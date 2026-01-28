@@ -1,0 +1,10 @@
+{
+  "name": "md-annotator",
+  "description": "Open Markdown files in a browser-based annotator",
+  "version": "0.1.0",
+  "author": {
+    "name": "k.michalik"
+  },
+  "license": "MIT",
+  "commands": "./commands/"
+}

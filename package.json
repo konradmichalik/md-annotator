@@ -1,0 +1,32 @@
+{
+  "name": "md-annotator",
+  "version": "0.1.0",
+  "description": "Annotate Markdown files in the browser",
+  "type": "module",
+  "bin": {
+    "md-annotator": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "build": "vite build",
+    "dev:client": "vite dev"
+  },
+  "keywords": ["markdown", "annotator", "editor"],
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "highlight.js": "^11.11.0",
+    "open": "^10.1.0",
+    "portfinder": "^1.0.32",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "web-highlighter": "^0.7.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.0",
+    "vite": "^6.0.0",
+    "vite-plugin-singlefile": "^2.0.3"
+  }
+}
