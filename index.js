@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 import { resolve } from 'node:path'
-import { startServer } from './server/index.js'
-import { isMarkdownFile, fileExists } from './server/utils.js'
-import open from 'open'
+import { createServer } from './server/index.js'
+import { isMarkdownFile, fileExists } from './server/file.js'
+import { openBrowser } from './server/browser.js'
 
 const HELP_TEXT = `
 md-annotator — Annotate Markdown files in the browser
@@ -13,6 +13,10 @@ Usage:
 
 Options:
   --help    Show this help message
+
+Environment:
+  MD_ANNOTATOR_PORT      Base port (default: 3000)
+  MD_ANNOTATOR_BROWSER   Custom browser app name
 
 Examples:
   md-annotator README.md
@@ -26,15 +30,13 @@ function parseArgs(argv) {
     return { help: true }
   }
 
-  const filePath = args[0]
-  return { filePath }
+  return { filePath: args[0] }
 }
 
 async function main() {
   const { help, filePath } = parseArgs(process.argv)
 
   if (help) {
-    // Help goes to stderr so stdout stays clean for feedback
     process.stderr.write(HELP_TEXT + '\n')
     process.exit(0)
   }
@@ -57,20 +59,21 @@ async function main() {
     process.exit(1)
   }
 
-  const { port, decisionPromise, shutdown } = await startServer(absolutePath)
+  const server = await createServer(absolutePath)
+  const url = `http://localhost:${server.port}`
 
-  const url = `http://localhost:${port}`
   process.stderr.write(`Server running at ${url}\n`)
   process.stderr.write(`Annotating: ${absolutePath}\n`)
-  await open(url)
+
+  await openBrowser(url)
 
   // Block until user clicks Approve or Submit Feedback
-  const decision = await decisionPromise
+  const decision = await server.waitForDecision()
 
   // Give browser time to receive response
   await new Promise(r => setTimeout(r, 500))
 
-  // Show decision on stderr (visible in CLI)
+  // Log decision to stderr
   if (decision.approved) {
     process.stderr.write('Decision: Approved (no changes)\n')
   } else {
@@ -78,17 +81,12 @@ async function main() {
   }
 
   // Output feedback to stdout — this is what Claude reads
-  // Use callback to ensure stdout is flushed before exit
   const output = decision.approved
     ? 'APPROVED: No changes requested.\n'
     : decision.feedback + '\n'
 
-  process.stderr.write('\n--- Feedback sent to Claude Code ---\n')
-  process.stderr.write(output)
-  process.stderr.write('--- End ---\n')
-
   process.stdout.write(output, () => {
-    shutdown()
+    server.shutdown()
     process.exit(0)
   })
 }
