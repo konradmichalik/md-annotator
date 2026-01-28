@@ -1,3 +1,7 @@
+/**
+ * File I/O utilities for markdown files.
+ */
+
 import { readFile } from 'node:fs/promises'
 import { access, constants } from 'node:fs/promises'
 import { extname, resolve } from 'node:path'
@@ -26,8 +30,7 @@ export async function readMarkdownFile(filePath) {
   }
 
   try {
-    const content = await readFile(absolutePath, 'utf-8')
-    return content
+    return await readFile(absolutePath, 'utf-8')
   } catch (error) {
     if (error.code === 'ENOENT') {
       throw new Error(`File not found: ${absolutePath}`)
