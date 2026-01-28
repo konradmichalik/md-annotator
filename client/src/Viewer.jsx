@@ -60,7 +60,7 @@ function InlineMarkdown({ text }) {
 
 function parseTableContent(content) {
   const lines = content.split('\n').filter(line => line.trim())
-  if (lines.length === 0) return { headers: [], rows: [] }
+  if (lines.length === 0) {return { headers: [], rows: [] }}
 
   const parseRow = (line) =>
     line.replace(/^\|/, '').replace(/\|$/, '').split('|').map(cell => cell.trim())
@@ -70,7 +70,7 @@ function parseTableContent(content) {
 
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim()
-    if (/^[|\-:\s]+$/.test(line)) continue
+    if (/^[|\-:\s]+$/.test(line)) {continue}
     rows.push(parseRow(line))
   }
 
@@ -166,7 +166,7 @@ function CodeBlock({ block, onHover, onLeave, isHovered }) {
       await navigator.clipboard.writeText(block.content)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch (err) {
+    } catch (_err) {
       // ignore
     }
   }, [block.content])
@@ -196,7 +196,7 @@ export const Viewer = forwardRef(function Viewer({
   annotations,
   onAddAnnotation,
   onSelectAnnotation,
-  selectedAnnotationId
+  selectedAnnotationId: _selectedAnnotationId
 }, ref) {
   const containerRef = useRef(null)
   const highlighterRef = useRef(null)
@@ -274,7 +274,7 @@ export const Viewer = forwardRef(function Viewer({
   }))
 
   useEffect(() => {
-    if (!containerRef.current) return
+    if (!containerRef.current) {return}
 
     const highlighter = new Highlighter({
       $root: containerRef.current,
@@ -311,7 +311,7 @@ export const Viewer = forwardRef(function Viewer({
 
   useEffect(() => {
     const highlighter = highlighterRef.current
-    if (!highlighter) return
+    if (!highlighter) {return}
 
     annotations.forEach(ann => {
       try {
@@ -323,7 +323,7 @@ export const Viewer = forwardRef(function Viewer({
             highlighter.addClass('comment', ann.id)
           }
         }
-      } catch (e) {
+      } catch (_e) {
         // ignore
       }
     })
@@ -331,7 +331,7 @@ export const Viewer = forwardRef(function Viewer({
 
   const handleAnnotate = (type, text) => {
     const highlighter = highlighterRef.current
-    if (!toolbarState || !highlighter) return
+    if (!toolbarState || !highlighter) {return}
     createAnnotationFromSource(highlighter, toolbarState.source, type, text)
     pendingSourceRef.current = null
     setToolbarState(null)

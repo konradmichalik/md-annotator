@@ -25,7 +25,7 @@ export function AnnotationPanel({ annotations, selectedAnnotationId, onSelect, o
             onClick={() => {
               onSelect(ann.id)
               const el = document.querySelector(`[data-bindid="${ann.id}"], mark.annotation-highlight`)
-              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              if (el) {el.scrollIntoView({ behavior: 'smooth', block: 'center' })}
             }}
           >
             <div className="panel-item-header">

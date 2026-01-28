@@ -8,7 +8,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose }) {
   const inputRef = useRef(null)
 
   useEffect(() => {
-    if (step === 'input') inputRef.current?.focus()
+    if (step === 'input') {inputRef.current?.focus()}
   }, [step])
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose }) {
     }
   }, [highlightElement, onClose, step])
 
-  if (!highlightElement || !position) return null
+  if (!highlightElement || !position) {return null}
 
   const handleTypeSelect = (type) => {
     if (type === 'DELETION') {
@@ -111,7 +111,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose }) {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Escape') setStep('menu')
+              if (e.key === 'Escape') {setStep('menu')}
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && inputValue.trim()) {
                 e.preventDefault()
                 onAnnotate('COMMENT', inputValue)

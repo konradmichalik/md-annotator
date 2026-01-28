@@ -9,7 +9,7 @@ export function parseMarkdownToBlocks(markdown) {
   let currentId = 0
   let buffer = []
   let currentType = 'paragraph'
-  let currentLevel = 0
+  const currentLevel = 0
   let bufferStartLine = 1
 
   const flush = () => {
