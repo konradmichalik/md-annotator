@@ -1,0 +1,14 @@
+{
+  "name": "md-annotator",
+  "description": "Browser-based Markdown annotator with text highlighting for Claude Code",
+  "owner": {
+    "name": "konradmichalik"
+  },
+  "plugins": [
+    {
+      "name": "annotate",
+      "source": "./apps/plugin",
+      "description": "Open Markdown files in a browser-based annotator for AI-assisted review"
+    }
+  ]
+}
