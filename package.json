@@ -1,7 +1,7 @@
 {
   "name": "md-annotator",
   "version": "0.1.0",
-  "description": "Annotate Markdown files in the browser",
+  "description": "Browser-based Markdown annotator for AI-assisted review",
   "type": "module",
   "bin": {
     "md-annotator": "./index.js"
@@ -10,9 +10,19 @@
     "start": "node index.js",
     "dev": "node --watch index.js",
     "build": "vite build",
-    "dev:client": "vite dev"
+    "dev:client": "vite dev",
+    "lint": "eslint . && stylelint '**/*.css'",
+    "lint:js": "eslint .",
+    "lint:css": "stylelint '**/*.css'",
+    "lint:fix": "eslint . --fix && stylelint '**/*.css' --fix"
   },
-  "keywords": ["markdown", "annotator", "editor"],
+  "keywords": [
+    "markdown",
+    "annotator",
+    "editor",
+    "ai",
+    "claude"
+  ],
   "license": "MIT",
   "dependencies": {
     "cors": "^2.8.5",
@@ -25,7 +35,14 @@
     "web-highlighter": "^0.7.4"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@vitejs/plugin-react": "^4.3.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^17.2.0",
+    "stylelint": "^17.0.0",
+    "stylelint-config-standard": "^40.0.0",
     "vite": "^6.0.0",
     "vite-plugin-singlefile": "^2.0.3"
   }
