@@ -1,6 +1,5 @@
 /**
  * Format annotations as readable Markdown feedback for Claude.
- * Ported from Plannotator's exportDiff pattern.
  */
 export function exportFeedback(annotations, blocks) {
   if (annotations.length === 0) {

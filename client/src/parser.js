@@ -1,7 +1,6 @@
 /**
  * Simplified markdown parser that splits content into linear blocks.
  * Designed for predictable text-anchoring (not AST-based).
- * Ported from Plannotator's parser.ts pattern.
  */
 export function parseMarkdownToBlocks(markdown) {
   const lines = markdown.split('\n')
