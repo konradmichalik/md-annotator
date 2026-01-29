@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { parseMarkdownToBlocks } from './parser.js'
 import { Viewer } from './Viewer.jsx'
 import { AnnotationPanel } from './AnnotationPanel.jsx'
+import { ExportModal } from './ExportModal.jsx'
 import './styles.css'
 
 // Theme: 'light' | 'dark' | 'auto'
@@ -21,6 +22,10 @@ function applyTheme(theme) {
   }
 }
 
+function getInitialSidebarCollapsed() {
+  return localStorage.getItem('md-annotator-sidebar-collapsed') === 'true'
+}
+
 export default function App() {
   const [_markdown, setMarkdown] = useState('')
   const [filePath, setFilePath] = useState('')
@@ -31,12 +36,22 @@ export default function App() {
   const [submitted, setSubmitted] = useState(false)
   const [decision, setDecision] = useState(null) // 'approved' | 'feedback'
   const [theme, setTheme] = useState(getInitialTheme)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed)
+  const [exportModalOpen, setExportModalOpen] = useState(false)
   const viewerRef = useRef(null)
 
   useEffect(() => {
     applyTheme(theme)
     localStorage.setItem('md-annotator-theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    localStorage.setItem('md-annotator-sidebar-collapsed', sidebarCollapsed)
+  }, [sidebarCollapsed])
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed(prev => !prev)
+  }, [])
 
   const cycleTheme = useCallback(() => {
     setTheme(prev => {
@@ -70,6 +85,7 @@ export default function App() {
 
   const handleAddAnnotation = useCallback((ann) => {
     setAnnotations(prev => [...prev, ann])
+    setSidebarCollapsed(false)
   }, [])
 
   const handleDeleteAnnotation = useCallback((id) => {
@@ -107,7 +123,18 @@ export default function App() {
       <div className="app">
         <div className="done-screen">
           <div className="done-card">
-            <div className="done-icon">{decision === 'approved' ? '\u2713' : '\u2709'}</div>
+            <div className={`done-icon done-icon--${decision}`}>
+              {decision === 'approved' ? (
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              ) : (
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+              )}
+            </div>
             <h1 className="done-title">
               {decision === 'approved' ? 'Approved' : 'Feedback Submitted'}
             </h1>
@@ -133,7 +160,7 @@ export default function App() {
         <div className="header-right">
           <button
             onClick={cycleTheme}
-            className="btn btn-theme"
+            className="btn btn-icon"
             title={`Theme: ${theme}`}
             aria-label={`Theme: ${theme}`}
           >
@@ -159,13 +186,15 @@ export default function App() {
             )}
           </button>
           <button
-            onClick={handleApprove}
-            className="btn btn-approve"
+            onClick={toggleSidebar}
+            className="btn btn-icon"
+            title={sidebarCollapsed ? 'Show annotations' : 'Hide annotations'}
+            aria-label={sidebarCollapsed ? 'Show annotations' : 'Hide annotations'}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12"/>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <line x1="15" y1="3" x2="15" y2="21"/>
             </svg>
-            Approve
           </button>
           <button
             onClick={handleSubmitFeedback}
@@ -177,7 +206,16 @@ export default function App() {
               <line x1="22" y1="2" x2="11" y2="13"/>
               <polygon points="22 2 15 22 11 13 2 9 22 2"/>
             </svg>
-            Submit Feedback{annotations.length > 0 ? ` (${annotations.length})` : ''}
+            Feedback{annotations.length > 0 ? ` (${annotations.length})` : ''}
+          </button>
+          <button
+            onClick={handleApprove}
+            className="btn btn-approve"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Approve
           </button>
         </div>
       </header>
@@ -196,10 +234,20 @@ export default function App() {
           selectedAnnotationId={selectedAnnotationId}
           onSelect={handleSelectAnnotation}
           onDelete={handleDeleteAnnotation}
+          onExport={() => setExportModalOpen(true)}
+          collapsed={sidebarCollapsed}
         />
       </main>
 
       <footer className="app-status">{status}</footer>
+
+      <ExportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        annotations={annotations}
+        blocks={blocks}
+        filePath={filePath}
+      />
     </div>
   )
 }
