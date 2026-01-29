@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { relative } from 'node:path'
 import { readMarkdownFile } from './file.js'
 import { exportFeedback } from './feedback.js'
 
@@ -16,7 +17,8 @@ export function createApiRouter(targetFilePath, resolveDecision, origin = 'claud
   router.get('/api/file', async (_req, res) => {
     try {
       const content = await readMarkdownFile(targetFilePath)
-      res.json(success({ content, path: targetFilePath, origin }))
+      const relativePath = relative(process.cwd(), targetFilePath) || targetFilePath
+      res.json(success({ content, path: relativePath, origin }))
     } catch (error) {
       res.status(500).json(failure(error.message))
     }
