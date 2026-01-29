@@ -10,13 +10,13 @@ function failure(error) {
   return { success: false, error }
 }
 
-export function createApiRouter(targetFilePath, resolveDecision) {
+export function createApiRouter(targetFilePath, resolveDecision, origin = 'claude-code') {
   const router = Router()
 
   router.get('/api/file', async (_req, res) => {
     try {
       const content = await readMarkdownFile(targetFilePath)
-      res.json(success({ content, path: targetFilePath }))
+      res.json(success({ content, path: targetFilePath, origin }))
     } catch (error) {
       res.status(500).json(failure(error.message))
     }
