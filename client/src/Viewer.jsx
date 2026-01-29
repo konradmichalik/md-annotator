@@ -34,6 +34,17 @@ function InlineMarkdown({ text }) {
       continue
     }
 
+    // Images: ![alt](url)
+    match = remaining.match(/^!\[([^\]]*)\]\(([^)]+)\)/)
+    if (match) {
+      parts.push(
+        <img key={key++} src={match[2]} alt={match[1]} className="inline-image" />
+      )
+      remaining = remaining.slice(match[0].length)
+      continue
+    }
+
+    // Links: [text](url)
     match = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/)
     if (match) {
       parts.push(
@@ -45,7 +56,7 @@ function InlineMarkdown({ text }) {
       continue
     }
 
-    const nextSpecial = remaining.slice(1).search(/[*`[]/)
+    const nextSpecial = remaining.slice(1).search(/[*`![]/)
     if (nextSpecial === -1) {
       parts.push(remaining)
       break
