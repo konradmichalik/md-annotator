@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "annotate",
-      "source": "./apps/plugin",
+      "source": "./apps/claude-code",
       "description": "Open Markdown files in a browser-based annotator for AI-assisted review"
     }
   ]
