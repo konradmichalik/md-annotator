@@ -52,6 +52,9 @@ export async function startAnnotatorServer(options) {
     app.use(express.static(clientPath))
   }
 
+  // Serve static files from project directory (for images, etc.)
+  app.use(express.static(process.cwd()))
+
   // Health check
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok' })
