@@ -3,58 +3,34 @@
  * Waits for user to click Approve or Submit Feedback in the browser.
  */
 
-import { existsSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
-import express from 'express'
-import cors from 'cors'
-import portfinder from 'portfinder'
+import { startAnnotatorServer } from './annotator.js'
 import { config } from './config.js'
-import { createApiRouter } from './routes.js'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const DIST_PATH = join(__dirname, '..', 'client', 'dist')
-const DEV_PATH = join(__dirname, '..', 'client')
-const CLIENT_PATH = existsSync(DIST_PATH) ? DIST_PATH : DEV_PATH
+// Re-export for plugin usage
+export { startAnnotatorServer } from './annotator.js'
 
 /**
- * Create and start the annotation server.
+ * Create and start the annotation server (CLI compatibility wrapper).
  * Returns an object with port, waitForDecision(), and shutdown().
  */
 export async function createServer(targetFilePath) {
-  const app = express()
+  let resolveDecision
 
-  // Middleware
-  app.use(cors())
-  app.use(express.json({ limit: config.jsonLimit }))
-  app.use(express.static(CLIENT_PATH))
-
-  // Health check
-  app.get('/health', (_req, res) => {
-    res.json({ status: 'ok' })
+  const server = await startAnnotatorServer({
+    filePath: targetFilePath,
+    origin: 'claude-code',
   })
 
-  // Decision promise — resolves when user submits decision
-  let resolveDecision
+  // Create a wrapper promise that can be resolved by signals
   const decisionPromise = new Promise((resolve) => {
     resolveDecision = resolve
-  })
-
-  // API routes
-  app.use(createApiRouter(targetFilePath, resolveDecision))
-
-  // Find available port
-  portfinder.basePort = config.port
-  const port = await portfinder.getPortPromise()
-
-  // Start server
-  const server = await new Promise((resolve) => {
-    const s = app.listen(port, () => resolve(s))
+    // Forward the actual decision
+    server.waitForDecision().then(resolve)
   })
 
   // Shutdown handler
   function shutdown() {
-    server.close()
+    server.stop()
     setTimeout(() => process.exit(1), config.forceExitTimeoutMs)
   }
 
@@ -69,7 +45,7 @@ export async function createServer(targetFilePath) {
   })
 
   return {
-    port,
+    port: server.port,
     waitForDecision: () => decisionPromise,
     shutdown,
   }
