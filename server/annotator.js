@@ -1,0 +1,96 @@
+/**
+ * Annotator server module.
+ * Provides startAnnotatorServer() for both CLI and plugin usage.
+ */
+
+import { existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+import express from 'express'
+import cors from 'cors'
+import portfinder from 'portfinder'
+import { config } from './config.js'
+import { createApiRouter } from './routes.js'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const DIST_PATH = join(__dirname, '..', 'client', 'dist')
+const DEV_PATH = join(__dirname, '..', 'client')
+
+/**
+ * Start the annotator server with configurable options.
+ *
+ * @param {Object} options - Server configuration
+ * @param {string} options.filePath - Absolute path to markdown file
+ * @param {string} [options.origin='claude-code'] - Origin identifier ('claude-code' | 'opencode')
+ * @param {string} [options.htmlContent] - Embedded HTML content (for plugin usage)
+ * @param {Function} [options.onReady] - Callback when server is ready: (url, port) => void
+ * @returns {Promise<Object>} Server control object
+ */
+export async function startAnnotatorServer(options) {
+  const {
+    filePath,
+    origin = 'claude-code',
+    htmlContent = null,
+    onReady = null,
+  } = options
+
+  const app = express()
+
+  // Middleware
+  app.use(cors())
+  app.use(express.json({ limit: config.jsonLimit }))
+
+  // Serve static files or embedded HTML
+  if (htmlContent) {
+    // Plugin mode: serve embedded HTML
+    app.get('/', (_req, res) => {
+      res.type('html').send(htmlContent)
+    })
+  } else {
+    // CLI mode: serve from disk
+    const clientPath = existsSync(DIST_PATH) ? DIST_PATH : DEV_PATH
+    app.use(express.static(clientPath))
+  }
+
+  // Health check
+  app.get('/health', (_req, res) => {
+    res.json({ status: 'ok' })
+  })
+
+  // Decision promise
+  let resolveDecision
+  const decisionPromise = new Promise((resolve) => {
+    resolveDecision = resolve
+  })
+
+  // API routes with origin support
+  app.use(createApiRouter(filePath, resolveDecision, origin))
+
+  // Find available port
+  portfinder.basePort = config.port
+  const port = await portfinder.getPortPromise()
+
+  // Start server
+  const server = await new Promise((resolve) => {
+    const s = app.listen(port, () => resolve(s))
+  })
+
+  const url = `http://localhost:${port}`
+
+  // Call onReady callback if provided
+  if (onReady) {
+    onReady(url, port)
+  }
+
+  // Stop function
+  function stop() {
+    server.close()
+  }
+
+  return {
+    port,
+    url,
+    waitForDecision: () => decisionPromise,
+    stop,
+  }
+}
