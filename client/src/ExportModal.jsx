@@ -1,0 +1,99 @@
+import { useState, useEffect } from 'react'
+import { formatAnnotationsForExport, copyToClipboard, downloadAsFile } from './export.js'
+
+const CopyIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+  </svg>
+)
+
+const CheckIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+)
+
+const DownloadIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+    <polyline points="7 10 12 15 17 10"/>
+    <line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>
+)
+
+const CloseIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"/>
+    <line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+)
+
+export function ExportModal({ isOpen, onClose, annotations, blocks, filePath }) {
+  const [copyFeedback, setCopyFeedback] = useState(false)
+  const [content, setContent] = useState('')
+
+  useEffect(() => {
+    if (isOpen) {
+      setContent(formatAnnotationsForExport(annotations, blocks, filePath))
+    }
+  }, [isOpen, annotations, blocks, filePath])
+
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape)
+      return () => document.removeEventListener('keydown', handleEscape)
+    }
+  }, [isOpen, onClose])
+
+  if (!isOpen) return null
+
+  const handleCopy = async () => {
+    await copyToClipboard(content)
+    setCopyFeedback(true)
+    setTimeout(() => setCopyFeedback(false), 2000)
+  }
+
+  const handleDownload = () => {
+    const filename = filePath
+      ? `${filePath.split('/').pop().replace('.md', '')}-annotations.md`
+      : 'annotations.md'
+    downloadAsFile(content, filename)
+  }
+
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) onClose()
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={handleBackdropClick}>
+      <div className="modal">
+        <div className="modal-header">
+          <h2>Export Annotations</h2>
+          <button className="modal-close" onClick={onClose} title="Close">
+            <CloseIcon />
+          </button>
+        </div>
+        <div className="modal-body">
+          <pre className="modal-preview">{content}</pre>
+        </div>
+        <div className="modal-footer">
+          <button className="btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn btn-export" onClick={handleCopy}>
+            {copyFeedback ? <CheckIcon /> : <CopyIcon />}
+            {copyFeedback ? 'Copied!' : 'Copy'}
+          </button>
+          <button className="btn btn-export" onClick={handleDownload}>
+            <DownloadIcon />
+            Download
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
