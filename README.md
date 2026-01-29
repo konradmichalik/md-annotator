@@ -3,7 +3,7 @@
 An AI coding agent plugin that opens Markdown files in a local browser-based annotator. Select text to mark deletions or add comments, then let the coding agent apply your feedback.
 
 > [!NOTE]
-> This plugin is heavily inspired by the excellent [plannotator](https://plannotator.ai/) plugin and uses a similar general approach for Markdown files. Useful for creating and reviewing documentation in software projects.
+> This plugin is heavily inspired by the excellent [plannotator](https://plannotator.ai/) plugin and uses a similar general approach for Markdown files. Useful for reviewing documentation in software projects.
 
 ![md-annotator](docs/images/screenshot.jpg)
 
