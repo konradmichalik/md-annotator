@@ -41,7 +41,7 @@ export function ExportModal({ isOpen, onClose, annotations, blocks, filePath }) 
 
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {onClose()}
     }
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
@@ -49,7 +49,7 @@ export function ExportModal({ isOpen, onClose, annotations, blocks, filePath }) 
     }
   }, [isOpen, onClose])
 
-  if (!isOpen) return null
+  if (!isOpen) {return null}
 
   const handleCopy = async () => {
     await copyToClipboard(content)
@@ -65,7 +65,7 @@ export function ExportModal({ isOpen, onClose, annotations, blocks, filePath }) 
   }
 
   const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) onClose()
+    if (e.target === e.currentTarget) {onClose()}
   }
 
   return (

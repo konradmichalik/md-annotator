@@ -14,7 +14,7 @@ export function formatAnnotationsForExport(annotations, blocks, filePath) {
   const sorted = [...annotations].sort((a, b) => {
     const blockA = blocks.findIndex(blk => blk.id === a.blockId)
     const blockB = blocks.findIndex(blk => blk.id === b.blockId)
-    if (blockA !== blockB) return blockA - blockB
+    if (blockA !== blockB) {return blockA - blockB}
     return a.startOffset - b.startOffset
   })
 
