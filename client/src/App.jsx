@@ -4,6 +4,7 @@ import { Viewer } from './Viewer.jsx'
 import { AnnotationPanel } from './AnnotationPanel.jsx'
 import { TableOfContents } from './TableOfContents.jsx'
 import { ExportModal } from './ExportModal.jsx'
+import { UpdateBanner } from './UpdateBanner.jsx'
 import './styles.css'
 
 // Theme: 'light' | 'dark' | 'auto'
@@ -277,6 +278,8 @@ export default function App() {
         blocks={blocks}
         filePath={filePath}
       />
+
+      <UpdateBanner />
     </div>
   )
 }
