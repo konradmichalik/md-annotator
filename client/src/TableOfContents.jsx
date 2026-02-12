@@ -55,18 +55,7 @@ export function TableOfContents({ blocks, collapsed }) {
     }
   }, [])
 
-  if (collapsed) return null
-
-  if (headings.length === 0) {
-    return (
-      <nav className="toc-panel">
-        <div className="toc-header">
-          <h2>Contents</h2>
-        </div>
-        <p className="toc-empty">No headings found.</p>
-      </nav>
-    )
-  }
+  if (collapsed || headings.length === 0) return null
 
   return (
     <nav className="toc-panel" ref={tocRef}>
