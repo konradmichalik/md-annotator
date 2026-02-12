@@ -1,3 +1,4 @@
+/* global __APP_VERSION__ */
 import { useState, useEffect } from 'react'
 
 const GITHUB_API = 'https://api.github.com/repos/konradmichalik/md-annotator/releases/latest'
@@ -10,8 +11,12 @@ function compareVersions(current, latest) {
   for (let i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
     const curr = currentParts[i] || 0
     const lat = latestParts[i] || 0
-    if (lat > curr) return true
-    if (lat < curr) return false
+    if (lat > curr) {
+      return true
+    }
+    if (lat < curr) {
+      return false
+    }
   }
   return false
 }
@@ -41,7 +46,9 @@ export function useUpdateCheck() {
         }
 
         const response = await fetch(GITHUB_API)
-        if (!response.ok) return
+        if (!response.ok) {
+          return
+        }
 
         const release = await response.json()
         const latestVersion = release.tag_name

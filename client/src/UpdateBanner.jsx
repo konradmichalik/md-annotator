@@ -18,7 +18,9 @@ export function UpdateBanner() {
     }
   }
 
-  if (!updateInfo?.updateAvailable || dismissed) return null
+  if (!updateInfo?.updateAvailable || dismissed) {
+    return null
+  }
 
   return (
     <div className="update-banner">

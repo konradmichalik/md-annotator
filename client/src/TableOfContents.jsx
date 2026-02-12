@@ -8,10 +8,14 @@ export function TableOfContents({ blocks, collapsed }) {
   const headings = blocks.filter(b => b.type === 'heading')
 
   useEffect(() => {
-    if (collapsed || headings.length === 0) return
+    if (collapsed || headings.length === 0) {
+      return
+    }
 
     const viewerEl = document.querySelector('.viewer-container')
-    if (!viewerEl) return
+    if (!viewerEl) {
+      return
+    }
 
     const handleIntersect = (entries) => {
       const visible = entries
@@ -31,16 +35,20 @@ export function TableOfContents({ blocks, collapsed }) {
 
     headings.forEach(h => {
       const el = viewerEl.querySelector(`[data-block-id="${h.id}"]`)
-      if (el) observerRef.current.observe(el)
+      if (el) {
+        observerRef.current.observe(el)
+      }
     })
 
     return () => {
       observerRef.current?.disconnect()
     }
-  }, [collapsed, headings.length, blocks])
+  }, [collapsed, headings])
 
   useEffect(() => {
-    if (!activeId || !tocRef.current) return
+    if (!activeId || !tocRef.current) {
+      return
+    }
     const activeEl = tocRef.current.querySelector(`[data-toc-id="${activeId}"]`)
     if (activeEl) {
       activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
@@ -55,7 +63,9 @@ export function TableOfContents({ blocks, collapsed }) {
     }
   }, [])
 
-  if (collapsed || headings.length === 0) return null
+  if (collapsed || headings.length === 0) {
+    return null
+  }
 
   return (
     <nav className="toc-panel" ref={tocRef}>
