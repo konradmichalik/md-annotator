@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { parseMarkdownToBlocks } from './parser.js'
 import { Viewer } from './Viewer.jsx'
 import { AnnotationPanel } from './AnnotationPanel.jsx'
+import { TableOfContents } from './TableOfContents.jsx'
 import { ExportModal } from './ExportModal.jsx'
 import './styles.css'
 
@@ -26,6 +27,10 @@ function getInitialSidebarCollapsed() {
   return localStorage.getItem('md-annotator-sidebar-collapsed') === 'true'
 }
 
+function getInitialTocCollapsed() {
+  return localStorage.getItem('md-annotator-toc-collapsed') === 'true'
+}
+
 export default function App() {
   const [_markdown, setMarkdown] = useState('')
   const [filePath, setFilePath] = useState('')
@@ -37,6 +42,7 @@ export default function App() {
   const [decision, setDecision] = useState(null) // 'approved' | 'feedback'
   const [theme, setTheme] = useState(getInitialTheme)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed)
+  const [tocCollapsed, setTocCollapsed] = useState(getInitialTocCollapsed)
   const [exportModalOpen, setExportModalOpen] = useState(false)
   const viewerRef = useRef(null)
 
@@ -48,6 +54,14 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('md-annotator-sidebar-collapsed', sidebarCollapsed)
   }, [sidebarCollapsed])
+
+  useEffect(() => {
+    localStorage.setItem('md-annotator-toc-collapsed', tocCollapsed)
+  }, [tocCollapsed])
+
+  const toggleToc = useCallback(() => {
+    setTocCollapsed(prev => !prev)
+  }, [])
 
   const toggleSidebar = useCallback(() => {
     setSidebarCollapsed(prev => !prev)
@@ -154,6 +168,17 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <div className="header-left">
+          <button
+            onClick={toggleToc}
+            className="btn btn-icon"
+            title={tocCollapsed ? 'Show table of contents' : 'Hide table of contents'}
+            aria-label={tocCollapsed ? 'Show table of contents' : 'Hide table of contents'}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <line x1="9" y1="3" x2="9" y2="21"/>
+            </svg>
+          </button>
           <h1 className="app-title">md-annotator</h1>
           <span className="app-filepath">{filePath}</span>
         </div>
@@ -186,17 +211,6 @@ export default function App() {
             )}
           </button>
           <button
-            onClick={toggleSidebar}
-            className="btn btn-icon"
-            title={sidebarCollapsed ? 'Show annotations' : 'Hide annotations'}
-            aria-label={sidebarCollapsed ? 'Show annotations' : 'Hide annotations'}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <line x1="15" y1="3" x2="15" y2="21"/>
-            </svg>
-          </button>
-          <button
             onClick={handleSubmitFeedback}
             className="btn btn-feedback"
             disabled={annotations.length === 0}
@@ -217,10 +231,25 @@ export default function App() {
             </svg>
             Approve
           </button>
+          <button
+            onClick={toggleSidebar}
+            className="btn btn-icon"
+            title={sidebarCollapsed ? 'Show annotations' : 'Hide annotations'}
+            aria-label={sidebarCollapsed ? 'Show annotations' : 'Hide annotations'}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <line x1="15" y1="3" x2="15" y2="21"/>
+            </svg>
+          </button>
         </div>
       </header>
 
       <main className="app-main">
+        <TableOfContents
+          blocks={blocks}
+          collapsed={tocCollapsed}
+        />
         <Viewer
           ref={viewerRef}
           blocks={blocks}
