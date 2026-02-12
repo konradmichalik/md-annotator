@@ -29,6 +29,12 @@ claude plugin install annotate@md-annotator --scope user
 
 For local development, see the [Development](#-development) section.
 
+### 🔄 Update
+
+```bash
+claude plugin update annotate@md-annotator
+```
+
 ### 🚀 Usage
 
 Inside a Claude Code session:
