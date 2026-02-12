@@ -7,6 +7,24 @@ import { Toolbar } from './Toolbar.jsx'
 /**
  * Renders inline markdown: **bold**, *italic*, `code`, [links](url)
  */
+function slugify(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim()
+}
+
+function handleAnchorClick(e, href) {
+  const viewerEl = e.target.closest('.viewer-container')
+  const targetEl = viewerEl?.querySelector(href)
+  if (targetEl) {
+    e.preventDefault()
+    targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
 function InlineMarkdown({ text }) {
   const parts = []
   let remaining = text
@@ -47,10 +65,12 @@ function InlineMarkdown({ text }) {
     // Links: [text](url)
     match = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/)
     if (match) {
+      const href = match[2]
+      const isAnchor = href.startsWith('#')
       parts.push(
-        <a key={key++} href={match[2]} target="_blank" rel="noopener noreferrer">
-          {match[1]}
-        </a>
+        isAnchor
+          ? <a key={key++} href={href} onClick={(e) => handleAnchorClick(e, href)}>{match[1]}</a>
+          : <a key={key++} href={href} target="_blank" rel="noopener noreferrer">{match[1]}</a>
       )
       remaining = remaining.slice(match[0].length)
       continue
@@ -92,7 +112,7 @@ function BlockRenderer({ block }) {
   switch (block.type) {
     case 'heading': {
       const Tag = `h${block.level || 1}`
-      return <Tag className={`heading heading-${block.level || 1}`} data-block-id={block.id}><InlineMarkdown text={block.content} /></Tag>
+      return <Tag id={slugify(block.content)} className={`heading heading-${block.level || 1}`} data-block-id={block.id}><InlineMarkdown text={block.content} /></Tag>
     }
 
     case 'blockquote':
