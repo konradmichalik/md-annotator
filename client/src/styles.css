@@ -481,6 +481,12 @@ body {
 .toolbar-btn-cancel { color: var(--text-muted); }
 .toolbar-btn-cancel:hover { background: var(--bg-secondary); }
 
+.toolbar-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  margin-left: 0.25rem;
+}
+
 .toolbar-divider {
   width: 1px;
   height: 1.25rem;

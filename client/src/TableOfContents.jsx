@@ -17,11 +17,10 @@ function buildSectionMap(blocks) {
 
   for (let hi = 0; hi < headings.length; hi++) {
     const start = headings[hi].index + 1
-    const level = headings[hi].level
     const sectionBlocks = sectionMap.get(headings[hi].id)
 
     for (let i = start; i < blocks.length; i++) {
-      if (blocks[i].type === 'heading' && blocks[i].level <= level) {
+      if (blocks[i].type === 'heading') {
         break
       }
       sectionBlocks.add(blocks[i].id)
