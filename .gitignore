@@ -7,3 +7,4 @@ client/dist/
 *.log
 package-lock.json
 IDEAS.md
+plans/

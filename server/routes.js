@@ -11,17 +11,44 @@ function failure(error) {
   return { success: false, error }
 }
 
-export function createApiRouter(targetFilePath, resolveDecision, origin = 'claude-code') {
+export function createApiRouter(targetFilePath, resolveDecision, origin = 'claude-code', annotationStore = null) {
   const router = Router()
 
   router.get('/api/file', async (_req, res) => {
     try {
       const content = await readMarkdownFile(targetFilePath)
       const relativePath = relative(process.cwd(), targetFilePath) || targetFilePath
-      res.json(success({ content, path: relativePath, origin }))
+      res.json(success({
+        content,
+        path: relativePath,
+        origin,
+        contentHash: annotationStore?.contentHash || null
+      }))
     } catch (error) {
       res.status(500).json(failure(error.message))
     }
+  })
+
+  router.get('/api/annotations', (_req, res) => {
+    if (!annotationStore) {
+      return res.json(success({ annotations: [], contentHash: null }))
+    }
+    res.json(success({
+      annotations: annotationStore.annotations,
+      contentHash: annotationStore.contentHash
+    }))
+  })
+
+  router.post('/api/annotations', (req, res) => {
+    if (!annotationStore) {
+      return res.json(success({ saved: false }))
+    }
+    const { annotations } = req.body
+    if (!Array.isArray(annotations)) {
+      return res.status(400).json(failure('annotations must be an array'))
+    }
+    annotationStore.annotations = [...annotations]
+    res.json(success({ saved: true, count: annotations.length }))
   })
 
   router.post('/api/approve', (_req, res) => {
