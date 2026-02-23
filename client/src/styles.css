@@ -481,12 +481,10 @@ body {
 .toolbar-btn-cancel { color: var(--text-muted); }
 .toolbar-btn-cancel:hover { background: var(--bg-secondary); }
 
-.toolbar-shortcut {
-  font-size: 0.625rem;
-  font-weight: 600;
-  opacity: 0.5;
-  margin-left: 0.125rem;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+.toolbar-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  margin-left: 0.25rem;
 }
 
 .toolbar-divider {
