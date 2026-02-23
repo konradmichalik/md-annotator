@@ -15,13 +15,16 @@ function getInitialTheme() {
 
 function applyTheme(theme) {
   const root = document.documentElement
-  if (theme === 'dark') {
-    root.setAttribute('data-theme', 'dark')
-  } else if (theme === 'light') {
-    root.setAttribute('data-theme', 'light')
-  } else {
-    root.removeAttribute('data-theme')
+  if (theme === 'dark' || theme === 'light') {
+    root.setAttribute('data-theme', theme)
+    return
   }
+  // Auto: follow system preference
+  const mq = window.matchMedia('(prefers-color-scheme: dark)')
+  root.setAttribute('data-theme', mq.matches ? 'dark' : 'light')
+  const onChange = () => root.setAttribute('data-theme', mq.matches ? 'dark' : 'light')
+  mq.addEventListener('change', onChange)
+  return () => mq.removeEventListener('change', onChange)
 }
 
 function getInitialSidebarCollapsed() {
@@ -52,13 +55,30 @@ function annotationReducer(state, action) {
         lastAction: { type: 'delete', annotation: deleted }
       }
     }
+    case 'EDIT': {
+      const original = state.annotations.find(a => a.id === action.id)
+      if (!original) {return state}
+      const updated = { ...original, type: action.annotationType, text: action.text }
+      return {
+        annotations: state.annotations.map(a => a.id === action.id ? updated : a),
+        history: [...state.history, { action: 'edit', annotation: original, updated }],
+        redo: [],
+        lastAction: { type: 'edit', annotation: original, updated }
+      }
+    }
     case 'UNDO': {
       if (state.history.length === 0) {return state}
       const entry = state.history[state.history.length - 1]
+      let newAnnotations
+      if (entry.action === 'add') {
+        newAnnotations = state.annotations.filter(a => a.id !== entry.annotation.id)
+      } else if (entry.action === 'delete') {
+        newAnnotations = [...state.annotations, entry.annotation]
+      } else if (entry.action === 'edit') {
+        newAnnotations = state.annotations.map(a => a.id === entry.updated.id ? entry.annotation : a)
+      }
       return {
-        annotations: entry.action === 'add'
-          ? state.annotations.filter(a => a.id !== entry.annotation.id)
-          : [...state.annotations, entry.annotation],
+        annotations: newAnnotations,
         history: state.history.slice(0, -1),
         redo: [...state.redo, entry],
         lastAction: { type: 'undo', entry }
@@ -67,10 +87,16 @@ function annotationReducer(state, action) {
     case 'REDO': {
       if (state.redo.length === 0) {return state}
       const entry = state.redo[state.redo.length - 1]
+      let newAnnotations
+      if (entry.action === 'add') {
+        newAnnotations = [...state.annotations, entry.annotation]
+      } else if (entry.action === 'delete') {
+        newAnnotations = state.annotations.filter(a => a.id !== entry.annotation.id)
+      } else if (entry.action === 'edit') {
+        newAnnotations = state.annotations.map(a => a.id === entry.annotation.id ? entry.updated : a)
+      }
       return {
-        annotations: entry.action === 'add'
-          ? [...state.annotations, entry.annotation]
-          : state.annotations.filter(a => a.id !== entry.annotation.id),
+        annotations: newAnnotations,
         history: [...state.history, entry],
         redo: state.redo.slice(0, -1),
         lastAction: { type: 'redo', entry }
@@ -123,26 +149,32 @@ export default function App() {
 
     if (lastAction.type === 'delete') {
       viewerRef.current?.removeHighlight(lastAction.annotation.id)
+    } else if (lastAction.type === 'edit') {
+      viewerRef.current?.updateHighlightType(lastAction.updated.id, lastAction.updated.type)
     } else if (lastAction.type === 'undo') {
       const { entry } = lastAction
       if (entry.action === 'add') {
         viewerRef.current?.removeHighlight(entry.annotation.id)
-      } else {
+      } else if (entry.action === 'delete') {
         viewerRef.current?.restoreHighlight(entry.annotation)
+      } else if (entry.action === 'edit') {
+        viewerRef.current?.updateHighlightType(entry.annotation.id, entry.annotation.type)
       }
     } else if (lastAction.type === 'redo') {
       const { entry } = lastAction
       if (entry.action === 'add') {
         viewerRef.current?.restoreHighlight(entry.annotation)
-      } else {
+      } else if (entry.action === 'delete') {
         viewerRef.current?.removeHighlight(entry.annotation.id)
+      } else if (entry.action === 'edit') {
+        viewerRef.current?.updateHighlightType(entry.updated.id, entry.updated.type)
       }
     }
   }, [annState])
 
   useEffect(() => {
-    applyTheme(theme)
     localStorage.setItem('md-annotator-theme', theme)
+    return applyTheme(theme)
   }, [theme])
 
   useEffect(() => {
@@ -244,6 +276,19 @@ export default function App() {
     setSelectedAnnotationId(prev => prev === id ? null : prev)
   }, [])
 
+  const handleEditAnnotation = useCallback((id, annotationType, text) => {
+    dispatch({ type: 'EDIT', id, annotationType, text })
+  }, [])
+
+  const handlePanelEdit = useCallback((id) => {
+    const ann = annotations.find(a => a.id === id)
+    if (ann) {
+      viewerRef.current?.openEditToolbar(ann)
+      setSelectedAnnotationId(id)
+      setSidebarCollapsed(false)
+    }
+  }, [annotations])
+
   const handleUndo = useCallback(() => {
     dispatch({ type: 'UNDO' })
   }, [])
@@ -301,6 +346,48 @@ export default function App() {
     } catch { /* server shuts down */ }
   }
 
+  const [serverGone, setServerGone] = useState(false)
+
+  useEffect(() => {
+    const ping = async () => {
+      try {
+        await fetch('/api/heartbeat', { method: 'POST' })
+      } catch {
+        setServerGone(true)
+      }
+    }
+    ping()
+    const id = setInterval(ping, 2000)
+    return () => clearInterval(id)
+  }, [])
+
+  if (serverGone && !submitted) {
+    return (
+      <div className="app">
+        <div className="done-screen">
+          <div className="done-card">
+            <div className="done-icon done-icon--disconnected">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="1" y1="1" x2="23" y2="23"/>
+                <path d="M16.72 11.06A10.94 10.94 0 0119 12.55"/>
+                <path d="M5 12.55a10.94 10.94 0 015.17-2.39"/>
+                <path d="M10.71 5.05A16 16 0 0122.56 9"/>
+                <path d="M1.42 9a15.91 15.91 0 014.7-2.88"/>
+                <path d="M8.53 16.11a6 6 0 016.95 0"/>
+                <line x1="12" y1="20" x2="12.01" y2="20"/>
+              </svg>
+            </div>
+            <h1 className="done-title">Server Disconnected</h1>
+            <p className="done-message">
+              The server is no longer available. Your annotations have not been submitted.
+            </p>
+            <p className="done-hint">You can close this tab.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (submitted) {
     return (
       <div className="app">
@@ -326,7 +413,9 @@ export default function App() {
                 ? 'No changes requested. The file was approved as-is.'
                 : `${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} sent to Claude Code.`}
             </p>
-            <p className="done-hint">You can close this tab.</p>
+            {serverGone
+              ? <p className="done-hint done-hint--disconnected">Server disconnected. You can close this tab.</p>
+              : <p className="done-hint">Waiting for server...</p>}
           </div>
         </div>
       </div>
@@ -403,11 +492,8 @@ export default function App() {
             disabled={annotations.length === 0}
             title={annotations.length === 0 ? 'Add annotations first' : `Submit ${annotations.length} annotation(s)`}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13"/>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
-            Feedback{annotations.length > 0 ? ` (${annotations.length})` : ''}
+            Feedback
+            {annotations.length > 0 && <span className="btn-badge">{annotations.length}</span>}
           </button>
           <button
             onClick={handleApprove}
@@ -415,9 +501,6 @@ export default function App() {
             disabled={annotations.length > 0}
             title={annotations.length > 0 ? 'Remove annotations to approve' : 'Approve file as-is'}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
             Approve
           </button>
           <button
@@ -445,6 +528,8 @@ export default function App() {
           blocks={blocks}
           annotations={annotations}
           onAddAnnotation={handleAddAnnotation}
+          onEditAnnotation={handleEditAnnotation}
+          onDeleteAnnotation={handleDeleteAnnotation}
           onSelectAnnotation={handleSelectAnnotation}
           selectedAnnotationId={selectedAnnotationId}
         />
@@ -452,13 +537,16 @@ export default function App() {
           annotations={annotations}
           selectedAnnotationId={selectedAnnotationId}
           onSelect={handleSelectAnnotation}
+          onEdit={handlePanelEdit}
           onDelete={handleDeleteAnnotation}
           onExport={() => setExportModalOpen(true)}
           collapsed={sidebarCollapsed}
         />
       </main>
 
-      <footer className="app-status">{status}</footer>
+      <footer className="app-status">
+        {status}
+      </footer>
 
       <ExportModal
         isOpen={exportModalOpen}
