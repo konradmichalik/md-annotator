@@ -76,6 +76,14 @@ function annotationReducer(state, action) {
         lastAction: { type: 'redo', entry }
       }
     }
+    case 'RESTORE': {
+      return {
+        annotations: action.annotations,
+        history: [],
+        redo: [],
+        lastAction: null
+      }
+    }
     default: return state
   }
 }
@@ -100,6 +108,8 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed)
   const [tocCollapsed, setTocCollapsed] = useState(getInitialTocCollapsed)
   const [exportModalOpen, setExportModalOpen] = useState(false)
+  const [_contentHash, setContentHash] = useState(null)
+  const [hashMismatch, setHashMismatch] = useState(false)
   const viewerRef = useRef(null)
   const prevLastActionRef = useRef(null)
 
@@ -168,18 +178,61 @@ export default function App() {
         setMarkdown(json.data.content)
         setFilePath(json.data.path)
         setBlocks(parseMarkdownToBlocks(json.data.content))
+        setContentHash(json.data.contentHash || null)
         setStatus('Select text to annotate, then Approve or Submit Feedback.')
+        return json.data.contentHash || null
       } else {
         setStatus('Error: ' + json.error)
       }
     } catch (err) {
       setStatus('Error: ' + err.message)
     }
+    return null
+  }, [])
+
+  const loadAnnotations = useCallback(async (expectedHash) => {
+    try {
+      const res = await fetch('/api/annotations')
+      const json = await res.json()
+      if (json.success && json.data.annotations.length > 0) {
+        if (json.data.contentHash === expectedHash) {
+          dispatch({ type: 'RESTORE', annotations: json.data.annotations })
+          setTimeout(() => {
+            viewerRef.current?.restoreHighlights(json.data.annotations)
+          }, 100)
+        } else {
+          setHashMismatch(true)
+        }
+      }
+    } catch (_err) {
+      // Silent failure - persistence is best-effort
+    }
   }, [])
 
   useEffect(() => {
-    loadFile()
-  }, [loadFile])
+    loadFile().then(hash => {
+      if (hash) {loadAnnotations(hash)}
+    })
+  }, [loadFile, loadAnnotations])
+
+  // Auto-save annotations to server (debounced)
+  useEffect(() => {
+    if (submitted) {return}
+
+    const timer = setTimeout(async () => {
+      try {
+        await fetch('/api/annotations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ annotations })
+        })
+      } catch (_err) {
+        // Silent failure
+      }
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [annotations, submitted])
 
   const handleAddAnnotation = useCallback((ann) => {
     dispatch({ type: 'ADD', annotation: ann })
@@ -280,8 +333,26 @@ export default function App() {
     )
   }
 
+  const handleReloadFile = async () => {
+    setHashMismatch(false)
+    dispatch({ type: 'RESTORE', annotations: [] })
+    viewerRef.current?.clearAllHighlights()
+    await loadFile()
+  }
+
   return (
     <div className="app">
+      {hashMismatch && (
+        <div className="hash-mismatch-banner">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>File has changed since annotations were saved. Annotations may be outdated.</span>
+          <button onClick={handleReloadFile} className="btn btn-sm">Reload</button>
+          <button onClick={() => setHashMismatch(false)} className="btn btn-sm">Dismiss</button>
+        </div>
+      )}
       <header className="app-header">
         <div className="header-left">
           <button

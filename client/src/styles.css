@@ -219,6 +219,33 @@ body {
   color: var(--text);
 }
 
+/* === Hash Mismatch Banner === */
+.hash-mismatch-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1.5rem;
+  background: var(--comment-bg);
+  border-bottom: 1px solid var(--comment-border);
+  font-size: 0.8125rem;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.hash-mismatch-banner svg {
+  flex-shrink: 0;
+  color: var(--comment-border);
+}
+
+.hash-mismatch-banner span {
+  flex: 1;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+}
+
 /* === Done Screen === */
 .done-screen {
   flex: 1;

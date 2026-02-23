@@ -4,6 +4,7 @@
  */
 
 import { existsSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import express from 'express'
@@ -11,6 +12,7 @@ import cors from 'cors'
 import portfinder from 'portfinder'
 import { config } from './config.js'
 import { createApiRouter } from './routes.js'
+import { readMarkdownFile } from './file.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST_PATH = join(__dirname, '..', 'client', 'dist')
@@ -60,14 +62,24 @@ export async function startAnnotatorServer(options) {
     res.json({ status: 'ok' })
   })
 
+  // Compute content hash for annotation persistence
+  let annotationStore = null
+  try {
+    const content = await readMarkdownFile(filePath)
+    const contentHash = createHash('sha256').update(content).digest('hex')
+    annotationStore = { contentHash, annotations: [] }
+  } catch (_e) {
+    // Hash computation failed — persistence disabled for this session
+  }
+
   // Decision promise
   let resolveDecision
   const decisionPromise = new Promise((resolve) => {
     resolveDecision = resolve
   })
 
-  // API routes with origin support
-  app.use(createApiRouter(filePath, resolveDecision, origin))
+  // API routes with origin support and annotation store
+  app.use(createApiRouter(filePath, resolveDecision, origin, annotationStore))
 
   // Find available port
   portfinder.basePort = config.port
