@@ -226,6 +226,8 @@ export default function App() {
           <button
             onClick={handleApprove}
             className="btn btn-approve"
+            disabled={annotations.length > 0}
+            title={annotations.length > 0 ? 'Remove annotations to approve' : 'Approve file as-is'}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12"/>
