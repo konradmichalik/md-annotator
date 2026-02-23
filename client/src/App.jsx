@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useReducer } from 'react'
 import { parseMarkdownToBlocks } from './parser.js'
 import { Viewer } from './Viewer.jsx'
 import { AnnotationPanel } from './AnnotationPanel.jsx'
@@ -32,11 +32,66 @@ function getInitialTocCollapsed() {
   return localStorage.getItem('md-annotator-toc-collapsed') === 'true'
 }
 
+function annotationReducer(state, action) {
+  switch (action.type) {
+    case 'ADD': {
+      return {
+        annotations: [...state.annotations, action.annotation],
+        history: [...state.history, { action: 'add', annotation: action.annotation }],
+        redo: [],
+        lastAction: { type: 'add', annotation: action.annotation }
+      }
+    }
+    case 'DELETE': {
+      const deleted = state.annotations.find(a => a.id === action.id)
+      if (!deleted) {return state}
+      return {
+        annotations: state.annotations.filter(a => a.id !== action.id),
+        history: [...state.history, { action: 'delete', annotation: deleted }],
+        redo: [],
+        lastAction: { type: 'delete', annotation: deleted }
+      }
+    }
+    case 'UNDO': {
+      if (state.history.length === 0) {return state}
+      const entry = state.history[state.history.length - 1]
+      return {
+        annotations: entry.action === 'add'
+          ? state.annotations.filter(a => a.id !== entry.annotation.id)
+          : [...state.annotations, entry.annotation],
+        history: state.history.slice(0, -1),
+        redo: [...state.redo, entry],
+        lastAction: { type: 'undo', entry }
+      }
+    }
+    case 'REDO': {
+      if (state.redo.length === 0) {return state}
+      const entry = state.redo[state.redo.length - 1]
+      return {
+        annotations: entry.action === 'add'
+          ? [...state.annotations, entry.annotation]
+          : state.annotations.filter(a => a.id !== entry.annotation.id),
+        history: [...state.history, entry],
+        redo: state.redo.slice(0, -1),
+        lastAction: { type: 'redo', entry }
+      }
+    }
+    default: return state
+  }
+}
+
+const initialAnnotationState = {
+  annotations: [],
+  history: [],
+  redo: [],
+  lastAction: null
+}
+
 export default function App() {
   const [_markdown, setMarkdown] = useState('')
   const [filePath, setFilePath] = useState('')
   const [blocks, setBlocks] = useState([])
-  const [annotations, setAnnotations] = useState([])
+  const [annState, dispatch] = useReducer(annotationReducer, initialAnnotationState)
   const [selectedAnnotationId, setSelectedAnnotationId] = useState(null)
   const [status, setStatus] = useState('Loading...')
   const [submitted, setSubmitted] = useState(false)
@@ -46,6 +101,34 @@ export default function App() {
   const [tocCollapsed, setTocCollapsed] = useState(getInitialTocCollapsed)
   const [exportModalOpen, setExportModalOpen] = useState(false)
   const viewerRef = useRef(null)
+  const prevLastActionRef = useRef(null)
+
+  const { annotations } = annState
+
+  // Handle DOM highlight side effects based on reducer lastAction
+  useEffect(() => {
+    const { lastAction } = annState
+    if (!lastAction || lastAction === prevLastActionRef.current) {return}
+    prevLastActionRef.current = lastAction
+
+    if (lastAction.type === 'delete') {
+      viewerRef.current?.removeHighlight(lastAction.annotation.id)
+    } else if (lastAction.type === 'undo') {
+      const { entry } = lastAction
+      if (entry.action === 'add') {
+        viewerRef.current?.removeHighlight(entry.annotation.id)
+      } else {
+        viewerRef.current?.restoreHighlight(entry.annotation)
+      }
+    } else if (lastAction.type === 'redo') {
+      const { entry } = lastAction
+      if (entry.action === 'add') {
+        viewerRef.current?.restoreHighlight(entry.annotation)
+      } else {
+        viewerRef.current?.removeHighlight(entry.annotation.id)
+      }
+    }
+  }, [annState])
 
   useEffect(() => {
     applyTheme(theme)
@@ -99,19 +182,51 @@ export default function App() {
   }, [loadFile])
 
   const handleAddAnnotation = useCallback((ann) => {
-    setAnnotations(prev => [...prev, ann])
+    dispatch({ type: 'ADD', annotation: ann })
     setSidebarCollapsed(false)
   }, [])
 
   const handleDeleteAnnotation = useCallback((id) => {
-    viewerRef.current?.removeHighlight(id)
-    setAnnotations(prev => prev.filter(a => a.id !== id))
+    dispatch({ type: 'DELETE', id })
     setSelectedAnnotationId(prev => prev === id ? null : prev)
+  }, [])
+
+  const handleUndo = useCallback(() => {
+    dispatch({ type: 'UNDO' })
+  }, [])
+
+  const handleRedo = useCallback(() => {
+    dispatch({ type: 'REDO' })
   }, [])
 
   const handleSelectAnnotation = useCallback((id) => {
     setSelectedAnnotationId(id)
   }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const tag = document.activeElement?.tagName?.toLowerCase()
+      if (tag === 'textarea' || tag === 'input') {return}
+
+      const isMod = e.metaKey || e.ctrlKey
+
+      if (isMod && !e.shiftKey && e.key === 'z') {
+        e.preventDefault()
+        handleUndo()
+      }
+      if (isMod && e.shiftKey && e.key === 'z') {
+        e.preventDefault()
+        handleRedo()
+      }
+      if (e.ctrlKey && !e.metaKey && e.key === 'y') {
+        e.preventDefault()
+        handleRedo()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [handleUndo, handleRedo])
 
   const handleApprove = async () => {
     setSubmitted(true)

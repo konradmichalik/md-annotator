@@ -234,6 +234,7 @@ export const Viewer = forwardRef(function Viewer({
   const onAddAnnotationRef = useRef(onAddAnnotation)
   const pendingSourceRef = useRef(null)
   const [toolbarState, setToolbarState] = useState(null)
+  const [requestedToolbarStep, setRequestedToolbarStep] = useState(null)
 
   useEffect(() => {
     onAddAnnotationRef.current = onAddAnnotation
@@ -290,6 +291,37 @@ export const Viewer = forwardRef(function Viewer({
           parent?.insertBefore(el.firstChild, el)
         }
         el.remove()
+      })
+    },
+    restoreHighlight(ann) {
+      const highlighter = highlighterRef.current
+      if (!highlighter) {return false}
+      try {
+        highlighter.fromStore(ann.startMeta, ann.endMeta, ann.originalText, ann.id)
+        if (ann.type === 'DELETION') {
+          highlighter.addClass('deletion', ann.id)
+        } else if (ann.type === 'COMMENT') {
+          highlighter.addClass('comment', ann.id)
+        }
+        return true
+      } catch (_e) {
+        return false
+      }
+    },
+    restoreHighlights(anns) {
+      const highlighter = highlighterRef.current
+      if (!highlighter) {return}
+      anns.forEach(ann => {
+        try {
+          highlighter.fromStore(ann.startMeta, ann.endMeta, ann.originalText, ann.id)
+          if (ann.type === 'DELETION') {
+            highlighter.addClass('deletion', ann.id)
+          } else if (ann.type === 'COMMENT') {
+            highlighter.addClass('comment', ann.id)
+          }
+        } catch (_e) {
+          // ignore
+        }
       })
     },
     clearAllHighlights() {
@@ -360,23 +392,52 @@ export const Viewer = forwardRef(function Viewer({
     })
   }, [annotations])
 
-  const handleAnnotate = (type, text) => {
+  const handleAnnotate = useCallback((type, text) => {
     const highlighter = highlighterRef.current
     if (!toolbarState || !highlighter) {return}
     createAnnotationFromSource(highlighter, toolbarState.source, type, text)
     pendingSourceRef.current = null
     setToolbarState(null)
+    setRequestedToolbarStep(null)
     window.getSelection()?.removeAllRanges()
-  }
+  }, [toolbarState])
 
-  const handleToolbarClose = () => {
+  const handleToolbarClose = useCallback(() => {
     if (toolbarState && highlighterRef.current) {
       highlighterRef.current.remove(toolbarState.source.id)
     }
     pendingSourceRef.current = null
     setToolbarState(null)
+    setRequestedToolbarStep(null)
     window.getSelection()?.removeAllRanges()
-  }
+  }, [toolbarState])
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const tag = document.activeElement?.tagName?.toLowerCase()
+      if (tag === 'textarea' || tag === 'input') {return}
+
+      const isMod = e.metaKey || e.ctrlKey
+
+      if (isMod && e.key === 'd' && toolbarState) {
+        e.preventDefault()
+        handleAnnotate('DELETION')
+      }
+
+      if (isMod && e.key === 'k' && toolbarState) {
+        e.preventDefault()
+        setRequestedToolbarStep(prev => (prev ?? 0) + 1)
+      }
+
+      if (e.key === 'Escape' && toolbarState) {
+        e.preventDefault()
+        handleToolbarClose()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [toolbarState, handleAnnotate, handleToolbarClose])
 
   return (
     <div className="viewer-container">
@@ -392,6 +453,7 @@ export const Viewer = forwardRef(function Viewer({
           highlightElement={toolbarState?.element ?? null}
           onAnnotate={handleAnnotate}
           onClose={handleToolbarClose}
+          requestedStep={requestedToolbarStep}
         />
       </article>
     </div>
