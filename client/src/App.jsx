@@ -249,6 +249,7 @@ export default function App() {
       <main className="app-main">
         <TableOfContents
           blocks={blocks}
+          annotations={annotations}
           collapsed={tocCollapsed}
         />
         <Viewer

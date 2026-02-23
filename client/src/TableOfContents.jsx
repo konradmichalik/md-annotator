@@ -1,11 +1,66 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 
-export function TableOfContents({ blocks, collapsed }) {
+/**
+ * Build a map: headingBlockId → Set of blockIds that belong to that section.
+ * A section spans from a heading to the next heading of equal or higher level.
+ */
+function buildSectionMap(blocks) {
+  const headings = []
+  const sectionMap = new Map()
+
+  for (let i = 0; i < blocks.length; i++) {
+    if (blocks[i].type === 'heading') {
+      headings.push({ index: i, id: blocks[i].id, level: blocks[i].level })
+      sectionMap.set(blocks[i].id, new Set())
+    }
+  }
+
+  for (let hi = 0; hi < headings.length; hi++) {
+    const start = headings[hi].index + 1
+    const level = headings[hi].level
+    const sectionBlocks = sectionMap.get(headings[hi].id)
+
+    for (let i = start; i < blocks.length; i++) {
+      if (blocks[i].type === 'heading' && blocks[i].level <= level) {
+        break
+      }
+      sectionBlocks.add(blocks[i].id)
+    }
+  }
+
+  return sectionMap
+}
+
+export function TableOfContents({ blocks, annotations = [], collapsed }) {
   const [activeId, setActiveId] = useState(null)
   const observerRef = useRef(null)
   const tocRef = useRef(null)
 
   const headings = blocks.filter(b => b.type === 'heading')
+
+  const sectionMap = useMemo(() => buildSectionMap(blocks), [blocks])
+
+  const annotationCountPerHeading = useMemo(() => {
+    if (annotations.length === 0) {
+      return new Map()
+    }
+    const annotatedBlockIds = annotations.reduce((map, a) => {
+      map.set(a.blockId, (map.get(a.blockId) || 0) + 1)
+      return map
+    }, new Map())
+
+    const counts = new Map()
+    for (const [headingId, sectionBlockIds] of sectionMap) {
+      let count = annotatedBlockIds.get(headingId) || 0
+      for (const blockId of sectionBlockIds) {
+        count += annotatedBlockIds.get(blockId) || 0
+      }
+      if (count > 0) {
+        counts.set(headingId, count)
+      }
+    }
+    return counts
+  }, [sectionMap, annotations])
 
   useEffect(() => {
     if (collapsed || headings.length === 0) {
@@ -73,18 +128,24 @@ export function TableOfContents({ blocks, collapsed }) {
         <h2>Contents</h2>
       </div>
       <ul className="toc-list">
-        {headings.map(h => (
-          <li key={h.id}>
-            <button
-              className={`toc-item toc-item--level-${h.level}${activeId === h.id ? ' toc-item--active' : ''}`}
-              data-toc-id={h.id}
-              onClick={() => handleClick(h.id)}
-              title={h.content}
-            >
-              {h.content}
-            </button>
-          </li>
-        ))}
+        {headings.map(h => {
+          const count = annotationCountPerHeading.get(h.id) || 0
+          return (
+            <li key={h.id}>
+              <button
+                className={`toc-item toc-item--level-${h.level}${activeId === h.id ? ' toc-item--active' : ''}${count > 0 ? ' toc-item--annotated' : ''}`}
+                data-toc-id={h.id}
+                onClick={() => handleClick(h.id)}
+                title={h.content}
+              >
+                <span className="toc-item-text">{h.content}</span>
+                {count > 0 && (
+                  <span className="toc-badge">{count}</span>
+                )}
+              </button>
+            </li>
+          )
+        })}
       </ul>
     </nav>
   )
