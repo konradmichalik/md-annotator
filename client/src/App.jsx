@@ -350,7 +350,6 @@ export default function App() {
 
   useEffect(() => {
     if (submitted) {return}
-    let intervalId
     const ping = async () => {
       try {
         const res = await fetch('/api/heartbeat', { method: 'POST' })
@@ -361,7 +360,7 @@ export default function App() {
       }
     }
     ping()
-    intervalId = setInterval(ping, 2000)
+    const intervalId = setInterval(ping, 2000)
     return () => clearInterval(intervalId)
   }, [submitted])
 
