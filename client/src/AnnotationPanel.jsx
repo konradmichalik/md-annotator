@@ -1,10 +1,12 @@
-const ExportIcon = () => (
+import { useRef, useState, useEffect } from 'react'
+
+const MoreIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-    <polyline points="17 8 12 3 7 8"/>
-    <line x1="12" y1="3" x2="12" y2="15"/>
+    <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
   </svg>
 )
+
+const MAX_IMPORT_SIZE = 5 * 1024 * 1024 // 5 MB
 
 export function AnnotationPanel({
   annotations,
@@ -13,39 +15,106 @@ export function AnnotationPanel({
   onEdit,
   onDelete,
   onExport,
+  onImport,
   collapsed
 }) {
-  // Collapsed view
+  const fileInputRef = useRef(null)
+  const menuRef = useRef(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const handleImportClick = () => {
+    setMenuOpen(false)
+    fileInputRef.current?.click()
+  }
+
+  const handleExportClick = () => {
+    setMenuOpen(false)
+    onExport()
+  }
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > MAX_IMPORT_SIZE) {
+      alert('File too large. Maximum import size is 5 MB.')
+      e.target.value = ''
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result)
+        onImport(data)
+      } catch {
+        alert('Invalid JSON file')
+      }
+      e.target.value = ''
+    }
+    reader.onerror = () => {
+      alert('Failed to read file')
+      e.target.value = ''
+    }
+    reader.readAsText(file)
+  }
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [menuOpen])
+
   if (collapsed) {
     return null
   }
 
-  // Empty state
-  if (annotations.length === 0) {
+  const hasAnnotations = annotations.length > 0
+
+  const moreMenu = (
+    <div className="panel-menu" ref={menuRef}>
+      <button className="panel-icon-btn" onClick={() => setMenuOpen(prev => !prev)} title="More actions">
+        <MoreIcon />
+      </button>
+      {menuOpen && (
+        <div className="panel-menu-dropdown">
+          {hasAnnotations && (
+            <button className="panel-menu-item" onClick={handleExportClick}>
+              Export
+            </button>
+          )}
+          <button className="panel-menu-item" onClick={handleImportClick}>
+            Import
+          </button>
+        </div>
+      )}
+    </div>
+  )
+
+  if (!hasAnnotations) {
     return (
       <aside className="annotation-panel">
+        <input ref={fileInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileSelect} />
         <div className="panel-header">
           <h2>Annotations</h2>
           <span className="panel-badge">0</span>
+          {moreMenu}
         </div>
         <p className="panel-empty">Select text in the document to add annotations.</p>
       </aside>
     )
   }
 
-  // Expanded view with annotations
   return (
     <aside className="annotation-panel">
+      <input ref={fileInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileSelect} />
       <div className="panel-header">
         <h2>Annotations</h2>
         <span className="panel-badge">{annotations.length}</span>
-        <button
-          className="panel-icon-btn"
-          onClick={onExport}
-          title="Export annotations"
-        >
-          <ExportIcon />
-        </button>
+        {moreMenu}
       </div>
       <ul className="panel-list">
         {annotations.map(ann => (
