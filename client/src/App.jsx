@@ -327,10 +327,11 @@ export default function App() {
 
   const handleOpenFile = useCallback(async (relativePath) => {
     const currentFiles = filesRef.current
+    const pathOnly = relativePath.split(/[?#]/)[0]
 
     // Resolve relative path against current file's directory for deduplication
     const dir = filePath.replace(/[^/]*$/, '')
-    const segments = (dir + relativePath.replace(/^\.\//, '')).split('/')
+    const segments = (dir + pathOnly.replace(/^\.\//, '')).split('/')
     const resolved = []
     for (const seg of segments) {
       if (seg === '..') { resolved.pop() }
@@ -347,7 +348,7 @@ export default function App() {
     }
 
     try {
-      const params = new URLSearchParams({ path: relativePath, relativeTo: filePath })
+      const params = new URLSearchParams({ path: pathOnly, relativeTo: filePath })
       const res = await fetch(`/api/file/open?${params}`)
       const json = await res.json()
       if (json.success) {

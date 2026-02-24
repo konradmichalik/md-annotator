@@ -1,7 +1,9 @@
 function handleAnchorClick(e, href) {
+  if (!href.startsWith('#') || href.length === 1) { return }
   const viewerEl = e.target.closest('.viewer-container')
-  const targetEl = viewerEl?.querySelector(href)
-  if (targetEl) {
+  if (!viewerEl) { return }
+  const targetEl = document.getElementById(href.slice(1))
+  if (targetEl && viewerEl.contains(targetEl)) {
     e.preventDefault()
     targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }

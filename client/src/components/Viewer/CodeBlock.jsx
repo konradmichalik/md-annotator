@@ -5,6 +5,7 @@ export function CodeBlock({ block, onHover, onLeave, isHovered }) {
   const [copied, setCopied] = useState(false)
   const containerRef = useRef(null)
   const codeRef = useRef(null)
+  const copyTimerRef = useRef(null)
 
   useEffect(() => {
     if (codeRef.current) {
@@ -14,11 +15,16 @@ export function CodeBlock({ block, onHover, onLeave, isHovered }) {
     }
   }, [block.content, block.language])
 
+  useEffect(() => {
+    return () => { if (copyTimerRef.current) { clearTimeout(copyTimerRef.current) } }
+  }, [])
+
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(block.content)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      if (copyTimerRef.current) { clearTimeout(copyTimerRef.current) }
+      copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
     } catch (_err) {
       // ignore
     }

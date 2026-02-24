@@ -14,7 +14,7 @@ function parseTableContent(content) {
   if (lines.length === 0) {return { headers: [], rows: [] }}
 
   const parseRow = (line) =>
-    line.replace(/^\|/, '').replace(/\|$/, '').split('|').map(cell => cell.trim())
+    line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(cell => cell.trim())
 
   const headers = parseRow(lines[0])
   const rows = []
