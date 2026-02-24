@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { relative, resolve, dirname } from 'node:path'
+import { relative, resolve, dirname, isAbsolute } from 'node:path'
 import { createHash } from 'node:crypto'
 import { readMarkdownFile, isMarkdownFile } from './file.js'
 import { exportFeedback, exportMultiFileFeedback } from './feedback.js'
@@ -22,11 +22,13 @@ export function createApiRouter(filePaths, resolveDecision, origin = 'claude-cod
         stores.map(async (store, index) => {
           const content = await readMarkdownFile(store.absolutePath)
           const relativePath = relative(process.cwd(), store.absolutePath) || store.absolutePath
+          const currentHash = createHash('sha256').update(content).digest('hex')
           return {
             index,
             path: relativePath,
             content,
-            contentHash: store.contentHash
+            contentHash: currentHash,
+            hashMismatch: currentHash !== store.contentHash
           }
         })
       )
@@ -66,7 +68,8 @@ export function createApiRouter(filePaths, resolveDecision, origin = 'claude-cod
       : dirname(filePaths[0])
     const absolutePath = resolve(referenceDir, requestedPath)
 
-    if (!absolutePath.startsWith(baseDir)) {
+    const rel = relative(baseDir, absolutePath)
+    if (rel.startsWith('..') || rel === '' || isAbsolute(rel)) {
       return res.status(403).json(failure('Access denied: path outside project directory'))
     }
 
