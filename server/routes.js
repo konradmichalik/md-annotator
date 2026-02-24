@@ -11,7 +11,7 @@ function failure(error) {
   return { success: false, error }
 }
 
-export function createApiRouter(targetFilePath, resolveDecision, origin = 'claude-code', annotationStore = null) {
+export function createApiRouter(targetFilePath, resolveDecision, origin = 'cli', annotationStore = null) {
   const router = Router()
 
   router.get('/api/file', async (_req, res) => {

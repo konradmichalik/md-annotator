@@ -14,7 +14,7 @@ args: file
 ## Run the annotator
 
 ```bash
-md-annotator <file>
+md-annotator --origin claude-code <file>
 ```
 
 Replace `<file>` with the determined file path.

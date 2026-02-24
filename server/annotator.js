@@ -23,7 +23,7 @@ const DEV_PATH = join(__dirname, '..', 'client')
  *
  * @param {Object} options - Server configuration
  * @param {string} options.filePath - Absolute path to markdown file
- * @param {string} [options.origin='claude-code'] - Origin identifier ('claude-code' | 'opencode')
+ * @param {string} [options.origin='cli'] - Origin identifier ('cli' | 'claude-code' | 'opencode')
  * @param {string} [options.htmlContent] - Embedded HTML content (for plugin usage)
  * @param {Function} [options.onReady] - Callback when server is ready: (url, port) => void
  * @returns {Promise<Object>} Server control object
@@ -31,7 +31,7 @@ const DEV_PATH = join(__dirname, '..', 'client')
 export async function startAnnotatorServer(options) {
   const {
     filePath,
-    origin = 'claude-code',
+    origin = 'cli',
     htmlContent = null,
     onReady = null,
   } = options

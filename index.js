@@ -9,10 +9,11 @@ const HELP_TEXT = `
 md-annotator — Annotate Markdown files in the browser
 
 Usage:
-  md-annotator <file.md>
+  md-annotator [--origin <name>] <file.md>
 
 Options:
-  --help    Show this help message
+  --help            Show this help message
+  --origin <name>   Set caller origin (cli, claude-code, opencode)
 
 Environment:
   MD_ANNOTATOR_PORT      Base port (default: 3000)
@@ -30,11 +31,37 @@ function parseArgs(argv) {
     return { help: true }
   }
 
-  return { filePath: args[0] }
+  const validOrigins = ['cli', 'claude-code', 'opencode']
+  let origin = 'cli'
+  let filePath = null
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--origin') {
+      if (!args[i + 1] || args[i + 1].startsWith('-')) {
+        return { error: '--origin requires a value (cli, claude-code, opencode)' }
+      }
+      origin = args[i + 1]
+      i++
+    } else if (!args[i].startsWith('-')) {
+      filePath = filePath || args[i]
+    }
+  }
+
+  if (!validOrigins.includes(origin)) {
+    return { error: `Unknown origin "${origin}". Valid: ${validOrigins.join(', ')}` }
+  }
+
+  return { filePath, origin }
 }
 
 async function main() {
-  const { help, filePath } = parseArgs(process.argv)
+  const { help, filePath, origin, error } = parseArgs(process.argv)
+
+  if (error) {
+    process.stderr.write(`Error: ${error}\n\n`)
+    process.stderr.write(HELP_TEXT + '\n')
+    process.exit(1)
+  }
 
   if (help) {
     process.stderr.write(HELP_TEXT + '\n')
@@ -59,7 +86,7 @@ async function main() {
     process.exit(1)
   }
 
-  const server = await createServer(absolutePath)
+  const server = await createServer(absolutePath, origin)
   const url = `http://localhost:${server.port}`
 
   process.stderr.write(`Server running at ${url}\n`)

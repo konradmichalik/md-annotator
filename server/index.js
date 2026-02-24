@@ -13,12 +13,12 @@ export { startAnnotatorServer } from './annotator.js'
  * Create and start the annotation server (CLI compatibility wrapper).
  * Returns an object with port, waitForDecision(), and shutdown().
  */
-export async function createServer(targetFilePath) {
+export async function createServer(targetFilePath, origin = 'cli') {
   let resolveDecision
 
   const server = await startAnnotatorServer({
     filePath: targetFilePath,
-    origin: 'claude-code',
+    origin,
   })
 
   // Create a wrapper promise that can be resolved by signals
