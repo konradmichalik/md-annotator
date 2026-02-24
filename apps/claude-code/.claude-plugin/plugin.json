@@ -1,6 +1,6 @@
 {
   "name": "annotate",
   "description": "Open Markdown files in a browser-based annotator for AI-assisted review",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "commands": "./commands/"
 }

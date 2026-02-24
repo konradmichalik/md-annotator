@@ -1,6 +1,6 @@
 {
   "name": "@md-annotator/opencode",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenCode plugin for interactive markdown annotation",
   "author": "k.michalik",
   "license": "MIT",
