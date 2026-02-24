@@ -1,4 +1,76 @@
 /**
+ * Format a single annotation as Markdown feedback.
+ */
+function formatAnnotation(ann, block, heading) {
+  const blockStartLine = block?.startLine || 1
+  const blockContent = block?.content || ''
+  const textBeforeSelection = blockContent.slice(0, ann.startOffset)
+  const linesBeforeSelection = (textBeforeSelection.match(/\n/g) || []).length
+  const startLine = blockStartLine + linesBeforeSelection
+  const newlinesInSelection = (ann.originalText.match(/\n/g) || []).length
+  const endLine = startLine + newlinesInSelection
+  const lineRef = startLine === endLine ? `Line ${startLine}` : `Lines ${startLine}-${endLine}`
+
+  let output = `${heading} `
+
+  if (ann.type === 'DELETION') {
+    output += `Remove this (${lineRef})\n`
+    output += `\`\`\`\n${ann.originalText}\n\`\`\`\n`
+    output += `> User wants this removed from the document.\n`
+  } else if (ann.type === 'COMMENT') {
+    output += `Comment on (${lineRef})\n`
+    output += `\`\`\`\n${ann.originalText}\n\`\`\`\n`
+    output += `> ${ann.text}\n`
+  }
+
+  return output + '\n'
+}
+
+function sortAnnotations(annotations, blocks) {
+  return [...annotations].sort((a, b) => {
+    const blockA = blocks.findIndex(blk => blk.id === a.blockId)
+    const blockB = blocks.findIndex(blk => blk.id === b.blockId)
+    if (blockA !== blockB) {return blockA - blockB}
+    return a.startOffset - b.startOffset
+  })
+}
+
+/**
+ * Format annotations from multiple files as readable Markdown feedback.
+ * Single file delegates to exportFeedback. Multi-file groups by file.
+ */
+export function exportMultiFileFeedback(files) {
+  const filesWithAnnotations = files.filter(f => f.annotations?.length > 0)
+
+  if (filesWithAnnotations.length === 0) {
+    return 'No annotations.'
+  }
+
+  if (files.length === 1) {
+    return exportFeedback(files[0].annotations, files[0].blocks)
+  }
+
+  const totalCount = filesWithAnnotations.reduce((sum, f) => sum + f.annotations.length, 0)
+  let output = `# Annotation Feedback\n\n`
+  output += `${totalCount} annotation${totalCount > 1 ? 's' : ''} across ${filesWithAnnotations.length} file${filesWithAnnotations.length > 1 ? 's' : ''}:\n\n`
+
+  let globalIndex = 1
+  for (const file of filesWithAnnotations) {
+    output += `---\n\n## File: ${file.path}\n\n`
+    const sorted = sortAnnotations(file.annotations, file.blocks)
+
+    for (const ann of sorted) {
+      const block = file.blocks.find(blk => blk.id === ann.blockId)
+      output += formatAnnotation(ann, block, `### ${globalIndex}.`)
+      globalIndex++
+    }
+  }
+
+  output += '---\n'
+  return output
+}
+
+/**
  * Format annotations as readable Markdown feedback for Claude.
  */
 export function exportFeedback(annotations, blocks) {
@@ -6,45 +78,14 @@ export function exportFeedback(annotations, blocks) {
     return 'No annotations.'
   }
 
-  const sorted = [...annotations].sort((a, b) => {
-    const blockA = blocks.findIndex(blk => blk.id === a.blockId)
-    const blockB = blocks.findIndex(blk => blk.id === b.blockId)
-    if (blockA !== blockB) {return blockA - blockB}
-    return a.startOffset - b.startOffset
-  })
+  const sorted = sortAnnotations(annotations, blocks)
 
   let output = `# Annotation Feedback\n\n`
   output += `${annotations.length} annotation${annotations.length > 1 ? 's' : ''}:\n\n`
 
   sorted.forEach((ann, index) => {
     const block = blocks.find(blk => blk.id === ann.blockId)
-    const blockStartLine = block?.startLine || 1
-    const blockContent = block?.content || ''
-
-    // Count newlines before startOffset to find actual line
-    const textBeforeSelection = blockContent.slice(0, ann.startOffset)
-    const linesBeforeSelection = (textBeforeSelection.match(/\n/g) || []).length
-    const startLine = blockStartLine + linesBeforeSelection
-
-    // Count newlines in selected text to find end line
-    const newlinesInSelection = (ann.originalText.match(/\n/g) || []).length
-    const endLine = startLine + newlinesInSelection
-
-    const lineRef = startLine === endLine ? `Line ${startLine}` : `Lines ${startLine}-${endLine}`
-
-    output += `## ${index + 1}. `
-
-    if (ann.type === 'DELETION') {
-      output += `Remove this (${lineRef})\n`
-      output += `\`\`\`\n${ann.originalText}\n\`\`\`\n`
-      output += `> User wants this removed from the document.\n`
-    } else if (ann.type === 'COMMENT') {
-      output += `Comment on (${lineRef})\n`
-      output += `\`\`\`\n${ann.originalText}\n\`\`\`\n`
-      output += `> ${ann.text}\n`
-    }
-
-    output += '\n'
+    output += formatAnnotation(ann, block, `## ${index + 1}.`)
   })
 
   output += '---\n'

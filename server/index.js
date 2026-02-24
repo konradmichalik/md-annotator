@@ -11,13 +11,15 @@ export { startAnnotatorServer } from './annotator.js'
 
 /**
  * Create and start the annotation server (CLI compatibility wrapper).
+ * Accepts a single file path (string) or an array of file paths.
  * Returns an object with port, waitForDecision(), and shutdown().
  */
-export async function createServer(targetFilePath) {
+export async function createServer(targetFilePaths) {
+  const filePaths = Array.isArray(targetFilePaths) ? targetFilePaths : [targetFilePaths]
   let resolveDecision
 
   const server = await startAnnotatorServer({
-    filePath: targetFilePath,
+    filePaths,
     origin: 'claude-code',
   })
 
