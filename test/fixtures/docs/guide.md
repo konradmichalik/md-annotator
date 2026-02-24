@@ -31,7 +31,7 @@ A **tab bar** appears at the top for switching between files. Each tab shows:
 
 ## Linked Navigation
 
-When a document contains relative markdown links like `[API Docs](./api.md)`, clicking them opens the linked file as a new tab instead of navigating away.
+When a document contains relative Markdown links like `[API Docs](./api.md)`, clicking them opens the linked file as a new tab instead of navigating away.
 
 ### How It Works
 
