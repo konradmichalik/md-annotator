@@ -205,7 +205,7 @@ export function MermaidBlock({ block }) {
 
     container.addEventListener('wheel', handleWheel, { passive: false })
     return () => container.removeEventListener('wheel', handleWheel)
-  }, [showSource, updateZoom])
+  }, [showSource, updateZoom, svg])
 
   const handleZoomIn = useCallback(() => {
     updateZoom(Math.min(zoomLevelRef.current + ZOOM_STEP, MAX_ZOOM))
