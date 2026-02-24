@@ -131,6 +131,11 @@ function filesReducer(state, action) {
       }))
     case 'ADD_FILE':
       return [...state, { ...action.file, annState: { ...initialAnnotationState } }]
+    case 'UPDATE_FILE': {
+      const idx = action.fileIndex
+      if (idx < 0 || idx >= state.length) {return state}
+      return state.map((f, i) => i !== idx ? f : { ...f, ...action.updates })
+    }
     case 'ANN': {
       const idx = action.fileIndex
       if (idx < 0 || idx >= state.length) {return state}
@@ -157,6 +162,8 @@ export default function App() {
   const [exportModalOpen, setExportModalOpen] = useState(false)
   const viewerRef = useRef(null)
   const prevLastActionRef = useRef(null)
+  const filesRef = useRef(files)
+  filesRef.current = files
 
   // Derived state from active file
   const activeFile = files[activeFileIndex] || null
@@ -246,7 +253,7 @@ export default function App() {
           content: f.content,
           blocks: parseMarkdownToBlocks(f.content),
           contentHash: f.contentHash,
-          hashMismatch: false
+          hashMismatch: f.hashMismatch || false
         }))
         filesDispatch({ type: 'INIT_FILES', files: loadedFiles })
         setStatus('Select text to annotate, then Approve or Submit Feedback.')
@@ -278,6 +285,12 @@ export default function App() {
                 viewerRef.current?.restoreHighlights(json.data.annotations)
               }, 100)
             }
+          } else {
+            filesDispatch({
+              type: 'UPDATE_FILE',
+              fileIndex: i,
+              updates: { hashMismatch: true }
+            })
           }
         }
       } catch (_err) {
@@ -368,7 +381,8 @@ export default function App() {
 
   const handleOpenFile = useCallback(async (relativePath) => {
     const normalized = relativePath.replace(/^\.\//, '')
-    const existingIndex = files.findIndex(f =>
+    const currentFiles = filesRef.current
+    const existingIndex = currentFiles.findIndex(f =>
       f.path.replace(/^\.\//, '') === normalized ||
       f.path.endsWith('/' + normalized)
     )
@@ -391,14 +405,14 @@ export default function App() {
           hashMismatch: false
         }
         filesDispatch({ type: 'ADD_FILE', file: newFile })
-        setActiveFileIndex(files.length)
+        setActiveFileIndex(currentFiles.length)
       } else {
         setStatus(`Could not open file: ${json.error}`)
       }
     } catch (err) {
       setStatus(`Error opening file: ${err.message}`)
     }
-  }, [files, filePath])
+  }, [filePath])
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -530,9 +544,29 @@ export default function App() {
   }
 
   const handleReloadFile = async () => {
-    annDispatch({ type: 'RESTORE', annotations: [] })
-    viewerRef.current?.clearAllHighlights()
-    await loadFiles()
+    try {
+      const res = await fetch('/api/files')
+      const json = await res.json()
+      if (json.success) {
+        const updated = json.data.files.find(f => f.path === activeFile?.path)
+        if (updated) {
+          filesDispatch({
+            type: 'UPDATE_FILE',
+            fileIndex: activeFileIndex,
+            updates: {
+              content: updated.content,
+              blocks: parseMarkdownToBlocks(updated.content),
+              contentHash: updated.contentHash,
+              hashMismatch: false,
+              annState: { ...initialAnnotationState }
+            }
+          })
+          viewerRef.current?.clearAllHighlights()
+        }
+      }
+    } catch (err) {
+      setStatus('Error reloading: ' + err.message)
+    }
   }
 
   const hasAnyHashMismatch = files.some(f => f.hashMismatch)
