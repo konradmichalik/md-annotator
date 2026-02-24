@@ -34,7 +34,6 @@ Use `/annotate:md <file>` in the chat to trigger annotation.
 - **Approve** - confirm the document needs no changes
 
 ## Environment Variables
-
 | Variable | Description |
 |----------|-------------|
 | `MD_ANNOTATOR_PORT` | Override the server port (default: 3000) |

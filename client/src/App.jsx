@@ -9,6 +9,7 @@ import { UpdateBanner } from './components/UpdateBanner.jsx'
 import { FileTabsBar } from './components/FileTabsBar.jsx'
 import { initialAnnotationState } from './state/annotationReducer.js'
 import { filesReducer } from './state/filesReducer.js'
+import { useAutoClose } from './hooks/useAutoClose.js'
 import './styles.css'
 
 // Theme: 'light' | 'dark' | 'auto'
@@ -438,6 +439,8 @@ export default function App() {
     return () => clearInterval(intervalId)
   }, [serverGone])
 
+  const { state: autoCloseState, enableAndStart } = useAutoClose(submitted)
+
   if (serverGone && !submitted) {
     return (
       <div className="app">
@@ -493,6 +496,22 @@ export default function App() {
             {serverGone
               ? <p className="done-hint done-hint--disconnected">Server disconnected. You can close this tab.</p>
               : <p className="done-hint">Waiting for server...</p>}
+            <div className="done-autoclose">
+              {autoCloseState.phase === 'counting' && (
+                <p className="done-countdown">
+                  This tab will close in <span className="done-countdown-number">{autoCloseState.remaining}</span> second{autoCloseState.remaining !== 1 ? 's' : ''}...
+                </p>
+              )}
+              {autoCloseState.phase === 'closeFailed' && (
+                <p className="done-hint">Could not close this tab automatically. Please close it manually.</p>
+              )}
+              {autoCloseState.phase === 'prompt' && (
+                <label className="done-autoclose-prompt">
+                  <input type="checkbox" checked={false} onChange={enableAndStart} />
+                  <span>Auto-close this tab after 3 seconds</span>
+                </label>
+              )}
+            </div>
           </div>
         </div>
       </div>
