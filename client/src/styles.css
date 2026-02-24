@@ -444,6 +444,38 @@ body {
   color: var(--danger);
 }
 
+.done-autoclose {
+  margin-top: 1.25rem;
+}
+
+.done-countdown {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.done-countdown-number {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.done-autoclose-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  transition: color 0.15s;
+}
+
+.done-autoclose-prompt:hover {
+  color: var(--text);
+}
+
+.done-autoclose-prompt input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
 /* === Viewer === */
 .viewer-container {
   flex: 1;
