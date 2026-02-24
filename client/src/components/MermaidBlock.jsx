@@ -4,17 +4,17 @@ import mermaid from 'mermaid'
 const DARK_THEME = {
   theme: 'dark',
   themeVariables: {
-    primaryColor: '#5e81ac',
+    primaryColor: '#434c5e',
     primaryTextColor: '#eceff4',
-    primaryBorderColor: '#4c566a',
+    primaryBorderColor: '#616e88',
     lineColor: '#81a1c1',
-    secondaryColor: '#3b4252',
-    tertiaryColor: '#2e3440',
-    background: '#3b4252',
-    mainBkg: '#3b4252',
-    nodeBorder: '#4c566a',
+    secondaryColor: '#434c5e',
+    tertiaryColor: '#3b4252',
+    background: '#2e3440',
+    mainBkg: '#434c5e',
+    nodeBorder: '#616e88',
     clusterBkg: '#3b4252',
-    clusterBorder: '#4c566a',
+    clusterBorder: '#616e88',
     titleColor: '#eceff4',
     edgeLabelBackground: '#3b4252',
   },
@@ -23,19 +23,19 @@ const DARK_THEME = {
 const LIGHT_THEME = {
   theme: 'default',
   themeVariables: {
-    primaryColor: '#5e81ac',
+    primaryColor: '#ffffff',
     primaryTextColor: '#2e3440',
-    primaryBorderColor: '#d8dee9',
+    primaryBorderColor: '#b8c5d6',
     lineColor: '#4c566a',
-    secondaryColor: '#eceff4',
-    tertiaryColor: '#e5e9f0',
-    background: '#eceff4',
-    mainBkg: '#eceff4',
-    nodeBorder: '#d8dee9',
-    clusterBkg: '#eceff4',
-    clusterBorder: '#d8dee9',
+    secondaryColor: '#ffffff',
+    tertiaryColor: '#e8ecf1',
+    background: '#f0f2f5',
+    mainBkg: '#ffffff',
+    nodeBorder: '#b8c5d6',
+    clusterBkg: '#e8ecf1',
+    clusterBorder: '#b8c5d6',
     titleColor: '#2e3440',
-    edgeLabelBackground: '#eceff4',
+    edgeLabelBackground: '#ffffff',
   },
 }
 
@@ -205,7 +205,7 @@ export function MermaidBlock({ block }) {
 
     container.addEventListener('wheel', handleWheel, { passive: false })
     return () => container.removeEventListener('wheel', handleWheel)
-  }, [showSource, updateZoom])
+  }, [showSource, updateZoom, svg])
 
   const handleZoomIn = useCallback(() => {
     updateZoom(Math.min(zoomLevelRef.current + ZOOM_STEP, MAX_ZOOM))

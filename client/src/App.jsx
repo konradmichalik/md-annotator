@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef, useCallback, useReducer } from 'react'
-import { parseMarkdownToBlocks } from './parser.js'
-import { Viewer } from './Viewer.jsx'
-import { AnnotationPanel } from './AnnotationPanel.jsx'
-import { TableOfContents } from './TableOfContents.jsx'
-import { ExportModal } from './ExportModal.jsx'
-import { validateAnnotationImport } from './export.js'
-import { UpdateBanner } from './UpdateBanner.jsx'
-import { FileTabsBar } from './FileTabsBar.jsx'
+import { parseMarkdownToBlocks } from './utils/parser.js'
+import { Viewer } from './components/Viewer/Viewer.jsx'
+import { AnnotationPanel } from './components/AnnotationPanel.jsx'
+import { TableOfContents } from './components/TableOfContents.jsx'
+import { ExportModal } from './components/ExportModal.jsx'
+import { validateAnnotationImport } from './utils/export.js'
+import { UpdateBanner } from './components/UpdateBanner.jsx'
+import { FileTabsBar } from './components/FileTabsBar.jsx'
+import { initialAnnotationState } from './state/annotationReducer.js'
+import { filesReducer } from './state/filesReducer.js'
 import './styles.css'
 
 // Theme: 'light' | 'dark' | 'auto'
@@ -37,122 +39,9 @@ function getInitialTocCollapsed() {
   return localStorage.getItem('md-annotator-toc-collapsed') === 'true'
 }
 
-function annotationReducer(state, action) {
-  switch (action.type) {
-    case 'ADD': {
-      return {
-        annotations: [...state.annotations, action.annotation],
-        history: [...state.history, { action: 'add', annotation: action.annotation }],
-        redo: [],
-        lastAction: { type: 'add', annotation: action.annotation }
-      }
-    }
-    case 'DELETE': {
-      const deleted = state.annotations.find(a => a.id === action.id)
-      if (!deleted) {return state}
-      return {
-        annotations: state.annotations.filter(a => a.id !== action.id),
-        history: [...state.history, { action: 'delete', annotation: deleted }],
-        redo: [],
-        lastAction: { type: 'delete', annotation: deleted }
-      }
-    }
-    case 'EDIT': {
-      const original = state.annotations.find(a => a.id === action.id)
-      if (!original) {return state}
-      const updated = { ...original, type: action.annotationType, text: action.text }
-      return {
-        annotations: state.annotations.map(a => a.id === action.id ? updated : a),
-        history: [...state.history, { action: 'edit', annotation: original, updated }],
-        redo: [],
-        lastAction: { type: 'edit', annotation: original, updated }
-      }
-    }
-    case 'UNDO': {
-      if (state.history.length === 0) {return state}
-      const entry = state.history[state.history.length - 1]
-      let newAnnotations = state.annotations
-      if (entry.action === 'add') {
-        newAnnotations = state.annotations.filter(a => a.id !== entry.annotation.id)
-      } else if (entry.action === 'delete') {
-        newAnnotations = [...state.annotations, entry.annotation]
-      } else if (entry.action === 'edit') {
-        newAnnotations = state.annotations.map(a => a.id === entry.updated.id ? entry.annotation : a)
-      }
-      return {
-        annotations: newAnnotations,
-        history: state.history.slice(0, -1),
-        redo: [...state.redo, entry],
-        lastAction: { type: 'undo', entry }
-      }
-    }
-    case 'REDO': {
-      if (state.redo.length === 0) {return state}
-      const entry = state.redo[state.redo.length - 1]
-      let newAnnotations = state.annotations
-      if (entry.action === 'add') {
-        newAnnotations = [...state.annotations, entry.annotation]
-      } else if (entry.action === 'delete') {
-        newAnnotations = state.annotations.filter(a => a.id !== entry.annotation.id)
-      } else if (entry.action === 'edit') {
-        newAnnotations = state.annotations.map(a => a.id === entry.annotation.id ? entry.updated : a)
-      }
-      return {
-        annotations: newAnnotations,
-        history: [...state.history, entry],
-        redo: state.redo.slice(0, -1),
-        lastAction: { type: 'redo', entry }
-      }
-    }
-    case 'RESTORE': {
-      return {
-        annotations: action.annotations,
-        history: [],
-        redo: [],
-        lastAction: null
-      }
-    }
-    default: return state
-  }
-}
-
 const ORIGIN_LABELS = {
   'claude-code': 'Claude Code',
   'opencode': 'OpenCode',
-}
-
-const initialAnnotationState = {
-  annotations: [],
-  history: [],
-  redo: [],
-  lastAction: null
-}
-
-function filesReducer(state, action) {
-  switch (action.type) {
-    case 'INIT_FILES':
-      return action.files.map(f => ({
-        ...f,
-        annState: { ...initialAnnotationState }
-      }))
-    case 'ADD_FILE':
-      return [...state, { ...action.file, annState: { ...initialAnnotationState } }]
-    case 'UPDATE_FILE': {
-      const idx = action.fileIndex
-      if (idx < 0 || idx >= state.length) {return state}
-      return state.map((f, i) => i !== idx ? f : { ...f, ...action.updates })
-    }
-    case 'ANN': {
-      const idx = action.fileIndex
-      if (idx < 0 || idx >= state.length) {return state}
-      return state.map((f, i) => {
-        if (i !== idx) {return f}
-        return { ...f, annState: annotationReducer(f.annState, action.annAction) }
-      })
-    }
-    default:
-      return state
-  }
 }
 
 export default function App() {
@@ -437,11 +326,21 @@ export default function App() {
   }, [activeFileIndex])
 
   const handleOpenFile = useCallback(async (relativePath) => {
-    const normalized = relativePath.replace(/^\.\//, '')
     const currentFiles = filesRef.current
+    const pathOnly = relativePath.split(/[?#]/)[0]
+
+    // Resolve relative path against current file's directory for deduplication
+    const dir = filePath.replace(/[^/]*$/, '')
+    const segments = (dir + pathOnly.replace(/^\.\//, '')).split('/')
+    const resolved = []
+    for (const seg of segments) {
+      if (seg === '..') { resolved.pop() }
+      else if (seg && seg !== '.') { resolved.push(seg) }
+    }
+    const resolvedPath = resolved.join('/')
+
     const existingIndex = currentFiles.findIndex(f =>
-      f.path.replace(/^\.\//, '') === normalized ||
-      f.path.endsWith('/' + normalized)
+      f.path.replace(/^\.\//, '') === resolvedPath
     )
     if (existingIndex !== -1) {
       setActiveFileIndex(existingIndex)
@@ -449,7 +348,7 @@ export default function App() {
     }
 
     try {
-      const params = new URLSearchParams({ path: relativePath, relativeTo: filePath })
+      const params = new URLSearchParams({ path: pathOnly, relativeTo: filePath })
       const res = await fetch(`/api/file/open?${params}`)
       const json = await res.json()
       if (json.success) {

@@ -540,6 +540,18 @@ body {
   font-size: 0.85em;
 }
 
+.external-link-icon {
+  display: inline-block;
+  vertical-align: baseline;
+  margin-left: 0.25em;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.external-link:hover .external-link-icon {
+  opacity: 0.85;
+}
+
 .inline-image {
   max-width: 100%;
   height: auto;
