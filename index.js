@@ -44,6 +44,8 @@ function parseArgs(argv) {
       i++
     } else if (!args[i].startsWith('-')) {
       filePath = filePath || args[i]
+    } else {
+      return { error: `Unknown option: ${args[i]}` }
     }
   }
 
