@@ -4,6 +4,32 @@ REST API reference for md-annotator server.
 
 Back to [Main Document](../main.md) | See also [User Guide](./guide.md)
 
+## Request Flow
+
+```mermaid
+sequenceDiagram
+    participant Client as React SPA
+    participant Server as Express Server
+    participant CLI as CLI Process
+
+    Client->>Server: GET /api/files
+    Server-->>Client: files + metadata
+
+    Client->>Client: User annotates text
+    Client->>Server: POST /api/annotations
+    Server-->>Client: saved
+
+    alt Approve
+        Client->>Server: POST /api/approve
+        Server->>CLI: resolve(approved)
+    else Submit Feedback
+        Client->>Server: POST /api/feedback
+        Server->>CLI: resolve(annotations)
+    end
+
+    CLI->>CLI: stdout → agent parses edits
+```
+
 ## Endpoints
 
 ### GET /api/files

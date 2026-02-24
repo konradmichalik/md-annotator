@@ -19,6 +19,22 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
 - **Tab bar** — switch between files with annotation count badges
 - **Per-file undo/redo** — each file has its own history
 
+## Architecture
+
+```mermaid
+graph TD
+    A[CLI Entry] -->|validates files| B[Express Server]
+    B -->|serves| C[React SPA]
+    C -->|text selection| D[web-highlighter]
+    D --> E{Annotation Type}
+    E -->|Cmd+D| F[Deletion]
+    E -->|Cmd+K| G[Comment]
+    F --> H[Annotation Store]
+    G --> H
+    H -->|POST /api/feedback| B
+    B -->|stdout| I[AI Agent]
+```
+
 ## Code Example
 
 ```javascript
