@@ -49,11 +49,23 @@ export function InlineMarkdown({ text }) {
     if (match) {
       const href = match[2]
       const isAnchor = href.startsWith('#')
-      parts.push(
-        isAnchor
-          ? <a key={key++} href={href} onClick={(e) => handleAnchorClick(e, href)}>{match[1]}</a>
-          : <a key={key++} href={href} target="_blank" rel="noopener noreferrer">{match[1]}</a>
-      )
+      const isExternal = href.startsWith('http://') || href.startsWith('https://')
+      if (isAnchor) {
+        parts.push(<a key={key++} href={href} onClick={(e) => handleAnchorClick(e, href)}>{match[1]}</a>)
+      } else if (isExternal) {
+        parts.push(
+          <a key={key++} href={href} target="_blank" rel="noopener noreferrer" className="external-link">
+            {match[1]}
+            <svg className="external-link-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+          </a>
+        )
+      } else {
+        parts.push(<a key={key++} href={href} target="_blank" rel="noopener noreferrer">{match[1]}</a>)
+      }
       remaining = remaining.slice(match[0].length)
       continue
     }
