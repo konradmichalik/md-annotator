@@ -1,4 +1,4 @@
-# md-annotator
+# *md*-annotator
 
 An AI coding agent plugin that opens Markdown files in a local browser-based annotator. Select text to mark deletions or add comments, then let the coding agent apply your feedback.
 
@@ -9,12 +9,20 @@ An AI coding agent plugin that opens Markdown files in a local browser-based ann
 
 ## ✨ Features
 
-- **Multi-File Support** — Review multiple files in one session with a tabbed interface
-- **Linked Navigation** — Click relative `.md` links to open them as new tabs (wiki-style browsing)
-- **Mermaid Diagrams** — Renders `mermaid` code blocks as interactive diagrams with zoom, pan, and source toggle (adapts to light/dark theme)
-- [Claude Code Plugin](#-claude-code-plugin)
-- [OpenCode Plugin](#-opencode-plugin)
-- [Standalone CLI](#-standalone-cli)
+- **Multi-File Support** -- Review multiple files in one session with a tabbed interface
+- **Linked Navigation** -- Click relative `.md` links to open them as new tabs (wiki-style browsing)
+- **Mermaid Diagrams** -- Renders `mermaid` code blocks as interactive diagrams with zoom, pan, and source toggle (adapts to light/dark theme)
+- **Export & Import** -- Export annotations as Markdown or JSON; re-import JSON to continue a review later
+- **Annotation Persistence** -- Annotations auto-save to the server and survive page reloads (validated by content hash)
+- **Undo / Redo** -- Full undo/redo history for annotations (`Cmd+Z` / `Cmd+Shift+Z`)
+- **Inline Editing** -- Click highlighted text to edit annotation type or comment in-place
+- **Table of Contents** -- Collapsible sidebar with scroll tracking and per-section annotation count badges
+- **Syntax Highlighting** -- Code blocks rendered with highlight.js
+- **Dark Mode** -- Light, dark, and auto theme (follows system preference)
+- **Auto-Close Tab** -- Opt-in countdown that closes the browser tab after submitting feedback
+- **Update Notifications** -- Banner when a new GitHub release is available
+- **Heartbeat Detection** -- Graceful shutdown when the browser tab is closed
+- **IDE Integration** -- Annotate the currently open file in VSCode, Cursor, or JetBrains without arguments
 
 ## 🔌 Claude Code Plugin
 
@@ -30,7 +38,7 @@ claude plugin marketplace add konradmichalik/md-annotator
 claude plugin install annotate@md-annotator --scope user
 ```
 
-For local development, see the [Development](#-development) section.
+For local development, see the [Development](#development) section.
 
 ### 🔄 Update
 
@@ -56,9 +64,10 @@ Or, with IDE integration (VSCode/Cursor/JetBrains), just run without arguments t
 This opens the file in your browser. You can then:
 
 - **Select text** to see the annotation toolbar
-- **Delete** — marks text as struck-through (red)
-- **Comment** — highlights text (yellow) and adds a comment
+- **Delete** -- marks text as struck-through (red)
+- **Comment** -- highlights text (yellow) and adds a comment
 - **View annotations** in the sidebar panel on the right
+- **Export** annotations as Markdown or JSON
 - **Approve** or **Submit Feedback** when done
 
 If no file argument is given, the command looks for `plan.md` in the current directory.
