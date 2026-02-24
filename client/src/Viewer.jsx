@@ -3,6 +3,7 @@ import Highlighter from 'web-highlighter'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github-dark.css'
 import { Toolbar } from './Toolbar.jsx'
+import { MermaidBlock } from './MermaidBlock.jsx'
 
 /**
  * Renders inline markdown: **bold**, *italic*, `code`, [links](url)
@@ -512,7 +513,9 @@ export const Viewer = forwardRef(function Viewer({
     <div className="viewer-container">
       <article ref={containerRef} className="viewer-article" onClick={handleLinkClick}>
         {blocks.map(block =>
-          block.type === 'code' ? (
+          block.type === 'code' && block.language === 'mermaid' ? (
+            <MermaidBlock key={block.id} block={block} />
+          ) : block.type === 'code' ? (
             <CodeBlock key={block.id} block={block} />
           ) : (
             <BlockRenderer key={block.id} block={block} />
