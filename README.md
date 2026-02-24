@@ -9,6 +9,8 @@ An AI coding agent plugin that opens Markdown files in a local browser-based ann
 
 ## ✨ Features
 
+- **Multi-File Support** — Review multiple files in one session with a tabbed interface
+- **Linked Navigation** — Click relative `.md` links to open them as new tabs (wiki-style browsing)
 - [Claude Code Plugin](#-claude-code-plugin)
 - [OpenCode Plugin](#-opencode-plugin)
 - [Standalone CLI](#-standalone-cli)
@@ -41,6 +43,7 @@ Inside a Claude Code session:
 
 ```
 /annotate:md README.md
+/annotate:md docs/api.md docs/guide.md
 ```
 
 Or, with IDE integration (VSCode/Cursor/JetBrains), just run without arguments to annotate the currently open file:
@@ -79,6 +82,7 @@ The agent can use the `annotate_markdown` tool:
 
 ```
 annotate_markdown({ filePath: "/path/to/file.md" })
+annotate_markdown({ filePaths: ["/path/to/a.md", "/path/to/b.md"] })
 ```
 
 Or use the `/annotate:md` command in the chat.
@@ -88,18 +92,20 @@ Or use the `/annotate:md` command in the chat.
 *md-annotator* also works as a standalone CLI tool without an AI coding agent:
 
 ```bash
-# Run directly
-node index.js README.md
-
-# Or link globally
-npm link
+# Single file
 md-annotator README.md
+
+# Multiple files (opens with tab bar)
+md-annotator docs/api.md docs/guide.md
+
+# Or link globally first
+npm link
 
 # Show help
 md-annotator --help
 ```
 
-The server starts on an available port (default 3000) and opens your browser automatically.
+The server starts on an available port (default 3000) and opens your browser automatically. When reviewing multiple files, a tab bar appears for switching between them. Clicking relative `.md` links inside a document opens the linked file as a new tab.
 
 ### Environment Variables
 
