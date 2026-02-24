@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useUpdateCheck } from './useUpdateCheck.js'
+import { useUpdateCheck } from '../hooks/useUpdateCheck.js'
 
 const UPDATE_COMMAND = 'claude plugin update annotate@md-annotator'
 

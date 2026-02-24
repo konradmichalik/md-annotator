@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { formatAnnotationsForExport, formatAnnotationsForJsonExport, copyToClipboard, downloadAsFile, downloadAsJsonFile } from './export.js'
+import { formatAnnotationsForExport, formatAnnotationsForJsonExport, copyToClipboard, downloadAsFile, downloadAsJsonFile } from '../utils/export.js'
 
 const CopyIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
