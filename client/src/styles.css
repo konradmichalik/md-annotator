@@ -152,7 +152,7 @@ body {
 
 .header-left {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 1rem;
 }
 
@@ -174,6 +174,16 @@ body {
   border-radius: 9999px;
   white-space: nowrap;
   letter-spacing: 0.01em;
+}
+
+.version-badge {
+  font-size: 0.5625rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  opacity: 0.6;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  font-family: monospace;
 }
 
 .app-filepath {
