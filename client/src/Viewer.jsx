@@ -241,6 +241,7 @@ export const Viewer = forwardRef(function Viewer({
   const annotationsRef = useRef(annotations)
   const toolbarStateRef = useRef(null)
   const pendingSourceRef = useRef(null)
+  const isRestoringRef = useRef(false)
   const [toolbarState, setToolbarState] = useState(null)
   const [requestedToolbarStep, setRequestedToolbarStep] = useState(null)
 
@@ -305,35 +306,28 @@ export const Viewer = forwardRef(function Viewer({
     restoreHighlight(ann) {
       const highlighter = highlighterRef.current
       if (!highlighter) {return false}
+      const wasRestoring = isRestoringRef.current
+      isRestoringRef.current = true
       try {
         highlighter.fromStore(ann.startMeta, ann.endMeta, ann.originalText, ann.id)
-        if (ann.type === 'DELETION') {
-          highlighter.addClass('deletion', ann.id)
-        } else if (ann.type === 'COMMENT') {
-          highlighter.addClass('comment', ann.id)
-        }
+        highlighter.addClass(ann.type.toLowerCase(), ann.id)
         return true
       } catch (_e) {
         return false
+      } finally {
+        isRestoringRef.current = wasRestoring
       }
     },
     restoreHighlights(anns) {
-      const highlighter = highlighterRef.current
-      if (!highlighter) {return}
-      anns.forEach(ann => {
-        try {
-          highlighter.fromStore(ann.startMeta, ann.endMeta, ann.originalText, ann.id)
-          if (ann.type === 'DELETION') {
-            highlighter.addClass('deletion', ann.id)
-          } else if (ann.type === 'COMMENT') {
-            highlighter.addClass('comment', ann.id)
-          }
-        } catch (_e) {
-          // ignore
-        }
-      })
+      if (!highlighterRef.current) {return}
+      anns.forEach(ann => { this.restoreHighlight(ann) })
     },
     clearAllHighlights() {
+      const highlighter = highlighterRef.current
+      if (highlighter) {
+        highlighter.removeAll()
+      }
+      // Fallback: clean any orphaned DOM elements
       const allHighlights = containerRef.current?.querySelectorAll('.annotation-highlight, [data-highlight-id]')
       allHighlights?.forEach(el => {
         const parent = el.parentNode
@@ -380,6 +374,7 @@ export const Viewer = forwardRef(function Viewer({
     highlighterRef.current = highlighter
 
     highlighter.on(Highlighter.event.CREATE, ({ sources }) => {
+      if (isRestoringRef.current) {return}
       if (sources.length > 0) {
         const source = sources[0]
         const doms = highlighter.getDoms(source.id)

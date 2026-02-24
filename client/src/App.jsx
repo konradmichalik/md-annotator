@@ -4,6 +4,7 @@ import { Viewer } from './Viewer.jsx'
 import { AnnotationPanel } from './AnnotationPanel.jsx'
 import { TableOfContents } from './TableOfContents.jsx'
 import { ExportModal } from './ExportModal.jsx'
+import { validateAnnotationImport } from './export.js'
 import { UpdateBanner } from './UpdateBanner.jsx'
 import { FileTabsBar } from './FileTabsBar.jsx'
 import './styles.css'
@@ -165,11 +166,19 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed)
   const [tocCollapsed, setTocCollapsed] = useState(getInitialTocCollapsed)
   const [exportModalOpen, setExportModalOpen] = useState(false)
+  const [toast, setToast] = useState(null)
   const [origin, setOrigin] = useState('cli')
   const viewerRef = useRef(null)
   const prevLastActionRef = useRef(null)
+  const toastTimerRef = useRef(null)
   const filesRef = useRef(files)
   filesRef.current = files
+
+  const showToast = useCallback((message) => {
+    if (toastTimerRef.current) {clearTimeout(toastTimerRef.current)}
+    setToast(message)
+    toastTimerRef.current = setTimeout(() => setToast(null), 2500)
+  }, [])
 
   // Derived state from active file
   const activeFile = files[activeFileIndex] || null
@@ -368,6 +377,47 @@ export default function App() {
       setSidebarCollapsed(false)
     }
   }, [annotations])
+
+  const handleImportAnnotations = useCallback((jsonData) => {
+    const result = validateAnnotationImport(jsonData)
+    if (!result.valid) {
+      alert(`Import failed: ${result.error}`)
+      return
+    }
+    if (result.annotations.length === 0) {
+      alert('No annotations found in file')
+      return
+    }
+    if (result.contentHash && activeFile?.contentHash &&
+        result.contentHash !== activeFile.contentHash) {
+      const proceed = window.confirm(
+        'File content has changed since these annotations were exported. ' +
+        'Annotations may not align correctly.\n\nImport anyway?'
+      )
+      if (!proceed) {return}
+    }
+    if (result.filePath && filePath && result.filePath !== filePath) {
+      const proceed = window.confirm(
+        `These annotations were exported from "${result.filePath}" ` +
+        `but current file is "${filePath}".\n\nImport anyway?`
+      )
+      if (!proceed) {return}
+    }
+    if (annotations.length > 0) {
+      const proceed = window.confirm(
+        `This will replace ${annotations.length} existing annotation(s) ` +
+        `with ${result.annotations.length} imported annotation(s). ` +
+        `Undo history will be lost.\n\nContinue?`
+      )
+      if (!proceed) {return}
+    }
+    viewerRef.current?.clearAllHighlights()
+    annDispatch({ type: 'RESTORE', annotations: result.annotations })
+    setTimeout(() => {
+      viewerRef.current?.restoreHighlights(result.annotations)
+    }, 100)
+    showToast(`Imported ${result.annotations.length} annotation${result.annotations.length !== 1 ? 's' : ''}`)
+  }, [activeFile, filePath, annotations, annDispatch, showToast])
 
   const handleUndo = useCallback(() => {
     annDispatch({ type: 'UNDO' })
@@ -699,6 +749,7 @@ export default function App() {
           onEdit={handlePanelEdit}
           onDelete={handleDeleteAnnotation}
           onExport={() => setExportModalOpen(true)}
+          onImport={handleImportAnnotations}
           collapsed={sidebarCollapsed}
         />
       </main>
@@ -713,9 +764,12 @@ export default function App() {
         annotations={annotations}
         blocks={blocks}
         filePath={filePath}
+        contentHash={activeFile?.contentHash}
+        onToast={showToast}
       />
 
       <UpdateBanner />
+      {toast && <div className="toast">{toast}</div>}
     </div>
   )
 }
