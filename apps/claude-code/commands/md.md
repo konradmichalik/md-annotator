@@ -1,12 +1,12 @@
 ---
 description: Open a Markdown file in the browser-based annotator for review
 allowed-tools: Bash(md-annotator *), Read, Edit, mcp__ide__getDiagnostics
-args: file
+args: files
 ---
 
-## Determine the file to annotate
+## Determine the file(s) to annotate
 
-1. If `$ARGUMENTS` contains a file path, use that file.
+1. If `$ARGUMENTS` contains file path(s), use those files.
 2. Otherwise, call `mcp__ide__getDiagnostics` to get the currently open file from the IDE:
    - Extract the file path from the `uri` field (remove `file://` prefix)
    - Only use `.md` files; if no markdown file is open, ask the user to specify one
@@ -14,10 +14,10 @@ args: file
 ## Run the annotator
 
 ```bash
-md-annotator --origin claude-code <file>
+md-annotator --origin claude-code <file1.md> [file2.md ...]
 ```
 
-Replace `<file>` with the determined file path.
+Replace `<file1.md> [file2.md ...]` with the determined file path(s).
 
 ## Your task
 

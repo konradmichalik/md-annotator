@@ -9,7 +9,7 @@ const HELP_TEXT = `
 md-annotator — Annotate Markdown files in the browser
 
 Usage:
-  md-annotator [--origin <name>] <file.md>
+  md-annotator [--origin <name>] <file.md> [file2.md ...]
 
 Options:
   --help            Show this help message
@@ -21,7 +21,7 @@ Environment:
 
 Examples:
   md-annotator README.md
-  md-annotator docs/notes.md
+  md-annotator docs/api.md docs/guide.md
 `.trim()
 
 function parseArgs(argv) {
@@ -33,7 +33,7 @@ function parseArgs(argv) {
 
   const validOrigins = ['cli', 'claude-code', 'opencode']
   let origin = 'cli'
-  let filePath = null
+  const filePaths = []
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--origin') {
@@ -43,7 +43,7 @@ function parseArgs(argv) {
       origin = args[i + 1]
       i++
     } else if (!args[i].startsWith('-')) {
-      filePath = filePath || args[i]
+      filePaths.push(args[i])
     } else {
       return { error: `Unknown option: ${args[i]}` }
     }
@@ -53,11 +53,11 @@ function parseArgs(argv) {
     return { error: `Unknown origin "${origin}". Valid: ${validOrigins.join(', ')}` }
   }
 
-  return { filePath, origin }
+  return { filePaths, origin }
 }
 
 async function main() {
-  const { help, filePath, origin, error } = parseArgs(process.argv)
+  const { help, filePaths, origin, error } = parseArgs(process.argv)
 
   if (error) {
     process.stderr.write(`Error: ${error}\n\n`)
@@ -70,29 +70,31 @@ async function main() {
     process.exit(0)
   }
 
-  if (!filePath) {
+  if (!filePaths || filePaths.length === 0) {
     process.stderr.write('Error: No file specified.\n\n')
     process.stderr.write(HELP_TEXT + '\n')
     process.exit(1)
   }
 
-  const absolutePath = resolve(filePath)
-
-  if (!isMarkdownFile(absolutePath)) {
-    process.stderr.write(`Error: Not a Markdown file: ${filePath}\n`)
-    process.exit(1)
+  const absolutePaths = []
+  for (const fp of filePaths) {
+    const abs = resolve(fp)
+    if (!isMarkdownFile(abs)) {
+      process.stderr.write(`Error: Not a Markdown file: ${fp}\n`)
+      process.exit(1)
+    }
+    if (!(await fileExists(abs))) {
+      process.stderr.write(`Error: File not found: ${abs}\n`)
+      process.exit(1)
+    }
+    absolutePaths.push(abs)
   }
 
-  if (!(await fileExists(absolutePath))) {
-    process.stderr.write(`Error: File not found: ${absolutePath}\n`)
-    process.exit(1)
-  }
-
-  const server = await createServer(absolutePath, origin)
+  const server = await createServer(absolutePaths, origin)
   const url = `http://localhost:${server.port}`
 
   process.stderr.write(`Server running at ${url}\n`)
-  process.stderr.write(`Annotating: ${absolutePath}\n`)
+  process.stderr.write(`Annotating: ${absolutePaths.join(', ')}\n`)
 
   await openBrowser(url)
 

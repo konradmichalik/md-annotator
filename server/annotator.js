@@ -22,7 +22,8 @@ const DEV_PATH = join(__dirname, '..', 'client')
  * Start the annotator server with configurable options.
  *
  * @param {Object} options - Server configuration
- * @param {string} options.filePath - Absolute path to markdown file
+ * @param {string} [options.filePath] - Absolute path to markdown file (single-file compat)
+ * @param {string[]} [options.filePaths] - Array of absolute paths to markdown files
  * @param {string} [options.origin='cli'] - Origin identifier ('cli' | 'claude-code' | 'opencode')
  * @param {string} [options.htmlContent] - Embedded HTML content (for plugin usage)
  * @param {Function} [options.onReady] - Callback when server is ready: (url, port) => void
@@ -31,10 +32,13 @@ const DEV_PATH = join(__dirname, '..', 'client')
 export async function startAnnotatorServer(options) {
   const {
     filePath,
+    filePaths: filePathsOpt,
     origin = 'cli',
     htmlContent = null,
     onReady = null,
   } = options
+
+  const filePaths = filePathsOpt || (filePath ? [filePath] : [])
 
   const app = express()
 
@@ -72,24 +76,34 @@ export async function startAnnotatorServer(options) {
     res.json({ status: 'ok' })
   })
 
-  // Compute content hash for annotation persistence
-  let annotationStore = null
-  try {
-    const content = await readMarkdownFile(filePath)
-    const contentHash = createHash('sha256').update(content).digest('hex')
-    annotationStore = { contentHash, annotations: [] }
-  } catch (_e) {
-    // Hash computation failed — persistence disabled for this session
-  }
+  // Compute content hash per file for annotation persistence
+  const stores = await Promise.all(
+    filePaths.map(async (fp) => {
+      try {
+        const content = await readMarkdownFile(fp)
+        const contentHash = createHash('sha256').update(content).digest('hex')
+        return { absolutePath: fp, contentHash, annotations: [] }
+      } catch (_e) {
+        return { absolutePath: fp, contentHash: null, annotations: [] }
+      }
+    })
+  )
 
-  // Decision promise
+  // Decision promise with guard against double resolution
   let resolveDecision
+  let decided = false
   const decisionPromise = new Promise((resolve) => {
     resolveDecision = resolve
   })
 
-  // API routes with origin support and annotation store
-  app.use(createApiRouter(filePath, resolveDecision, origin, annotationStore))
+  function safeResolve(value) {
+    if (decided) {return}
+    decided = true
+    resolveDecision(value)
+  }
+
+  // API routes with multi-file support
+  app.use(createApiRouter(filePaths, safeResolve, origin, stores))
 
   // Find available port
   portfinder.basePort = config.port
@@ -111,7 +125,7 @@ export async function startAnnotatorServer(options) {
   const heartbeatInterval = setInterval(() => {
     if (heartbeatReceived && Date.now() - lastHeartbeat > 6000) {
       clearInterval(heartbeatInterval)
-      resolveDecision({ disconnected: true })
+      safeResolve({ disconnected: true })
     }
   }, 3000)
   heartbeatInterval.unref()

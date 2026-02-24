@@ -31,16 +31,26 @@ export const MdAnnotatorPlugin: Plugin = async (ctx) => {
     tool: {
       annotate_markdown: tool({
         description:
-          "Open a markdown file for interactive user annotation and review. The user can highlight text to mark deletions or add comments, then submit feedback.",
+          "Open markdown file(s) for interactive user annotation and review. The user can highlight text to mark deletions or add comments, then submit feedback.",
         args: {
           filePath: tool.schema
             .string()
-            .describe("Absolute path to the markdown file to annotate"),
+            .optional()
+            .describe("Absolute path to a single markdown file to annotate"),
+          filePaths: tool.schema
+            .array(tool.schema.string())
+            .optional()
+            .describe("Array of absolute paths to markdown files to annotate"),
         },
 
         async execute(args) {
+          const paths = args.filePaths || (args.filePath ? [args.filePath] : []);
+          if (paths.length === 0) {
+            return "ERROR: No file paths provided.";
+          }
+
           const server = await startAnnotatorServer({
-            filePath: args.filePath,
+            filePaths: paths,
             origin: "opencode",
             htmlContent,
             onReady: async (url: string) => {

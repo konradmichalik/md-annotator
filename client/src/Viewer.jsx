@@ -222,6 +222,8 @@ function CodeBlock({ block, onHover, onLeave, isHovered }) {
   )
 }
 
+const MD_LINK_PATTERN = /\.(?:md|markdown|mdown|mkd)(?:[#?]|$)/i
+
 export const Viewer = forwardRef(function Viewer({
   blocks,
   annotations,
@@ -229,6 +231,7 @@ export const Viewer = forwardRef(function Viewer({
   onEditAnnotation,
   onDeleteAnnotation,
   onSelectAnnotation,
+  onOpenFile,
   selectedAnnotationId: _selectedAnnotationId
 }, ref) {
   const containerRef = useRef(null)
@@ -500,9 +503,19 @@ export const Viewer = forwardRef(function Viewer({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [toolbarState, handleAnnotate, handleToolbarClose])
 
+  const handleLinkClick = useCallback((e) => {
+    const anchor = e.target.closest('a[href]')
+    if (!anchor) {return}
+    const href = anchor.getAttribute('href')
+    if (!href || href.startsWith('#') || href.startsWith('http://') || href.startsWith('https://')) {return}
+    if (!MD_LINK_PATTERN.test(href)) {return}
+    e.preventDefault()
+    onOpenFile?.(href)
+  }, [onOpenFile])
+
   return (
     <div className="viewer-container">
-      <article ref={containerRef} className="viewer-article">
+      <article ref={containerRef} className="viewer-article" onClick={handleLinkClick}>
         {blocks.map(block =>
           block.type === 'code' ? (
             <CodeBlock key={block.id} block={block} />
