@@ -392,14 +392,14 @@ export default function App() {
         'File content has changed since these annotations were exported. ' +
         'Annotations may not align correctly.\n\nImport anyway?'
       )
-      if (!proceed) return
+      if (!proceed) {return}
     }
     if (result.filePath && filePath && result.filePath !== filePath) {
       const proceed = window.confirm(
         `These annotations were exported from "${result.filePath}" ` +
         `but current file is "${filePath}".\n\nImport anyway?`
       )
-      if (!proceed) return
+      if (!proceed) {return}
     }
     if (annotations.length > 0) {
       const proceed = window.confirm(
@@ -407,7 +407,7 @@ export default function App() {
         `with ${result.annotations.length} imported annotation(s). ` +
         `Undo history will be lost.\n\nContinue?`
       )
-      if (!proceed) return
+      if (!proceed) {return}
     }
     viewerRef.current?.clearAllHighlights()
     annDispatch({ type: 'RESTORE', annotations: result.annotations })

@@ -34,7 +34,7 @@ export function AnnotationPanel({
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file) {return}
     if (file.size > MAX_IMPORT_SIZE) {
       alert('File too large. Maximum import size is 5 MB.')
       e.target.value = ''
@@ -58,7 +58,7 @@ export function AnnotationPanel({
   }
 
   useEffect(() => {
-    if (!menuOpen) return
+    if (!menuOpen) {return}
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setMenuOpen(false)
