@@ -9,7 +9,7 @@ const HELP_TEXT = `
 md-annotator — Annotate Markdown files in the browser
 
 Usage:
-  md-annotator <file.md>
+  md-annotator <file.md> [file2.md ...]
 
 Options:
   --help    Show this help message
@@ -20,7 +20,7 @@ Environment:
 
 Examples:
   md-annotator README.md
-  md-annotator docs/notes.md
+  md-annotator docs/api.md docs/guide.md
 `.trim()
 
 function parseArgs(argv) {
@@ -30,40 +30,43 @@ function parseArgs(argv) {
     return { help: true }
   }
 
-  return { filePath: args[0] }
+  const filePaths = args.filter(a => !a.startsWith('-'))
+  return { filePaths }
 }
 
 async function main() {
-  const { help, filePath } = parseArgs(process.argv)
+  const { help, filePaths } = parseArgs(process.argv)
 
   if (help) {
     process.stderr.write(HELP_TEXT + '\n')
     process.exit(0)
   }
 
-  if (!filePath) {
+  if (!filePaths || filePaths.length === 0) {
     process.stderr.write('Error: No file specified.\n\n')
     process.stderr.write(HELP_TEXT + '\n')
     process.exit(1)
   }
 
-  const absolutePath = resolve(filePath)
-
-  if (!isMarkdownFile(absolutePath)) {
-    process.stderr.write(`Error: Not a Markdown file: ${filePath}\n`)
-    process.exit(1)
+  const absolutePaths = []
+  for (const fp of filePaths) {
+    const abs = resolve(fp)
+    if (!isMarkdownFile(abs)) {
+      process.stderr.write(`Error: Not a Markdown file: ${fp}\n`)
+      process.exit(1)
+    }
+    if (!(await fileExists(abs))) {
+      process.stderr.write(`Error: File not found: ${abs}\n`)
+      process.exit(1)
+    }
+    absolutePaths.push(abs)
   }
 
-  if (!(await fileExists(absolutePath))) {
-    process.stderr.write(`Error: File not found: ${absolutePath}\n`)
-    process.exit(1)
-  }
-
-  const server = await createServer(absolutePath)
+  const server = await createServer(absolutePaths)
   const url = `http://localhost:${server.port}`
 
   process.stderr.write(`Server running at ${url}\n`)
-  process.stderr.write(`Annotating: ${absolutePath}\n`)
+  process.stderr.write(`Annotating: ${absolutePaths.join(', ')}\n`)
 
   await openBrowser(url)
 
