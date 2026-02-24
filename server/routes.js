@@ -12,7 +12,7 @@ function failure(error) {
   return { success: false, error }
 }
 
-export function createApiRouter(filePaths, resolveDecision, origin = 'claude-code', stores = []) {
+export function createApiRouter(filePaths, resolveDecision, origin = 'cli', stores = []) {
   const router = Router()
 
   // Multi-file endpoint — returns all files

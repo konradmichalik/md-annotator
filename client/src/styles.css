@@ -157,6 +157,17 @@ body {
   font-weight: 600;
 }
 
+.origin-badge {
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--border);
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
 .app-filepath {
   font-size: 0.75rem;
   color: var(--text-muted);

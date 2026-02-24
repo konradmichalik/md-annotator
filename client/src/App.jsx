@@ -115,6 +115,11 @@ function annotationReducer(state, action) {
   }
 }
 
+const ORIGIN_LABELS = {
+  'claude-code': 'Claude Code',
+  'opencode': 'OpenCode',
+}
+
 const initialAnnotationState = {
   annotations: [],
   history: [],
@@ -160,6 +165,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed)
   const [tocCollapsed, setTocCollapsed] = useState(getInitialTocCollapsed)
   const [exportModalOpen, setExportModalOpen] = useState(false)
+  const [origin, setOrigin] = useState('cli')
   const viewerRef = useRef(null)
   const prevLastActionRef = useRef(null)
   const filesRef = useRef(files)
@@ -256,6 +262,7 @@ export default function App() {
           hashMismatch: f.hashMismatch || false
         }))
         filesDispatch({ type: 'INIT_FILES', files: loadedFiles })
+        setOrigin(json.data.origin || 'cli')
         setStatus('Select text to annotate, then Approve or Submit Feedback.')
         return loadedFiles
       } else {
@@ -532,7 +539,7 @@ export default function App() {
             <p className="done-message">
               {decision === 'approved'
                 ? 'No changes requested. The file was approved as-is.'
-                : `${totalAnnotationCount} annotation${totalAnnotationCount !== 1 ? 's' : ''} sent to Claude Code.`}
+                : `${totalAnnotationCount} annotation${totalAnnotationCount !== 1 ? 's' : ''} ${ORIGIN_LABELS[origin] ? `sent to ${ORIGIN_LABELS[origin]}` : 'submitted'}.`}
             </p>
             {serverGone
               ? <p className="done-hint done-hint--disconnected">Server disconnected. You can close this tab.</p>
@@ -597,6 +604,9 @@ export default function App() {
             </svg>
           </button>
           <h1 className="app-title">md-annotator</h1>
+          {ORIGIN_LABELS[origin] && (
+            <span className="origin-badge">{ORIGIN_LABELS[origin]}</span>
+          )}
           <span className="app-filepath">{filePath}</span>
         </div>
         <div className="header-right">
