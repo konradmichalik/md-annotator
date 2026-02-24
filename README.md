@@ -11,6 +11,7 @@ An AI coding agent plugin that opens Markdown files in a local browser-based ann
 
 - **Multi-File Support** — Review multiple files in one session with a tabbed interface
 - **Linked Navigation** — Click relative `.md` links to open them as new tabs (wiki-style browsing)
+- **Mermaid Diagrams** — Renders `mermaid` code blocks as interactive diagrams with zoom, pan, and source toggle (adapts to light/dark theme)
 - [Claude Code Plugin](#-claude-code-plugin)
 - [OpenCode Plugin](#-opencode-plugin)
 - [Standalone CLI](#-standalone-cli)
