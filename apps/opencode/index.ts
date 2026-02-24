@@ -55,6 +55,10 @@ export const MdAnnotatorPlugin: Plugin = async (ctx) => {
 
           server.stop();
 
+          if (result.disconnected) {
+            return "CANCELLED: Browser tab was closed — no decision made.";
+          }
+
           if (result.approved) {
             return "APPROVED: No changes requested.";
           }

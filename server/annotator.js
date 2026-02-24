@@ -62,6 +62,16 @@ export async function startAnnotatorServer(options) {
     res.json({ status: 'ok' })
   })
 
+  // Client heartbeat — detect browser tab close
+  let lastHeartbeat = 0
+  let heartbeatReceived = false
+
+  app.post('/api/heartbeat', (_req, res) => {
+    lastHeartbeat = Date.now()
+    heartbeatReceived = true
+    res.json({ status: 'ok' })
+  })
+
   // Compute content hash for annotation persistence
   let annotationStore = null
   try {
@@ -97,8 +107,18 @@ export async function startAnnotatorServer(options) {
     onReady(url, port)
   }
 
+  // Heartbeat monitor — resolve as disconnected if client goes silent
+  const heartbeatInterval = setInterval(() => {
+    if (heartbeatReceived && Date.now() - lastHeartbeat > 6000) {
+      clearInterval(heartbeatInterval)
+      resolveDecision({ disconnected: true })
+    }
+  }, 3000)
+  heartbeatInterval.unref()
+
   // Stop function
   function stop() {
+    clearInterval(heartbeatInterval)
     server.close()
   }
 

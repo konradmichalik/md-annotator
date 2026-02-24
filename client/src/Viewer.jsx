@@ -226,19 +226,25 @@ export const Viewer = forwardRef(function Viewer({
   blocks,
   annotations,
   onAddAnnotation,
+  onEditAnnotation,
+  onDeleteAnnotation,
   onSelectAnnotation,
   selectedAnnotationId: _selectedAnnotationId
 }, ref) {
   const containerRef = useRef(null)
   const highlighterRef = useRef(null)
   const onAddAnnotationRef = useRef(onAddAnnotation)
+  const onEditAnnotationRef = useRef(onEditAnnotation)
+  const annotationsRef = useRef(annotations)
+  const toolbarStateRef = useRef(null)
   const pendingSourceRef = useRef(null)
   const [toolbarState, setToolbarState] = useState(null)
   const [requestedToolbarStep, setRequestedToolbarStep] = useState(null)
 
-  useEffect(() => {
-    onAddAnnotationRef.current = onAddAnnotation
-  }, [onAddAnnotation])
+  useEffect(() => { onAddAnnotationRef.current = onAddAnnotation }, [onAddAnnotation])
+  useEffect(() => { onEditAnnotationRef.current = onEditAnnotation }, [onEditAnnotation])
+  useEffect(() => { annotationsRef.current = annotations }, [annotations])
+  useEffect(() => { toolbarStateRef.current = toolbarState }, [toolbarState])
 
   const createAnnotationFromSource = (highlighter, source, type, text) => {
     const doms = highlighter.getDoms(source.id)
@@ -284,7 +290,7 @@ export const Viewer = forwardRef(function Viewer({
   useImperativeHandle(ref, () => ({
     removeHighlight(id) {
       highlighterRef.current?.remove(id)
-      const manualHighlights = containerRef.current?.querySelectorAll(`[data-bind-id="${id}"]`)
+      const manualHighlights = containerRef.current?.querySelectorAll(`[data-highlight-id="${id}"]`)
       manualHighlights?.forEach(el => {
         const parent = el.parentNode
         while (el.firstChild) {
@@ -325,7 +331,7 @@ export const Viewer = forwardRef(function Viewer({
       })
     },
     clearAllHighlights() {
-      const allHighlights = containerRef.current?.querySelectorAll('.annotation-highlight, [data-bind-id]')
+      const allHighlights = containerRef.current?.querySelectorAll('.annotation-highlight, [data-highlight-id]')
       allHighlights?.forEach(el => {
         const parent = el.parentNode
         while (el.firstChild) {
@@ -333,6 +339,28 @@ export const Viewer = forwardRef(function Viewer({
         }
         el.remove()
       })
+    },
+    updateHighlightType(id, type) {
+      const highlighter = highlighterRef.current
+      if (!highlighter) {return}
+      highlighter.removeClass('deletion', id)
+      highlighter.removeClass('comment', id)
+      highlighter.addClass(type.toLowerCase(), id)
+    },
+    openEditToolbar(ann) {
+      const highlighter = highlighterRef.current
+      if (!highlighter) {return}
+      if (pendingSourceRef.current) {
+        highlighter.remove(pendingSourceRef.current.id)
+        pendingSourceRef.current = null
+      }
+      const doms = highlighter.getDoms(ann.id)
+      if (doms?.length > 0) {
+        doms[0].scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setTimeout(() => {
+          setToolbarState({ element: doms[0], annotation: ann, mode: 'edit' })
+        }, 300)
+      }
     }
   }))
 
@@ -364,7 +392,24 @@ export const Viewer = forwardRef(function Viewer({
     })
 
     highlighter.on(Highlighter.event.CLICK, ({ id }) => {
+      const current = toolbarStateRef.current
+      if (current?.mode === 'edit' && current?.annotation?.id === id) {
+        setToolbarState(null)
+        setRequestedToolbarStep(null)
+        return
+      }
+      if (pendingSourceRef.current) {
+        highlighter.remove(pendingSourceRef.current.id)
+        pendingSourceRef.current = null
+      }
+      const ann = annotationsRef.current.find(a => a.id === id)
+      if (!ann) {return}
       onSelectAnnotation(id)
+      const doms = highlighter.getDoms(id)
+      if (doms?.length > 0) {
+        setToolbarState({ element: doms[0], annotation: ann, mode: 'edit' })
+        setRequestedToolbarStep(null)
+      }
     })
 
     highlighter.run()
@@ -395,15 +440,25 @@ export const Viewer = forwardRef(function Viewer({
   const handleAnnotate = useCallback((type, text) => {
     const highlighter = highlighterRef.current
     if (!toolbarState || !highlighter) {return}
-    createAnnotationFromSource(highlighter, toolbarState.source, type, text)
-    pendingSourceRef.current = null
+
+    if (toolbarState.mode === 'edit') {
+      const { annotation } = toolbarState
+      highlighter.removeClass('deletion', annotation.id)
+      highlighter.removeClass('comment', annotation.id)
+      highlighter.addClass(type.toLowerCase(), annotation.id)
+      onEditAnnotationRef.current(annotation.id, type, text)
+    } else {
+      createAnnotationFromSource(highlighter, toolbarState.source, type, text)
+      pendingSourceRef.current = null
+    }
+
     setToolbarState(null)
     setRequestedToolbarStep(null)
     window.getSelection()?.removeAllRanges()
   }, [toolbarState])
 
   const handleToolbarClose = useCallback(() => {
-    if (toolbarState && highlighterRef.current) {
+    if (toolbarState?.mode !== 'edit' && toolbarState && highlighterRef.current) {
       highlighterRef.current.remove(toolbarState.source.id)
     }
     pendingSourceRef.current = null
@@ -411,6 +466,12 @@ export const Viewer = forwardRef(function Viewer({
     setRequestedToolbarStep(null)
     window.getSelection()?.removeAllRanges()
   }, [toolbarState])
+
+  const handleToolbarDelete = useCallback((id) => {
+    onDeleteAnnotation(id)
+    setToolbarState(null)
+    setRequestedToolbarStep(null)
+  }, [onDeleteAnnotation])
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -453,7 +514,9 @@ export const Viewer = forwardRef(function Viewer({
           highlightElement={toolbarState?.element ?? null}
           onAnnotate={handleAnnotate}
           onClose={handleToolbarClose}
+          onDelete={handleToolbarDelete}
           requestedStep={requestedToolbarStep}
+          editAnnotation={toolbarState?.mode === 'edit' ? toolbarState.annotation : null}
         />
       </article>
     </div>

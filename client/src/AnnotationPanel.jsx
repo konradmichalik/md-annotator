@@ -10,6 +10,7 @@ export function AnnotationPanel({
   annotations,
   selectedAnnotationId,
   onSelect,
+  onEdit,
   onDelete,
   onExport,
   collapsed
@@ -53,7 +54,7 @@ export function AnnotationPanel({
             className={`panel-item${ann.id === selectedAnnotationId ? ' selected' : ''} panel-item-${ann.type.toLowerCase()}`}
             onClick={() => {
               onSelect(ann.id)
-              const el = document.querySelector(`[data-bindid="${ann.id}"], mark.annotation-highlight`)
+              const el = document.querySelector(`[data-highlight-id="${ann.id}"]`)
               if (el) {el.scrollIntoView({ behavior: 'smooth', block: 'center' })}
             }}
           >
@@ -61,16 +62,30 @@ export function AnnotationPanel({
               <span className={`panel-type-badge ${ann.type.toLowerCase()}`}>
                 {ann.type === 'DELETION' ? 'Delete' : 'Comment'}
               </span>
-              <button
-                className="panel-delete-btn"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onDelete(ann.id)
-                }}
-                title="Remove annotation"
-              >
-                ×
-              </button>
+              <div className="panel-item-actions">
+                <button
+                  className="panel-edit-btn"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onEdit(ann.id)
+                  }}
+                  title="Edit annotation"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                  </svg>
+                </button>
+                <button
+                  className="panel-delete-btn"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDelete(ann.id)
+                  }}
+                  title="Remove annotation"
+                >
+                  ×
+                </button>
+              </div>
             </div>
             <p className="panel-original-text">"{ann.originalText.length > 80
               ? ann.originalText.slice(0, 80) + '...'
