@@ -5,6 +5,7 @@ import { AnnotationPanel } from './AnnotationPanel.jsx'
 import { TableOfContents } from './TableOfContents.jsx'
 import { ExportModal } from './ExportModal.jsx'
 import { UpdateBanner } from './UpdateBanner.jsx'
+import { FileTabsBar } from './FileTabsBar.jsx'
 import './styles.css'
 
 // Theme: 'light' | 'dark' | 'auto'
@@ -69,7 +70,7 @@ function annotationReducer(state, action) {
     case 'UNDO': {
       if (state.history.length === 0) {return state}
       const entry = state.history[state.history.length - 1]
-      let newAnnotations
+      let newAnnotations = state.annotations
       if (entry.action === 'add') {
         newAnnotations = state.annotations.filter(a => a.id !== entry.annotation.id)
       } else if (entry.action === 'delete') {
@@ -87,7 +88,7 @@ function annotationReducer(state, action) {
     case 'REDO': {
       if (state.redo.length === 0) {return state}
       const entry = state.redo[state.redo.length - 1]
-      let newAnnotations
+      let newAnnotations = state.annotations
       if (entry.action === 'add') {
         newAnnotations = [...state.annotations, entry.annotation]
       } else if (entry.action === 'delete') {
@@ -121,11 +122,31 @@ const initialAnnotationState = {
   lastAction: null
 }
 
+function filesReducer(state, action) {
+  switch (action.type) {
+    case 'INIT_FILES':
+      return action.files.map(f => ({
+        ...f,
+        annState: { ...initialAnnotationState }
+      }))
+    case 'ADD_FILE':
+      return [...state, { ...action.file, annState: { ...initialAnnotationState } }]
+    case 'ANN': {
+      const idx = action.fileIndex
+      if (idx < 0 || idx >= state.length) {return state}
+      return state.map((f, i) => {
+        if (i !== idx) {return f}
+        return { ...f, annState: annotationReducer(f.annState, action.annAction) }
+      })
+    }
+    default:
+      return state
+  }
+}
+
 export default function App() {
-  const [_markdown, setMarkdown] = useState('')
-  const [filePath, setFilePath] = useState('')
-  const [blocks, setBlocks] = useState([])
-  const [annState, dispatch] = useReducer(annotationReducer, initialAnnotationState)
+  const [files, filesDispatch] = useReducer(filesReducer, [])
+  const [activeFileIndex, setActiveFileIndex] = useState(0)
   const [selectedAnnotationId, setSelectedAnnotationId] = useState(null)
   const [status, setStatus] = useState('Loading...')
   const [submitted, setSubmitted] = useState(false)
@@ -134,16 +155,25 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed)
   const [tocCollapsed, setTocCollapsed] = useState(getInitialTocCollapsed)
   const [exportModalOpen, setExportModalOpen] = useState(false)
-  const [_contentHash, setContentHash] = useState(null)
-  const [hashMismatch, setHashMismatch] = useState(false)
   const viewerRef = useRef(null)
   const prevLastActionRef = useRef(null)
 
-  const { annotations } = annState
+  // Derived state from active file
+  const activeFile = files[activeFileIndex] || null
+  const activeAnnState = activeFile?.annState || initialAnnotationState
+  const { annotations } = activeAnnState
+  const blocks = activeFile?.blocks || []
+  const filePath = activeFile?.path || ''
+  const totalAnnotationCount = files.reduce((sum, f) => sum + f.annState.annotations.length, 0)
+
+  // Dispatch annotation actions to active file
+  const annDispatch = useCallback((annAction) => {
+    filesDispatch({ type: 'ANN', fileIndex: activeFileIndex, annAction })
+  }, [activeFileIndex])
 
   // Handle DOM highlight side effects based on reducer lastAction
   useEffect(() => {
-    const { lastAction } = annState
+    const { lastAction } = activeAnnState
     if (!lastAction || lastAction === prevLastActionRef.current) {return}
     prevLastActionRef.current = lastAction
 
@@ -170,7 +200,7 @@ export default function App() {
         viewerRef.current?.updateHighlightType(entry.updated.id, entry.updated.type)
       }
     }
-  }, [annState])
+  }, [activeAnnState])
 
   useEffect(() => {
     localStorage.setItem('md-annotator-theme', theme)
@@ -201,18 +231,26 @@ export default function App() {
     })
   }, [])
 
-  const loadFile = useCallback(async () => {
+  const loadFiles = useCallback(async () => {
     try {
       setStatus('Loading...')
-      const res = await fetch('/api/file')
+
+      // Try multi-file endpoint first
+      const res = await fetch('/api/files')
       const json = await res.json()
+
       if (json.success) {
-        setMarkdown(json.data.content)
-        setFilePath(json.data.path)
-        setBlocks(parseMarkdownToBlocks(json.data.content))
-        setContentHash(json.data.contentHash || null)
+        const loadedFiles = json.data.files.map(f => ({
+          index: f.index,
+          path: f.path,
+          content: f.content,
+          blocks: parseMarkdownToBlocks(f.content),
+          contentHash: f.contentHash,
+          hashMismatch: false
+        }))
+        filesDispatch({ type: 'INIT_FILES', files: loadedFiles })
         setStatus('Select text to annotate, then Approve or Submit Feedback.')
-        return json.data.contentHash || null
+        return loadedFiles
       } else {
         setStatus('Error: ' + json.error)
       }
@@ -222,41 +260,63 @@ export default function App() {
     return null
   }, [])
 
-  const loadAnnotations = useCallback(async (expectedHash) => {
-    try {
-      const res = await fetch('/api/annotations')
-      const json = await res.json()
-      if (json.success && json.data.annotations.length > 0) {
-        if (json.data.contentHash === expectedHash) {
-          dispatch({ type: 'RESTORE', annotations: json.data.annotations })
-          setTimeout(() => {
-            viewerRef.current?.restoreHighlights(json.data.annotations)
-          }, 100)
-        } else {
-          setHashMismatch(true)
+  const loadAnnotations = useCallback(async (loadedFiles) => {
+    for (let i = 0; i < loadedFiles.length; i++) {
+      try {
+        const res = await fetch(`/api/annotations?fileIndex=${i}`)
+        const json = await res.json()
+        if (json.success && json.data.annotations.length > 0) {
+          if (json.data.contentHash === loadedFiles[i].contentHash) {
+            filesDispatch({
+              type: 'ANN',
+              fileIndex: i,
+              annAction: { type: 'RESTORE', annotations: json.data.annotations }
+            })
+            // Restore highlights only for initial active file
+            if (i === 0) {
+              setTimeout(() => {
+                viewerRef.current?.restoreHighlights(json.data.annotations)
+              }, 100)
+            }
+          }
         }
+      } catch (_err) {
+        // Silent failure - persistence is best-effort
       }
-    } catch (_err) {
-      // Silent failure - persistence is best-effort
     }
   }, [])
 
   useEffect(() => {
-    loadFile().then(hash => {
-      if (hash) {loadAnnotations(hash)}
+    loadFiles().then(loaded => {
+      if (loaded) {loadAnnotations(loaded)}
     })
-  }, [loadFile, loadAnnotations])
+  }, [loadFiles, loadAnnotations])
 
-  // Auto-save annotations to server (debounced)
+  // Restore highlights when switching files (Viewer remounts via key)
+  const prevFileIndexRef = useRef(0)
   useEffect(() => {
-    if (submitted) {return}
+    if (prevFileIndexRef.current === activeFileIndex) {return}
+    prevFileIndexRef.current = activeFileIndex
+    prevLastActionRef.current = null
+    setSelectedAnnotationId(null)
+
+    if (annotations.length > 0) {
+      setTimeout(() => {
+        viewerRef.current?.restoreHighlights(annotations)
+      }, 100)
+    }
+  }, [activeFileIndex, annotations])
+
+  // Auto-save annotations to server (debounced, scoped to active file)
+  useEffect(() => {
+    if (submitted || !activeFile) {return}
 
     const timer = setTimeout(async () => {
       try {
         await fetch('/api/annotations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ annotations })
+          body: JSON.stringify({ annotations, fileIndex: activeFileIndex })
         })
       } catch (_err) {
         // Silent failure
@@ -264,21 +324,21 @@ export default function App() {
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [annotations, submitted])
+  }, [annotations, submitted, activeFileIndex, activeFile])
 
   const handleAddAnnotation = useCallback((ann) => {
-    dispatch({ type: 'ADD', annotation: ann })
+    annDispatch({ type: 'ADD', annotation: ann })
     setSidebarCollapsed(false)
-  }, [])
+  }, [annDispatch])
 
   const handleDeleteAnnotation = useCallback((id) => {
-    dispatch({ type: 'DELETE', id })
+    annDispatch({ type: 'DELETE', id })
     setSelectedAnnotationId(prev => prev === id ? null : prev)
-  }, [])
+  }, [annDispatch])
 
   const handleEditAnnotation = useCallback((id, annotationType, text) => {
-    dispatch({ type: 'EDIT', id, annotationType, text })
-  }, [])
+    annDispatch({ type: 'EDIT', id, annotationType, text })
+  }, [annDispatch])
 
   const handlePanelEdit = useCallback((id) => {
     const ann = annotations.find(a => a.id === id)
@@ -290,16 +350,55 @@ export default function App() {
   }, [annotations])
 
   const handleUndo = useCallback(() => {
-    dispatch({ type: 'UNDO' })
-  }, [])
+    annDispatch({ type: 'UNDO' })
+  }, [annDispatch])
 
   const handleRedo = useCallback(() => {
-    dispatch({ type: 'REDO' })
-  }, [])
+    annDispatch({ type: 'REDO' })
+  }, [annDispatch])
 
   const handleSelectAnnotation = useCallback((id) => {
     setSelectedAnnotationId(id)
   }, [])
+
+  const handleSelectFile = useCallback((index) => {
+    if (index === activeFileIndex) {return}
+    setActiveFileIndex(index)
+  }, [activeFileIndex])
+
+  const handleOpenFile = useCallback(async (relativePath) => {
+    const normalized = relativePath.replace(/^\.\//, '')
+    const existingIndex = files.findIndex(f =>
+      f.path.replace(/^\.\//, '') === normalized ||
+      f.path.endsWith('/' + normalized)
+    )
+    if (existingIndex !== -1) {
+      setActiveFileIndex(existingIndex)
+      return
+    }
+
+    try {
+      const params = new URLSearchParams({ path: relativePath, relativeTo: filePath })
+      const res = await fetch(`/api/file/open?${params}`)
+      const json = await res.json()
+      if (json.success) {
+        const newFile = {
+          index: json.data.index,
+          path: json.data.path,
+          content: json.data.content,
+          blocks: parseMarkdownToBlocks(json.data.content),
+          contentHash: json.data.contentHash,
+          hashMismatch: false
+        }
+        filesDispatch({ type: 'ADD_FILE', file: newFile })
+        setActiveFileIndex(files.length)
+      } else {
+        setStatus(`Could not open file: ${json.error}`)
+      }
+    } catch (err) {
+      setStatus(`Error opening file: ${err.message}`)
+    }
+  }, [files, filePath])
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -338,10 +437,15 @@ export default function App() {
     setSubmitted(true)
     setDecision('feedback')
     try {
+      const feedbackFiles = files.map(f => ({
+        path: f.path,
+        annotations: f.annState.annotations,
+        blocks: f.blocks
+      }))
       await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ annotations, blocks })
+        body: JSON.stringify({ files: feedbackFiles })
       })
     } catch { /* server shuts down */ }
   }
@@ -349,7 +453,7 @@ export default function App() {
   const [serverGone, setServerGone] = useState(false)
 
   useEffect(() => {
-    if (submitted) {return}
+    if (serverGone) {return}
     const ping = async () => {
       try {
         const res = await fetch('/api/heartbeat', { method: 'POST' })
@@ -362,7 +466,7 @@ export default function App() {
     ping()
     const intervalId = setInterval(ping, 2000)
     return () => clearInterval(intervalId)
-  }, [submitted])
+  }, [serverGone])
 
   if (serverGone && !submitted) {
     return (
@@ -414,7 +518,7 @@ export default function App() {
             <p className="done-message">
               {decision === 'approved'
                 ? 'No changes requested. The file was approved as-is.'
-                : `${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} sent to Claude Code.`}
+                : `${totalAnnotationCount} annotation${totalAnnotationCount !== 1 ? 's' : ''} sent to Claude Code.`}
             </p>
             {serverGone
               ? <p className="done-hint done-hint--disconnected">Server disconnected. You can close this tab.</p>
@@ -426,15 +530,16 @@ export default function App() {
   }
 
   const handleReloadFile = async () => {
-    setHashMismatch(false)
-    dispatch({ type: 'RESTORE', annotations: [] })
+    annDispatch({ type: 'RESTORE', annotations: [] })
     viewerRef.current?.clearAllHighlights()
-    await loadFile()
+    await loadFiles()
   }
+
+  const hasAnyHashMismatch = files.some(f => f.hashMismatch)
 
   return (
     <div className="app">
-      {hashMismatch && (
+      {hasAnyHashMismatch && (
         <div className="hash-mismatch-banner">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
@@ -442,7 +547,6 @@ export default function App() {
           </svg>
           <span>File has changed since annotations were saved. Annotations may be outdated.</span>
           <button onClick={handleReloadFile} className="btn btn-sm">Reload</button>
-          <button onClick={() => setHashMismatch(false)} className="btn btn-sm">Dismiss</button>
         </div>
       )}
       <header className="app-header">
@@ -492,17 +596,17 @@ export default function App() {
           <button
             onClick={handleSubmitFeedback}
             className="btn btn-feedback"
-            disabled={annotations.length === 0}
-            title={annotations.length === 0 ? 'Add annotations first' : `Submit ${annotations.length} annotation(s)`}
+            disabled={totalAnnotationCount === 0}
+            title={totalAnnotationCount === 0 ? 'Add annotations first' : `Submit ${totalAnnotationCount} annotation(s)`}
           >
             Feedback
-            {annotations.length > 0 && <span className="btn-badge">{annotations.length}</span>}
+            {totalAnnotationCount > 0 && <span className="btn-badge">{totalAnnotationCount}</span>}
           </button>
           <button
             onClick={handleApprove}
             className="btn btn-approve"
-            disabled={annotations.length > 0}
-            title={annotations.length > 0 ? 'Remove annotations to approve' : 'Approve file as-is'}
+            disabled={totalAnnotationCount > 0}
+            title={totalAnnotationCount > 0 ? 'Remove annotations to approve' : 'Approve file as-is'}
           >
             Approve
           </button>
@@ -520,6 +624,12 @@ export default function App() {
         </div>
       </header>
 
+      <FileTabsBar
+        files={files}
+        activeFileIndex={activeFileIndex}
+        onSelectFile={handleSelectFile}
+      />
+
       <main className="app-main">
         <TableOfContents
           blocks={blocks}
@@ -527,6 +637,7 @@ export default function App() {
           collapsed={tocCollapsed}
         />
         <Viewer
+          key={activeFile?.path || 'empty'}
           ref={viewerRef}
           blocks={blocks}
           annotations={annotations}
@@ -534,6 +645,7 @@ export default function App() {
           onEditAnnotation={handleEditAnnotation}
           onDeleteAnnotation={handleDeleteAnnotation}
           onSelectAnnotation={handleSelectAnnotation}
+          onOpenFile={handleOpenFile}
           selectedAnnotationId={selectedAnnotationId}
         />
         <AnnotationPanel
