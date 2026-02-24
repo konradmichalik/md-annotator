@@ -222,7 +222,7 @@ function CodeBlock({ block, onHover, onLeave, isHovered }) {
   )
 }
 
-const MD_LINK_PATTERN = /\.(?:md|markdown|mdown|mkd)$/i
+const MD_LINK_PATTERN = /\.(?:md|markdown|mdown|mkd)(?:[#?]|$)/i
 
 export const Viewer = forwardRef(function Viewer({
   blocks,

@@ -20,7 +20,7 @@ function formatAnnotation(ann, block, heading) {
   } else if (ann.type === 'COMMENT') {
     output += `Comment on (${lineRef})\n`
     output += `\`\`\`\n${ann.originalText}\n\`\`\`\n`
-    output += `> ${ann.text}\n`
+    output += `> ${ann.text.replace(/\n/g, '\n> ')}\n`
   }
 
   return output + '\n'

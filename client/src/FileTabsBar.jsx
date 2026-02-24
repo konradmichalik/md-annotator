@@ -5,7 +5,7 @@ export function FileTabsBar({ files, activeFileIndex, onSelectFile }) {
     <nav className="file-tabs-bar" role="tablist">
       <div className="file-tabs-scroll">
         {files.map((file, index) => {
-          const name = file.path.split('/').pop()
+          const name = file.path.split(/[\\/]/).pop()
           const count = file.annState.annotations.length
           const isActive = index === activeFileIndex
           return (
