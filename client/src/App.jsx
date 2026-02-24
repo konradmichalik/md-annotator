@@ -170,12 +170,14 @@ export default function App() {
   const [origin, setOrigin] = useState('cli')
   const viewerRef = useRef(null)
   const prevLastActionRef = useRef(null)
+  const toastTimerRef = useRef(null)
   const filesRef = useRef(files)
   filesRef.current = files
 
   const showToast = useCallback((message) => {
+    if (toastTimerRef.current) {clearTimeout(toastTimerRef.current)}
     setToast(message)
-    setTimeout(() => setToast(null), 2500)
+    toastTimerRef.current = setTimeout(() => setToast(null), 2500)
   }, [])
 
   // Derived state from active file

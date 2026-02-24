@@ -320,7 +320,7 @@ export const Viewer = forwardRef(function Viewer({
     },
     restoreHighlights(anns) {
       if (!highlighterRef.current) {return}
-      anns.forEach(ann => this.restoreHighlight(ann))
+      anns.forEach(ann => { this.restoreHighlight(ann) })
     },
     clearAllHighlights() {
       const highlighter = highlighterRef.current

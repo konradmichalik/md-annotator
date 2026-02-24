@@ -1266,7 +1266,7 @@ a:hover { opacity: 0.8; }
   padding: 0.5rem 1rem;
   border-radius: var(--radius-md);
   font-size: 0.8125rem;
-  z-index: 200;
+  z-index: 210;
   pointer-events: none;
   animation: toast-in 0.2s ease-out, toast-out 0.3s ease-in 2.2s forwards;
 }
