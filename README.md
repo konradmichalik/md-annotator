@@ -1,6 +1,15 @@
-# *md*-annotator
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/logo-light.png">
+    <img alt="md-annotator" src="docs/images/logo-light.png" width="400">
+  </picture>
+</p>
 
-An AI coding agent plugin that opens Markdown files in a local browser-based annotator. Select text to mark deletions or add comments, then let the coding agent apply your feedback.
+<p align="center">
+  An AI coding agent plugin that opens Markdown files in a local browser-based annotator.<br>
+  Select text to mark deletions or add comments, then let the coding agent apply your feedback.
+</p>
 
 > [!NOTE]
 > This plugin is heavily inspired by the excellent [plannotator](https://plannotator.ai/) plugin and uses a similar general approach for Markdown files. Useful for reviewing documentation in software projects.
