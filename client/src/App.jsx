@@ -439,6 +439,8 @@ export default function App() {
     return () => clearInterval(intervalId)
   }, [serverGone])
 
+  const { state: autoCloseState, enableAndStart } = useAutoClose(submitted)
+
   if (serverGone && !submitted) {
     return (
       <div className="app">
@@ -465,8 +467,6 @@ export default function App() {
       </div>
     )
   }
-
-  const { state: autoCloseState, enableAndStart } = useAutoClose(submitted)
 
   if (submitted) {
     return (
