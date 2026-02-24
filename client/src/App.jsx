@@ -326,11 +326,20 @@ export default function App() {
   }, [activeFileIndex])
 
   const handleOpenFile = useCallback(async (relativePath) => {
-    const normalized = relativePath.replace(/^\.\//, '')
     const currentFiles = filesRef.current
+
+    // Resolve relative path against current file's directory for deduplication
+    const dir = filePath.replace(/[^/]*$/, '')
+    const segments = (dir + relativePath.replace(/^\.\//, '')).split('/')
+    const resolved = []
+    for (const seg of segments) {
+      if (seg === '..') { resolved.pop() }
+      else if (seg && seg !== '.') { resolved.push(seg) }
+    }
+    const resolvedPath = resolved.join('/')
+
     const existingIndex = currentFiles.findIndex(f =>
-      f.path.replace(/^\.\//, '') === normalized ||
-      f.path.endsWith('/' + normalized)
+      f.path.replace(/^\.\//, '') === resolvedPath
     )
     if (existingIndex !== -1) {
       setActiveFileIndex(existingIndex)
