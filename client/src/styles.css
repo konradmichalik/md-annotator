@@ -24,7 +24,6 @@
   --deletion-text: #bf616a; /* nord11 */
   --comment-bg: rgb(235 203 139 / 18%);
   --comment-border: #ebcb8b; /* nord13 */
-
   --code-bg: #2e3440; /* nord0 */
   --shadow: 0 1px 3px rgb(0 0 0 / 6%), 0 4px 12px rgb(0 0 0 / 4%);
   --shadow-lg: 0 4px 16px rgb(0 0 0 / 10%), 0 12px 40px rgb(0 0 0 / 6%);
@@ -78,7 +77,6 @@
   --deletion-text: #bf616a; /* nord11 */
   --comment-bg: rgb(235 203 139 / 12%);
   --comment-border: #ebcb8b; /* nord13 */
-
   --code-bg: #2e3440; /* nord0 */
   --shadow: 0 1px 3px rgb(0 0 0 / 25%), 0 4px 12px rgb(0 0 0 / 20%);
   --shadow-lg: 0 4px 16px rgb(0 0 0 / 35%), 0 12px 40px rgb(0 0 0 / 25%);
