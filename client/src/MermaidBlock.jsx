@@ -131,11 +131,15 @@ export function MermaidBlock({ block }) {
     const isDark = resolvedTheme === 'dark'
     initMermaid(isDark)
 
+    let cancelled = false
     const renderDiagram = async () => {
       try {
         renderCountRef.current += 1
-        const id = `mermaid-${block.id}-${renderCountRef.current}`
-        const { svg: renderedSvg } = await mermaid.render(id, block.content)
+        const renderId = renderCountRef.current
+        const safeContent = block.content.replace(/%%\s*\{[^}]*\}\s*%%/g, '')
+        const id = `mermaid-${block.id}-${renderId}`
+        const { svg: renderedSvg } = await mermaid.render(id, safeContent)
+        if (cancelled) { return }
         const cleaned = renderedSvg
           .replace(/ width="[^"]*"/, ' width="100%"')
           .replace(/ height="[^"]*"/, ' height="100%"')
@@ -143,12 +147,14 @@ export function MermaidBlock({ block }) {
         setSvg(cleaned)
         setError(null)
       } catch (err) {
+        if (cancelled) { return }
         setError(err instanceof Error ? err.message : 'Failed to render diagram')
         setSvg('')
       }
     }
 
     renderDiagram()
+    return () => { cancelled = true }
   }, [block.content, block.id, resolvedTheme])
 
   // Reset zoom/pan when content, theme, or view mode changes
