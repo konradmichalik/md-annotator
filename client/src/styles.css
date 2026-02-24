@@ -5,6 +5,7 @@
   /* Nord Snow Storm + Polar Night */
   --bg: #fff;
   --bg-secondary: #eceff4; /* nord6 */
+  --bg-sidebar: #f4f6f9; /* between bg and bg-secondary */
   --bg-card: #fff;
   --text: #2e3440; /* nord0 */
   --text-muted: #4c566a; /* nord3 */
@@ -58,7 +59,8 @@
 /* Dark mode variables — Nord Polar Night */
 :root[data-theme="dark"] {
   --bg: #2e3440; /* nord0 */
-  --bg-secondary: #3b4252; /* nord1 — chrome: header, footer, sidebars */
+  --bg-secondary: #3b4252; /* nord1 — chrome: header, footer */
+  --bg-sidebar: #353b49; /* between nord0 and nord1 */
   --bg-card: #2e3440; /* nord0 — article card, same as body */
   --text: #eceff4; /* nord6 */
   --text-muted: #d8dee9; /* nord4 */
@@ -157,6 +159,10 @@ body {
 .app-title {
   font-size: 1rem;
   font-weight: 600;
+}
+
+.app-title-md {
+  font-style: italic;
 }
 
 .origin-badge {
@@ -346,10 +352,15 @@ body {
   padding: 0.375rem;
   line-height: 1;
   color: var(--text-muted);
+  background: transparent;
+  border-color: transparent;
+  opacity: 0.5;
 }
 
 .btn-icon:hover {
   color: var(--text);
+  background: transparent;
+  opacity: 1;
 }
 
 /* === Hash Mismatch Banner === */
@@ -897,7 +908,7 @@ body {
   width: var(--sidebar-width);
   flex-shrink: 0;
   border-left: 1px solid var(--border);
-  background: var(--bg-secondary);
+  background: var(--bg-sidebar);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -921,7 +932,7 @@ body {
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
-  background: var(--bg-secondary);
+  background: var(--bg-sidebar);
   z-index: 1;
 }
 
@@ -1146,7 +1157,7 @@ body {
   width: var(--toc-width);
   flex-shrink: 0;
   border-right: 1px solid var(--border);
-  background: var(--bg-secondary);
+  background: var(--bg-sidebar);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -1159,7 +1170,7 @@ body {
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
-  background: var(--bg-secondary);
+  background: var(--bg-sidebar);
   z-index: 1;
 }
 

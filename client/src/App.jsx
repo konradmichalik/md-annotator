@@ -571,13 +571,30 @@ export default function App() {
               <line x1="9" y1="3" x2="9" y2="21"/>
             </svg>
           </button>
-          <h1 className="app-title">md-annotator</h1>
+          <h1 className="app-title"><span className="app-title-md">md</span>-annotator</h1>
           {ORIGIN_LABELS[origin] && (
             <span className="origin-badge">{ORIGIN_LABELS[origin]}</span>
           )}
           <span className="app-filepath">{filePath}</span>
         </div>
         <div className="header-right">
+          <button
+            onClick={handleSubmitFeedback}
+            className="btn btn-feedback"
+            disabled={totalAnnotationCount === 0}
+            title={totalAnnotationCount === 0 ? 'Add annotations first' : `Submit ${totalAnnotationCount} annotation(s)`}
+          >
+            Feedback
+            {totalAnnotationCount > 0 && <span className="btn-badge">{totalAnnotationCount}</span>}
+          </button>
+          <button
+            onClick={handleApprove}
+            className="btn btn-approve"
+            disabled={totalAnnotationCount > 0}
+            title={totalAnnotationCount > 0 ? 'Remove annotations to approve' : 'Approve file as-is'}
+          >
+            Approve
+          </button>
           <button
             onClick={cycleTheme}
             className="btn btn-icon"
@@ -604,23 +621,6 @@ export default function App() {
                 <path d="M12 3a9 9 0 0 1 0 18" fill="currentColor"/>
               </svg>
             )}
-          </button>
-          <button
-            onClick={handleSubmitFeedback}
-            className="btn btn-feedback"
-            disabled={totalAnnotationCount === 0}
-            title={totalAnnotationCount === 0 ? 'Add annotations first' : `Submit ${totalAnnotationCount} annotation(s)`}
-          >
-            Feedback
-            {totalAnnotationCount > 0 && <span className="btn-badge">{totalAnnotationCount}</span>}
-          </button>
-          <button
-            onClick={handleApprove}
-            className="btn btn-approve"
-            disabled={totalAnnotationCount > 0}
-            title={totalAnnotationCount > 0 ? 'Remove annotations to approve' : 'Approve file as-is'}
-          >
-            Approve
           </button>
           <button
             onClick={toggleSidebar}
