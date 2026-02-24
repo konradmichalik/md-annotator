@@ -114,6 +114,11 @@ function annotationReducer(state, action) {
   }
 }
 
+const ORIGIN_LABELS = {
+  'claude-code': 'Claude Code',
+  'opencode': 'OpenCode',
+}
+
 const initialAnnotationState = {
   annotations: [],
   history: [],
@@ -136,6 +141,7 @@ export default function App() {
   const [exportModalOpen, setExportModalOpen] = useState(false)
   const [_contentHash, setContentHash] = useState(null)
   const [hashMismatch, setHashMismatch] = useState(false)
+  const [origin, setOrigin] = useState('cli')
   const viewerRef = useRef(null)
   const prevLastActionRef = useRef(null)
 
@@ -209,6 +215,7 @@ export default function App() {
       if (json.success) {
         setMarkdown(json.data.content)
         setFilePath(json.data.path)
+        setOrigin(json.data.origin || 'cli')
         setBlocks(parseMarkdownToBlocks(json.data.content))
         setContentHash(json.data.contentHash || null)
         setStatus('Select text to annotate, then Approve or Submit Feedback.')
@@ -414,7 +421,7 @@ export default function App() {
             <p className="done-message">
               {decision === 'approved'
                 ? 'No changes requested. The file was approved as-is.'
-                : `${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} sent to Claude Code.`}
+                : `${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} ${ORIGIN_LABELS[origin] ? `sent to ${ORIGIN_LABELS[origin]}` : 'submitted'}.`}
             </p>
             {serverGone
               ? <p className="done-hint done-hint--disconnected">Server disconnected. You can close this tab.</p>
@@ -459,6 +466,9 @@ export default function App() {
             </svg>
           </button>
           <h1 className="app-title">md-annotator</h1>
+          {ORIGIN_LABELS[origin] && (
+            <span className="origin-badge">{ORIGIN_LABELS[origin]}</span>
+          )}
           <span className="app-filepath">{filePath}</span>
         </div>
         <div className="header-right">
