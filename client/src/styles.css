@@ -364,7 +364,7 @@ body {
 }
 
 .done-icon--disconnected {
-  background: rgb(191 97 106 / 12%);
+  background: var(--deletion-bg);
   color: var(--danger);
 }
 

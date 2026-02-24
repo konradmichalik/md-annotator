@@ -349,17 +349,21 @@ export default function App() {
   const [serverGone, setServerGone] = useState(false)
 
   useEffect(() => {
+    if (submitted) {return}
+    let intervalId
     const ping = async () => {
       try {
-        await fetch('/api/heartbeat', { method: 'POST' })
+        const res = await fetch('/api/heartbeat', { method: 'POST' })
+        if (!res.ok) {throw new Error('heartbeat failed')}
       } catch {
         setServerGone(true)
+        clearInterval(intervalId)
       }
     }
     ping()
-    const id = setInterval(ping, 2000)
-    return () => clearInterval(id)
-  }, [])
+    intervalId = setInterval(ping, 2000)
+    return () => clearInterval(intervalId)
+  }, [submitted])
 
   if (serverGone && !submitted) {
     return (

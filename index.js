@@ -70,15 +70,15 @@ async function main() {
   // Block until user clicks Approve or Submit Feedback (or browser disconnects)
   const decision = await server.waitForDecision()
 
-  // Give browser time to receive response
-  await new Promise(r => setTimeout(r, 500))
-
-  // Handle browser disconnect
+  // Handle browser disconnect (no need to wait for browser)
   if (decision.disconnected) {
     process.stderr.write('Browser tab closed — no decision made.\n')
     server.shutdown()
     process.exit(1)
   }
+
+  // Give browser time to receive response
+  await new Promise(r => setTimeout(r, 500))
 
   // Log decision to stderr
   if (decision.approved) {
