@@ -1,3 +1,4 @@
+/* global __APP_VERSION__ */
 import { useState, useEffect, useRef, useCallback, useReducer } from 'react'
 import { parseMarkdownToBlocks } from './utils/parser.js'
 import { Viewer } from './components/Viewer/Viewer.jsx'
@@ -572,6 +573,7 @@ export default function App() {
             </svg>
           </button>
           <h1 className="app-title"><span className="app-title-md">md</span>-annotator</h1>
+          <span className="version-badge">v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '?'}</span>
           {ORIGIN_LABELS[origin] && (
             <span className="origin-badge">{ORIGIN_LABELS[origin]}</span>
           )}
