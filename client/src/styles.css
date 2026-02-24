@@ -473,7 +473,7 @@ body {
 }
 
 .done-autoclose-prompt input[type="checkbox"] {
-  accent-color: var(--accent);
+  accent-color: var(--primary);
 }
 
 /* === Viewer === */
