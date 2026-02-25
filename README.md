@@ -33,6 +33,11 @@
 - **Heartbeat Detection** -- Graceful shutdown when the browser tab is closed
 - **IDE Integration** -- Annotate the currently open file in VSCode, Cursor, or JetBrains without arguments
 
+## Prerequisites
+
+- **Node.js** 22+ and **npm**
+- A modern **browser** (opens automatically)
+
 ## 🔌 Claude Code Plugin
 
 *md-annotator* is a Claude Code plugin. After installation the slash command `/annotate:md` is available in any Claude Code session.
