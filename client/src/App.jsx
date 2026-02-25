@@ -12,6 +12,7 @@ import { FileTabsBar } from './components/FileTabsBar.jsx'
 import { initialAnnotationState } from './state/annotationReducer.js'
 import { filesReducer } from './state/filesReducer.js'
 import { useAutoClose } from './hooks/useAutoClose.js'
+import { useResizablePanel } from './hooks/useResizablePanel.js'
 import './styles.css'
 
 // Theme: 'light' | 'dark' | 'auto'
@@ -460,6 +461,8 @@ export default function App() {
   }, [serverGone])
 
   const { state: autoCloseState, enableAndStart } = useAutoClose(submitted)
+  const { width: panelWidth, handleMouseDown: handlePanelResize } = useResizablePanel('md-annotator-panel-width', 280, 1)
+  const { width: tocWidth, handleMouseDown: handleTocResize } = useResizablePanel('md-annotator-toc-width', 220, -1)
 
   if (serverGone && !submitted) {
     return (
@@ -683,7 +686,14 @@ export default function App() {
           blocks={blocks}
           annotations={annotations}
           collapsed={tocCollapsed}
+          width={tocWidth}
         />
+        {!tocCollapsed && (
+          <div
+            className="resize-handle"
+            onMouseDown={handleTocResize}
+          />
+        )}
         <Viewer
           key={activeFile?.path || 'empty'}
           ref={viewerRef}
@@ -696,6 +706,12 @@ export default function App() {
           onOpenFile={handleOpenFile}
           selectedAnnotationId={selectedAnnotationId}
         />
+        {!sidebarCollapsed && (
+          <div
+            className="resize-handle"
+            onMouseDown={handlePanelResize}
+          />
+        )}
         <AnnotationPanel
           annotations={annotations}
           selectedAnnotationId={selectedAnnotationId}
@@ -705,6 +721,7 @@ export default function App() {
           onExport={() => setExportModalOpen(true)}
           onImport={handleImportAnnotations}
           collapsed={sidebarCollapsed}
+          width={panelWidth}
         />
       </main>
 

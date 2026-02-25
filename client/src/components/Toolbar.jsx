@@ -24,6 +24,22 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
     }
   }, [highlightElement, requestedStepProp, editAnnotation, elementMode])
 
+  // Type-to-comment: any printable key in menu state transitions to input
+  useEffect(() => {
+    if (step !== 'menu' || !highlightElement || editAnnotation) {return}
+    const handleKeyDown = (e) => {
+      const tag = document.activeElement?.tagName?.toLowerCase()
+      if (tag === 'textarea' || tag === 'input') {return}
+      if (e.metaKey || e.ctrlKey || e.altKey) {return}
+      if (e.key.length !== 1) {return}
+      e.preventDefault()
+      setInputValue(e.key)
+      setStep('input')
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [step, highlightElement, editAnnotation])
+
   useEffect(() => {
     if (!highlightElement) {
       setPosition(null)
