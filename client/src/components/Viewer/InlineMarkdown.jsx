@@ -48,9 +48,19 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
           key={key++}
           className={`annotatable-image-wrapper${annClass}`}
           data-image-src={imgSrc}
+          role="button"
+          tabIndex={0}
+          aria-label={imgAlt ? `Annotate image: ${imgAlt}` : 'Annotate image'}
           onClick={(e) => {
             e.stopPropagation()
             onImageClick?.({ alt: imgAlt, src: imgSrc, blockId, element: e.currentTarget })
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              e.stopPropagation()
+              onImageClick?.({ alt: imgAlt, src: imgSrc, blockId, element: e.currentTarget })
+            }
           }}
         >
           <img src={imgSrc} alt={imgAlt} className="inline-image annotatable-image" />
