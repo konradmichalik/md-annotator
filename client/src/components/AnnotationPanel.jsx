@@ -95,20 +95,6 @@ export function AnnotationPanel({
     </div>
   )
 
-  if (!hasAnnotations) {
-    return (
-      <aside className="annotation-panel" style={width ? { width: `${width}px` } : undefined}>
-        <input ref={fileInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileSelect} />
-        <div className="panel-header">
-          <h2>Annotations</h2>
-          <span className="panel-badge">0</span>
-          {moreMenu}
-        </div>
-        <p className="panel-empty">Select text, click an image, or click a diagram to add annotations.</p>
-      </aside>
-    )
-  }
-
   return (
     <aside className="annotation-panel" style={width ? { width: `${width}px` } : undefined}>
       <input ref={fileInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileSelect} />
@@ -117,6 +103,9 @@ export function AnnotationPanel({
         <span className="panel-badge">{annotations.length}</span>
         {moreMenu}
       </div>
+      {!hasAnnotations ? (
+        <p className="panel-empty">Select text, click an image, or click a diagram to add annotations.</p>
+      ) : (
       <ul className="panel-list">
         {annotations.map(ann => {
           const isElement = ann.targetType === 'image' || ann.targetType === 'diagram'
@@ -203,6 +192,7 @@ export function AnnotationPanel({
           )
         })}
       </ul>
+      )}
     </aside>
   )
 }

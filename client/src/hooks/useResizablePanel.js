@@ -48,6 +48,11 @@ export function useResizablePanel(storageKey, defaultWidth, direction) {
     return () => {
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseup', onUp)
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+      }
     }
   }, [storageKey, direction])
 
