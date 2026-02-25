@@ -6,6 +6,7 @@ import { AnnotationPanel } from './components/AnnotationPanel.jsx'
 import { TableOfContents } from './components/TableOfContents.jsx'
 import { ExportModal } from './components/ExportModal.jsx'
 import { validateAnnotationImport } from './utils/export.js'
+import { getTextStats } from './utils/textStats.js'
 import { UpdateBanner } from './components/UpdateBanner.jsx'
 import { FileTabsBar } from './components/FileTabsBar.jsx'
 import { initialAnnotationState } from './state/annotationReducer.js'
@@ -39,6 +40,15 @@ function getInitialSidebarCollapsed() {
 
 function getInitialTocCollapsed() {
   return localStorage.getItem('md-annotator-toc-collapsed') === 'true'
+}
+
+function FileStats({ content }) {
+  const { lines, words, readingTime } = getTextStats(content)
+  return (
+    <span className="file-stats">
+      {lines} lines &middot; {words} words &middot; ~{readingTime} min read
+    </span>
+  )
 }
 
 const ORIGIN_LABELS = {
@@ -699,7 +709,10 @@ export default function App() {
       </main>
 
       <footer className="app-status">
-        {status}
+        <span>{status}</span>
+        {activeFile?.content && (
+          <FileStats content={activeFile.content} />
+        )}
       </footer>
 
       <ExportModal

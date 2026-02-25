@@ -14,7 +14,10 @@
     "lint": "eslint . && stylelint '**/*.css'",
     "lint:js": "eslint .",
     "lint:css": "stylelint '**/*.css'",
-    "lint:fix": "eslint . --fix && stylelint '**/*.css' --fix"
+    "lint:fix": "eslint . --fix && stylelint '**/*.css' --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [
     "markdown",
@@ -45,6 +48,7 @@
     "stylelint": "^17.0.0",
     "stylelint-config-standard": "^40.0.0",
     "vite": "^6.0.0",
-    "vite-plugin-singlefile": "^2.0.3"
+    "vite-plugin-singlefile": "^2.0.3",
+    "vitest": "^4.0.18"
   }
 }
