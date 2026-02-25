@@ -212,6 +212,87 @@ describe('parseMarkdownToBlocks', () => {
     })
   })
 
+  describe('html blocks', () => {
+    it('treats inline void tags as paragraphs', () => {
+      const blocks = parseMarkdownToBlocks('<br/>')
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0].type).toBe('paragraph')
+    })
+
+    it('parses a block-level void element', () => {
+      const blocks = parseMarkdownToBlocks('<hr>')
+      expect(blocks[0].type).toBe('html')
+    })
+
+    it('parses a multi-line div block', () => {
+      const md = '<div align="center">\n  <p>Hello</p>\n</div>'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0]).toMatchObject({ type: 'html', content: md, startLine: 1 })
+    })
+
+    it('parses a details/summary block', () => {
+      const md = '<details>\n<summary>Click me</summary>\nHidden content\n</details>'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0].type).toBe('html')
+      expect(blocks[0].content).toContain('</details>')
+    })
+
+    it('parses a picture element', () => {
+      const md = '<picture>\n  <source srcset="img.webp">\n  <img src="img.png" alt="test">\n</picture>'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0].type).toBe('html')
+    })
+
+    it('parses a single-line HTML comment', () => {
+      const blocks = parseMarkdownToBlocks('<!-- comment -->')
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0]).toMatchObject({ type: 'html', content: '<!-- comment -->', startLine: 1 })
+    })
+
+    it('parses a multi-line HTML comment', () => {
+      const md = '<!--\nMulti-line\ncomment\n-->'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0].type).toBe('html')
+      expect(blocks[0].content).toContain('-->')
+    })
+
+    it('parses a same-line open/close tag', () => {
+      const md = '<p align="center">Centered text</p>'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0]).toMatchObject({ type: 'html', content: md })
+    })
+
+    it('handles HTML block between paragraphs', () => {
+      const md = 'Before\n\n<div>Block</div>\n\nAfter'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(3)
+      expect(blocks[0].type).toBe('paragraph')
+      expect(blocks[1].type).toBe('html')
+      expect(blocks[2].type).toBe('paragraph')
+    })
+
+    it('does not affect HTML inside code blocks', () => {
+      const md = '```html\n<div>Not an HTML block</div>\n```'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0].type).toBe('code')
+      expect(blocks[0].content).toBe('<div>Not an HTML block</div>')
+    })
+
+    it('tracks line numbers correctly through HTML blocks', () => {
+      const md = '# Title\n\n<div>\n  Content\n</div>\n\nAfter'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks[0].startLine).toBe(1)
+      expect(blocks[1].startLine).toBe(3)
+      expect(blocks[2].startLine).toBe(7)
+    })
+  })
+
   describe('mixed content', () => {
     it('parses heading followed by paragraph', () => {
       const md = '# Title\n\nSome text here.'
