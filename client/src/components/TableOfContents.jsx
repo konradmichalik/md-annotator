@@ -208,7 +208,7 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
             : (annotationCountPerHeading.get(h.id) || 0)
 
           return (
-            <li key={h.id} className={`toc-li${isHidden ? ' toc-li--hidden' : ''}`}>
+            <li key={h.id} className={`toc-li${isHidden ? ' toc-li--hidden' : ''}`} inert={isHidden ? true : undefined}>
               <div className="toc-li-inner">
                 <div
                   className={`toc-row toc-row--level-${h.level}${activeId === h.id ? ' toc-row--active' : ''}`}
