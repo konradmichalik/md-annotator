@@ -964,6 +964,24 @@ body {
 .toolbar-submit:disabled { opacity: 0.5; cursor: default; }
 .toolbar-submit:hover:not(:disabled) { background: var(--border); }
 
+/* === Resize Handle === */
+.resize-handle {
+  width: 4px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: transparent;
+  transition: background var(--transition-fast);
+  position: relative;
+  z-index: 5;
+  margin-left: -2px;
+  margin-right: -2px;
+}
+
+.resize-handle:hover,
+.resize-handle:active {
+  background: var(--primary);
+}
+
 /* === Annotation Panel === */
 .annotation-panel {
   width: var(--sidebar-width);
@@ -973,7 +991,6 @@ body {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  transition: width var(--transition-normal);
 }
 
 .annotation-panel--collapsed {
@@ -1341,6 +1358,10 @@ body {
     flex-direction: row;
     padding: 0.5rem 1rem;
     max-height: none;
+  }
+
+  .resize-handle {
+    display: none;
   }
 
   .toc-panel {

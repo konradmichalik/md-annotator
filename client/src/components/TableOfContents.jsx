@@ -30,7 +30,7 @@ function buildSectionMap(blocks) {
   return sectionMap
 }
 
-export function TableOfContents({ blocks, annotations = [], collapsed }) {
+export function TableOfContents({ blocks, annotations = [], collapsed, width }) {
   const [activeId, setActiveId] = useState(null)
   const observerRef = useRef(null)
   const tocRef = useRef(null)
@@ -122,7 +122,7 @@ export function TableOfContents({ blocks, annotations = [], collapsed }) {
   }
 
   return (
-    <nav className="toc-panel" ref={tocRef}>
+    <nav className="toc-panel" ref={tocRef} style={width ? { width: `${width}px` } : undefined}>
       <div className="toc-header">
         <h2>Contents</h2>
       </div>

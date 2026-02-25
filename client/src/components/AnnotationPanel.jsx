@@ -16,7 +16,8 @@ export function AnnotationPanel({
   onDelete,
   onExport,
   onImport,
-  collapsed
+  collapsed,
+  width
 }) {
   const fileInputRef = useRef(null)
   const menuRef = useRef(null)
@@ -96,7 +97,7 @@ export function AnnotationPanel({
 
   if (!hasAnnotations) {
     return (
-      <aside className="annotation-panel">
+      <aside className="annotation-panel" style={width ? { width: `${width}px` } : undefined}>
         <input ref={fileInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileSelect} />
         <div className="panel-header">
           <h2>Annotations</h2>
@@ -109,7 +110,7 @@ export function AnnotationPanel({
   }
 
   return (
-    <aside className="annotation-panel">
+    <aside className="annotation-panel" style={width ? { width: `${width}px` } : undefined}>
       <input ref={fileInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileSelect} />
       <div className="panel-header">
         <h2>Annotations</h2>
