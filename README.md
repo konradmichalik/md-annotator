@@ -80,11 +80,12 @@ This opens the file in your browser. You can then:
 - **Select text** to see the annotation toolbar
 - **Delete** -- marks text as struck-through (red)
 - **Comment** -- highlights text (yellow) and adds a comment
+- **Insert** -- place the cursor to add new text at that position
+- **Global Comment** -- add general feedback via the "+" button in the annotation panel
+- **Annotate images & diagrams** -- click on images or Mermaid diagrams to comment or delete them
 - **View annotations** in the sidebar panel on the right
 - **Export** annotations as Markdown or JSON
 - **Approve** or **Submit Feedback** when done
-
-If no file argument is given, the command looks for `plan.md` in the current directory.
 
 ## 🔷 OpenCode Plugin
 
