@@ -196,6 +196,10 @@ export const Viewer = forwardRef(function Viewer({
         const source = sources[0]
         const doms = highlighter.getDoms(source.id)
         if (doms?.length > 0) {
+          // Clean up any active insertion marker
+          if (toolbarStateRef.current?.insertionMode) {
+            removeInsertionMarker(toolbarStateRef.current.element)
+          }
           if (pendingSourceRef.current) {
             highlighter.remove(pendingSourceRef.current.id)
             pendingSourceRef.current = null
@@ -208,6 +212,10 @@ export const Viewer = forwardRef(function Viewer({
 
     highlighter.on(Highlighter.event.CLICK, ({ id }) => {
       const current = toolbarStateRef.current
+      // Clean up any active insertion marker
+      if (current?.insertionMode) {
+        removeInsertionMarker(current.element)
+      }
       if (current?.mode === 'edit' && current?.annotation?.id === id) {
         setToolbarState(null)
         setRequestedToolbarStep(null)
