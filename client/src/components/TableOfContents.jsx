@@ -30,14 +30,57 @@ function buildSectionMap(blocks) {
   return sectionMap
 }
 
+/**
+ * For each heading, find all descendant headings (deeper level until same/higher level).
+ * Returns a map of headingId → array of descendant heading ids, and a set of parent ids.
+ */
+function buildDescendantsMap(headings) {
+  const descendantsMap = new Map()
+  const parentSet = new Set()
+
+  for (let i = 0; i < headings.length; i++) {
+    const descendants = []
+    for (let j = i + 1; j < headings.length; j++) {
+      if (headings[j].level <= headings[i].level) break
+      descendants.push(headings[j].id)
+    }
+    if (descendants.length > 0) {
+      descendantsMap.set(headings[i].id, descendants)
+      parentSet.add(headings[i].id)
+    }
+  }
+
+  return { descendantsMap, parentSet }
+}
+
 export function TableOfContents({ blocks, annotations = [], collapsed, width }) {
   const [activeId, setActiveId] = useState(null)
+  const [collapsedIds, setCollapsedIds] = useState(() => new Set())
   const observerRef = useRef(null)
   const tocRef = useRef(null)
 
-  const headings = blocks.filter(b => b.type === 'heading')
+  const headings = useMemo(() => blocks.filter(b => b.type === 'heading'), [blocks])
 
   const sectionMap = useMemo(() => buildSectionMap(blocks), [blocks])
+
+  const { descendantsMap, parentSet } = useMemo(
+    () => buildDescendantsMap(headings),
+    [headings]
+  )
+
+  // Heading IDs hidden because an ancestor is collapsed
+  const hiddenIds = useMemo(() => {
+    const hidden = new Set()
+    for (const id of collapsedIds) {
+      const descendants = descendantsMap.get(id)
+      if (descendants) {
+        for (const descId of descendants) {
+          hidden.add(descId)
+        }
+      }
+    }
+    return hidden
+  }, [collapsedIds, descendantsMap])
 
   const annotationCountPerHeading = useMemo(() => {
     if (annotations.length === 0) {
@@ -60,6 +103,34 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
     }
     return counts
   }, [sectionMap, annotations])
+
+  // Deep counts: heading's own annotation count + all descendants' counts
+  const deepAnnotationCounts = useMemo(() => {
+    const deep = new Map()
+    for (const [headingId, descendants] of descendantsMap) {
+      let total = annotationCountPerHeading.get(headingId) || 0
+      for (const descId of descendants) {
+        total += annotationCountPerHeading.get(descId) || 0
+      }
+      if (total > 0) {
+        deep.set(headingId, total)
+      }
+    }
+    return deep
+  }, [descendantsMap, annotationCountPerHeading])
+
+  const toggleCollapse = useCallback((headingId, e) => {
+    e.stopPropagation()
+    setCollapsedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(headingId)) {
+        next.delete(headingId)
+      } else {
+        next.add(headingId)
+      }
+      return next
+    })
+  }, [])
 
   useEffect(() => {
     if (collapsed || headings.length === 0) {
@@ -128,20 +199,42 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
       </div>
       <ul className="toc-list">
         {headings.map(h => {
-          const count = annotationCountPerHeading.get(h.id) || 0
+          const isHidden = hiddenIds.has(h.id)
+          const isParent = parentSet.has(h.id)
+          const isCollapsed = collapsedIds.has(h.id)
+          const count = isCollapsed
+            ? (deepAnnotationCounts.get(h.id) || 0)
+            : (annotationCountPerHeading.get(h.id) || 0)
+
           return (
-            <li key={h.id}>
-              <button
-                className={`toc-item toc-item--level-${h.level}${activeId === h.id ? ' toc-item--active' : ''}${count > 0 ? ' toc-item--annotated' : ''}`}
-                data-toc-id={h.id}
-                onClick={() => handleClick(h.id)}
-                title={h.content}
-              >
-                <span className="toc-item-text">{h.content}</span>
-                {count > 0 && (
-                  <span className="toc-badge">{count}</span>
-                )}
-              </button>
+            <li key={h.id} className={`toc-li${isHidden ? ' toc-li--hidden' : ''}`}>
+              <div className="toc-li-inner">
+                <button
+                  className={`toc-item toc-item--level-${h.level}${activeId === h.id ? ' toc-item--active' : ''}${count > 0 ? ' toc-item--annotated' : ''}`}
+                  data-toc-id={h.id}
+                  onClick={() => handleClick(h.id)}
+                  aria-expanded={isParent ? !isCollapsed : undefined}
+                  title={h.content}
+                >
+                  {isParent ? (
+                    <span
+                      className={`toc-toggle${isCollapsed ? '' : ' toc-toggle--expanded'}`}
+                      onClick={(e) => toggleCollapse(h.id, e)}
+                      aria-hidden="true"
+                    >
+                      <svg viewBox="0 0 16 16" width="10" height="10">
+                        <path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                  ) : (
+                    <span className="toc-toggle toc-toggle--placeholder" aria-hidden="true" />
+                  )}
+                  <span className="toc-item-text">{h.content}</span>
+                  {count > 0 && (
+                    <span className="toc-badge">{count}</span>
+                  )}
+                </button>
+              </div>
             </li>
           )
         })}
