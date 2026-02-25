@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
-export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, requestedStep: requestedStepProp, editAnnotation, elementMode }) {
+export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, requestedStep: requestedStepProp, editAnnotation, elementMode, insertionMode }) {
   const [step, setStep] = useState('menu')
   const [inputValue, setInputValue] = useState('')
   const [position, setPosition] = useState(null)
@@ -15,6 +15,9 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
     if (editAnnotation) {
       setStep('menu')
       setInputValue(editAnnotation.text || '')
+    } else if (insertionMode) {
+      setStep('menu')
+      setInputValue('')
     } else if (requestedStepProp) {
       setStep('input')
       setInputValue('')
@@ -22,7 +25,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
       setStep('menu')
       setInputValue('')
     }
-  }, [highlightElement, requestedStepProp, editAnnotation, elementMode])
+  }, [highlightElement, requestedStepProp, editAnnotation, elementMode, insertionMode])
 
   // Type-to-comment: any printable key in menu state transitions to input
   useEffect(() => {
@@ -90,7 +93,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
   const handleSubmit = (e) => {
     e.preventDefault()
     if (inputValue.trim()) {
-      onAnnotate('COMMENT', inputValue)
+      onAnnotate(insertionMode ? 'INSERTION' : 'COMMENT', inputValue)
     }
   }
 
@@ -129,6 +132,29 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
                 onClick={onClose}
                 className="toolbar-btn toolbar-btn-cancel"
                 title="Close"
+              >
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </>
+          ) : insertionMode ? (
+            <>
+              <button
+                onClick={() => setStep('input')}
+                className="toolbar-btn toolbar-btn-insert"
+                title="Insert text here"
+              >
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m-8-8h16" />
+                </svg>
+                <span className="toolbar-label">Insert</span>
+              </button>
+              <span className="toolbar-divider" />
+              <button
+                onClick={onClose}
+                className="toolbar-btn toolbar-btn-cancel"
+                title="Cancel"
               >
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -176,7 +202,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
             ref={inputRef}
             rows={1}
             className="toolbar-textarea"
-            placeholder="Add a comment..."
+            placeholder={insertionMode ? "Text to insert..." : "Add a comment..."}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={(e) => {
@@ -185,7 +211,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
               }
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && inputValue.trim()) {
                 e.preventDefault()
-                onAnnotate('COMMENT', inputValue)
+                onAnnotate(insertionMode ? 'INSERTION' : 'COMMENT', inputValue)
               }
             }}
           />

@@ -51,6 +51,13 @@ function formatAnnotation(ann, block, heading) {
     output += `Comment on (${lineRef})\n`
     output += `\`\`\`\n${ann.originalText}\n\`\`\`\n`
     output += `> ${ann.text.replace(/\n/g, '\n> ')}\n`
+  } else if (ann.type === 'INSERTION') {
+    output += `Insert text (${lineRef})\n`
+    if (ann.afterContext) {
+      output += `After: \`${ann.afterContext}\`\n`
+    }
+    output += `\`\`\`\n${ann.text}\n\`\`\`\n`
+    output += `> User wants this text inserted at this point in the document.\n`
   }
 
   return output + '\n'
@@ -88,8 +95,17 @@ export function exportMultiFileFeedback(files) {
   for (const file of filesWithAnnotations) {
     output += `---\n\n## File: ${file.path}\n\n`
     const sorted = sortAnnotations(file.annotations, file.blocks)
+    const globalComments = sorted.filter(a => a.targetType === 'global')
+    const regularAnnotations = sorted.filter(a => a.targetType !== 'global')
 
-    for (const ann of sorted) {
+    if (globalComments.length > 0) {
+      output += `### General Feedback\n\n`
+      globalComments.forEach(ann => {
+        output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n\n`
+      })
+    }
+
+    for (const ann of regularAnnotations) {
       const block = file.blocks.find(blk => blk.id === ann.blockId)
       output += formatAnnotation(ann, block, `### ${globalIndex}.`)
       globalIndex++
@@ -109,11 +125,20 @@ export function exportFeedback(annotations, blocks) {
   }
 
   const sorted = sortAnnotations(annotations, blocks)
+  const globalComments = sorted.filter(a => a.targetType === 'global')
+  const regularAnnotations = sorted.filter(a => a.targetType !== 'global')
 
   let output = `# Annotation Feedback\n\n`
   output += `${annotations.length} annotation${annotations.length > 1 ? 's' : ''}:\n\n`
 
-  sorted.forEach((ann, index) => {
+  if (globalComments.length > 0) {
+    output += `## General Feedback\n\n`
+    globalComments.forEach(ann => {
+      output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n\n`
+    })
+  }
+
+  regularAnnotations.forEach((ann, index) => {
     const block = blocks.find(blk => blk.id === ann.blockId)
     output += formatAnnotation(ann, block, `## ${index + 1}.`)
   })

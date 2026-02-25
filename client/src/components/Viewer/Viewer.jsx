@@ -8,6 +8,14 @@ import { CodeBlock } from './CodeBlock.jsx'
 
 const MD_LINK_PATTERN = /\.(?:md|markdown|mdown|mkd)(?:[#?]|$)/i
 
+function removeInsertionMarker(el) {
+  const parent = el?.parentNode
+  if (parent) {
+    parent.removeChild(el)
+    parent.normalize()
+  }
+}
+
 export const Viewer = forwardRef(function Viewer({
   blocks,
   annotations,
@@ -88,8 +96,8 @@ export const Viewer = forwardRef(function Viewer({
       })
     },
     restoreHighlight(ann) {
-      // Skip element annotations — they have no web-highlighter DOM
-      if (ann.targetType === 'image' || ann.targetType === 'diagram') {return true}
+      // Skip element/global/insertion annotations — they have no web-highlighter DOM
+      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'global' || ann.type === 'INSERTION') {return true}
       const highlighter = highlighterRef.current
       if (!highlighter) {return false}
       const wasRestoring = isRestoringRef.current
@@ -221,7 +229,71 @@ export const Viewer = forwardRef(function Viewer({
 
     highlighter.run()
 
-    return () => highlighter.dispose()
+    // Insertion mode: detect zero-width cursor placement
+    const handleCursorClick = (e) => {
+      // Don't interfere with active toolbar or pending highlight
+      if (toolbarStateRef.current) {return}
+      if (pendingSourceRef.current) {return}
+      if (isRestoringRef.current) {return}
+
+      // Ignore clicks on toolbar, buttons, code blocks, images, diagrams
+      if (e.target.closest('.annotation-toolbar, button, .code-copy-btn, .annotatable-image-wrapper, .mermaid-diagram, .mermaid-controls')) {return}
+
+      requestAnimationFrame(() => {
+        // If web-highlighter created a pending source in the meantime, don't interfere
+        if (pendingSourceRef.current || toolbarStateRef.current) {return}
+
+        const sel = window.getSelection()
+        if (!sel || !sel.isCollapsed || sel.rangeCount === 0) {return}
+
+        const range = sel.getRangeAt(0)
+
+        // Find containing block
+        let blockEl = range.startContainer
+        if (blockEl.nodeType === Node.TEXT_NODE) {blockEl = blockEl.parentElement}
+        while (blockEl && !blockEl.dataset?.blockId) {
+          blockEl = blockEl.parentElement
+        }
+        if (!blockEl || !containerRef.current.contains(blockEl)) {return}
+
+        // Don't trigger on existing highlights
+        if (range.startContainer.parentElement?.closest('[data-highlight-id]')) {return}
+
+        const blockId = blockEl.dataset.blockId
+        const blockText = blockEl.textContent || ''
+
+        // Calculate character offset
+        const preRange = document.createRange()
+        preRange.selectNodeContents(blockEl)
+        preRange.setEnd(range.startContainer, range.startOffset)
+        const offset = preRange.toString().length
+
+        // Get context (~50 chars before cursor)
+        const afterContext = blockText.slice(Math.max(0, offset - 50), offset)
+
+        // Create a temporary zero-width marker for toolbar positioning
+        const marker = document.createElement('span')
+        marker.className = 'insertion-marker-temp'
+        marker.textContent = '\u200B' // zero-width space
+        range.insertNode(marker)
+
+        setToolbarState({
+          element: marker,
+          insertionMode: true,
+          insertionData: { blockId, offset, afterContext }
+        })
+      })
+    }
+
+    const container = containerRef.current
+    container.addEventListener('click', handleCursorClick)
+
+    return () => {
+      // Clean up any lingering insertion markers
+      container?.querySelectorAll('.insertion-marker-temp').forEach(removeInsertionMarker)
+      container?.removeEventListener('click', handleCursorClick)
+      highlighter.dispose()
+    }
   }, [onSelectAnnotation])
 
   useEffect(() => {
@@ -246,6 +318,31 @@ export const Viewer = forwardRef(function Viewer({
 
   const handleAnnotate = useCallback((type, text) => {
     if (!toolbarState) {return}
+
+    // Insertion annotations bypass web-highlighter
+    if (toolbarState.insertionMode) {
+      const { blockId, offset, afterContext } = toolbarState.insertionData
+      const newAnnotation = {
+        id: crypto.randomUUID(),
+        blockId,
+        startOffset: offset,
+        endOffset: offset,
+        type: 'INSERTION',
+        text: text || '',
+        afterContext,
+        originalText: '',
+        createdAt: Date.now(),
+        startMeta: null,
+        endMeta: null
+      }
+      // Remove temporary marker and normalize DOM
+      removeInsertionMarker(toolbarState.element)
+      onAddAnnotationRef.current(newAnnotation)
+      setToolbarState(null)
+      setRequestedToolbarStep(null)
+      window.getSelection()?.removeAllRanges()
+      return
+    }
 
     // Element annotations (image/diagram) bypass web-highlighter
     if (toolbarState.elementMode) {
@@ -295,7 +392,10 @@ export const Viewer = forwardRef(function Viewer({
   }, [toolbarState])
 
   const handleToolbarClose = useCallback(() => {
-    if (!toolbarState?.elementMode && toolbarState?.mode !== 'edit' && toolbarState?.source && highlighterRef.current) {
+    // Clean up insertion marker and normalize DOM
+    if (toolbarState?.insertionMode) {
+      removeInsertionMarker(toolbarState.element)
+    } else if (!toolbarState?.elementMode && toolbarState?.mode !== 'edit' && toolbarState?.source && highlighterRef.current) {
       highlighterRef.current.remove(toolbarState.source.id)
     }
     pendingSourceRef.current = null
@@ -450,6 +550,7 @@ export const Viewer = forwardRef(function Viewer({
           requestedStep={requestedToolbarStep}
           editAnnotation={toolbarState?.mode === 'edit' ? toolbarState.annotation : null}
           elementMode={toolbarState?.elementMode || false}
+          insertionMode={toolbarState?.insertionMode || false}
         />
       </article>
     </div>

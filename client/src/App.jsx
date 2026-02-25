@@ -102,19 +102,21 @@ export default function App() {
     if (!lastAction || lastAction === prevLastActionRef.current) {return}
     prevLastActionRef.current = lastAction
 
-    const isElement = (ann) => ann?.targetType === 'image' || ann?.targetType === 'diagram'
+    const hasNoHighlighter = (ann) =>
+      ann?.targetType === 'image' || ann?.targetType === 'diagram' ||
+      ann?.targetType === 'global' || ann?.type === 'INSERTION'
 
     if (lastAction.type === 'delete') {
-      if (!isElement(lastAction.annotation)) {
+      if (!hasNoHighlighter(lastAction.annotation)) {
         viewerRef.current?.removeHighlight(lastAction.annotation.id)
       }
     } else if (lastAction.type === 'edit') {
-      if (!isElement(lastAction.updated)) {
+      if (!hasNoHighlighter(lastAction.updated)) {
         viewerRef.current?.updateHighlightType(lastAction.updated.id, lastAction.updated.type)
       }
     } else if (lastAction.type === 'undo') {
       const { entry } = lastAction
-      if (isElement(entry.annotation)) {/* no-op for element annotations */}
+      if (hasNoHighlighter(entry.annotation)) {/* no-op for element annotations */}
       else if (entry.action === 'add') {
         viewerRef.current?.removeHighlight(entry.annotation.id)
       } else if (entry.action === 'delete') {
@@ -124,7 +126,7 @@ export default function App() {
       }
     } else if (lastAction.type === 'redo') {
       const { entry } = lastAction
-      if (isElement(entry.annotation)) {/* no-op for element annotations */}
+      if (hasNoHighlighter(entry.annotation)) {/* no-op for element annotations */}
       else if (entry.action === 'add') {
         viewerRef.current?.restoreHighlight(entry.annotation)
       } else if (entry.action === 'delete') {
@@ -139,6 +141,7 @@ export default function App() {
     localStorage.setItem('md-annotator-theme', theme)
     return applyTheme(theme)
   }, [theme])
+
 
   useEffect(() => {
     localStorage.setItem('md-annotator-sidebar-collapsed', sidebarCollapsed)
@@ -271,6 +274,28 @@ export default function App() {
     setSidebarCollapsed(false)
   }, [annDispatch])
 
+  const handleAddGlobalComment = useCallback(() => {
+    const ann = {
+      id: crypto.randomUUID(),
+      blockId: '',
+      startOffset: 0,
+      endOffset: 0,
+      type: 'COMMENT',
+      targetType: 'global',
+      text: '',
+      originalText: '',
+      createdAt: Date.now(),
+      startMeta: null,
+      endMeta: null
+    }
+    annDispatch({ type: 'ADD', annotation: ann })
+    setSidebarCollapsed(false)
+  }, [annDispatch])
+
+  const handleEditGlobalComment = useCallback((id, text) => {
+    annDispatch({ type: 'EDIT', id, annotationType: 'COMMENT', text })
+  }, [annDispatch])
+
   const handleDeleteAnnotation = useCallback((id) => {
     annDispatch({ type: 'DELETE', id })
     setSelectedAnnotationId(prev => prev === id ? null : prev)
@@ -282,11 +307,16 @@ export default function App() {
 
   const handlePanelEdit = useCallback((id) => {
     const ann = annotations.find(a => a.id === id)
-    if (ann) {
-      viewerRef.current?.openEditToolbar(ann)
+    if (!ann) {return}
+    // Global comments and insertions have no highlight DOM — editing is handled inline in the panel
+    if (ann.targetType === 'global' || ann.type === 'INSERTION') {
       setSelectedAnnotationId(id)
       setSidebarCollapsed(false)
+      return
     }
+    viewerRef.current?.openEditToolbar(ann)
+    setSelectedAnnotationId(id)
+    setSidebarCollapsed(false)
   }, [annotations])
 
   const handleImportAnnotations = useCallback((jsonData) => {
@@ -720,6 +750,8 @@ export default function App() {
           onDelete={handleDeleteAnnotation}
           onExport={() => setExportModalOpen(true)}
           onImport={handleImportAnnotations}
+          onAddGlobalComment={handleAddGlobalComment}
+          onEditGlobalComment={handleEditGlobalComment}
           collapsed={sidebarCollapsed}
           width={panelWidth}
         />
