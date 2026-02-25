@@ -41,7 +41,9 @@ function buildDescendantsMap(headings) {
   for (let i = 0; i < headings.length; i++) {
     const descendants = []
     for (let j = i + 1; j < headings.length; j++) {
-      if (headings[j].level <= headings[i].level) break
+      if (headings[j].level <= headings[i].level) {
+        break
+      }
       descendants.push(headings[j].id)
     }
     if (descendants.length > 0) {
@@ -119,8 +121,7 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
     return deep
   }, [descendantsMap, annotationCountPerHeading])
 
-  const toggleCollapse = useCallback((headingId, e) => {
-    e.stopPropagation()
+  const toggleCollapse = useCallback((headingId) => {
     setCollapsedIds(prev => {
       const next = new Set(prev)
       if (next.has(headingId)) {
@@ -209,31 +210,35 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
           return (
             <li key={h.id} className={`toc-li${isHidden ? ' toc-li--hidden' : ''}`}>
               <div className="toc-li-inner">
-                <button
-                  className={`toc-item toc-item--level-${h.level}${activeId === h.id ? ' toc-item--active' : ''}${count > 0 ? ' toc-item--annotated' : ''}`}
+                <div
+                  className={`toc-row toc-row--level-${h.level}${activeId === h.id ? ' toc-row--active' : ''}`}
                   data-toc-id={h.id}
-                  onClick={() => handleClick(h.id)}
-                  aria-expanded={isParent ? !isCollapsed : undefined}
-                  title={h.content}
                 >
                   {isParent ? (
-                    <span
+                    <button
                       className={`toc-toggle${isCollapsed ? '' : ' toc-toggle--expanded'}`}
-                      onClick={(e) => toggleCollapse(h.id, e)}
-                      aria-hidden="true"
+                      onClick={() => toggleCollapse(h.id)}
+                      aria-expanded={!isCollapsed}
+                      aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${h.content}`}
                     >
                       <svg viewBox="0 0 16 16" width="10" height="10">
                         <path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
-                    </span>
+                    </button>
                   ) : (
                     <span className="toc-toggle toc-toggle--placeholder" aria-hidden="true" />
                   )}
-                  <span className="toc-item-text">{h.content}</span>
-                  {count > 0 && (
-                    <span className="toc-badge">{count}</span>
-                  )}
-                </button>
+                  <button
+                    className={`toc-item${count > 0 ? ' toc-item--annotated' : ''}`}
+                    onClick={() => handleClick(h.id)}
+                    title={h.content}
+                  >
+                    <span className="toc-item-text">{h.content}</span>
+                    {count > 0 && (
+                      <span className="toc-badge">{count}</span>
+                    )}
+                  </button>
+                </div>
               </div>
             </li>
           )
