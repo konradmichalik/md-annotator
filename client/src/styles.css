@@ -159,7 +159,7 @@ body {
 .app-logo {
   height: 1.125rem;
   width: auto;
-  fill: currentColor;
+  fill: currentcolor;
   flex-shrink: 0;
   transform: translateY(-3px);
 }
