@@ -201,10 +201,16 @@ export function parseMarkdownToBlocks(markdown) {
 
         if (!isSelfClosing && !isVoid && !hasSameLineClose) {
           const closePattern = new RegExp(`</${tagName}\\s*>`, 'i')
+          const openPattern = new RegExp(`<${tagName}[\\s>/]`, 'i')
+          let depth = 1
           i++
           while (i < lines.length) {
             htmlLines.push(lines[i])
-            if (closePattern.test(lines[i])) { break }
+            if (openPattern.test(lines[i])) { depth++ }
+            if (closePattern.test(lines[i])) {
+              depth--
+              if (depth === 0) { break }
+            }
             i++
           }
         }

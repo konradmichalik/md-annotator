@@ -291,6 +291,13 @@ describe('parseMarkdownToBlocks', () => {
       expect(blocks[1].startLine).toBe(3)
       expect(blocks[2].startLine).toBe(7)
     })
+
+    it('parses nested same-name HTML tags as a single block', () => {
+      const md = '<div>\n  <div>inner</div>\n</div>'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0]).toMatchObject({ type: 'html', content: md })
+    })
   })
 
   describe('mixed content', () => {
