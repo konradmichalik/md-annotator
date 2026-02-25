@@ -19,6 +19,14 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
 - **Tab bar** — switch between files with annotation count badges
 - **Per-file undo/redo** — each file has its own history
 
+## Screenshot
+
+Here is a preview of the annotation interface:
+
+![Annotation UI](./assets/placeholder-wide.svg)
+
+You can also see inline images like this: The logo ![Logo](./assets/placeholder-icon.svg) appears next to the title.
+
 ## Architecture
 
 ```mermaid

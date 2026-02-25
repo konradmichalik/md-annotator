@@ -103,7 +103,7 @@ export function AnnotationPanel({
           <span className="panel-badge">0</span>
           {moreMenu}
         </div>
-        <p className="panel-empty">Select text in the document to add annotations.</p>
+        <p className="panel-empty">Select text, click an image, or click a diagram to add annotations.</p>
       </aside>
     )
   }
@@ -117,19 +117,35 @@ export function AnnotationPanel({
         {moreMenu}
       </div>
       <ul className="panel-list">
-        {annotations.map(ann => (
+        {annotations.map(ann => {
+          const isElement = ann.targetType === 'image' || ann.targetType === 'diagram'
+          const badgeLabel = ann.type === 'DELETION' ? 'Delete' : 'Comment'
+          const badgeClass = ann.type.toLowerCase()
+
+          return (
           <li
             key={ann.id}
             className={`panel-item${ann.id === selectedAnnotationId ? ' selected' : ''} panel-item-${ann.type.toLowerCase()}`}
             onClick={() => {
               onSelect(ann.id)
-              const el = document.querySelector(`[data-highlight-id="${ann.id}"]`)
-              if (el) {el.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              if (isElement) {
+                let targetEl = null
+                if (ann.targetType === 'image') {
+                  targetEl = document.querySelector(`[data-block-id="${ann.blockId}"] .annotatable-image-wrapper[data-image-src="${CSS.escape(ann.imageSrc)}"]`)
+                } else if (ann.targetType === 'diagram') {
+                  targetEl = document.querySelector(`[data-block-id="${ann.blockId}"] .mermaid-diagram`)
+                    || document.querySelector(`[data-block-id="${ann.blockId}"]`)
+                }
+                if (targetEl) {targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              } else {
+                const el = document.querySelector(`[data-highlight-id="${ann.id}"]`)
+                if (el) {el.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              }
             }}
           >
             <div className="panel-item-header">
-              <span className={`panel-type-badge ${ann.type.toLowerCase()}`}>
-                {ann.type === 'DELETION' ? 'Delete' : 'Comment'}
+              <span className={`panel-type-badge ${badgeClass}`}>
+                {badgeLabel}
               </span>
               <div className="panel-item-actions">
                 <button
@@ -156,12 +172,35 @@ export function AnnotationPanel({
                 </button>
               </div>
             </div>
-            <p className="panel-original-text">"{ann.originalText.length > 80
-              ? ann.originalText.slice(0, 80) + '...'
-              : ann.originalText}"</p>
+            {ann.targetType === 'image' ? (
+              <p className="panel-original-text">
+                <span className="panel-element-icon">
+                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                </span>
+                {ann.imageAlt || ann.imageSrc}
+              </p>
+            ) : ann.targetType === 'diagram' ? (
+              <p className="panel-original-text">
+                <span className="panel-element-icon">
+                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-1zM7 10v4m0 0l5 3m-5-3l5-3"/>
+                  </svg>
+                </span>
+                {ann.originalText.split('\n')[0]}
+              </p>
+            ) : (
+              <p className="panel-original-text">"{ann.originalText.length > 80
+                ? ann.originalText.slice(0, 80) + '...'
+                : ann.originalText}"</p>
+            )}
             {ann.text && <p className="panel-comment-text">{ann.text}</p>}
           </li>
-        ))}
+          )
+        })}
       </ul>
     </aside>
   )

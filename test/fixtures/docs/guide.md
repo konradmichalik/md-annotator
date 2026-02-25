@@ -52,6 +52,10 @@ These links behave normally (open in new browser tab):
 - `[text](./image.png)` - Non-markdown files
 - `[text](#heading)` - Anchor links (scroll within page)
 
+## Workflow Diagram
+
+![Annotation workflow](../assets/placeholder-workflow.svg)
+
 ## Annotation Workflow
 
 1. **Select text** in the viewer

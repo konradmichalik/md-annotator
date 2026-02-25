@@ -618,6 +618,37 @@ body {
   margin: 0.5rem 0;
 }
 
+/* === Annotatable Images === */
+.annotatable-image-wrapper {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: box-shadow var(--transition-fast);
+}
+
+.annotatable-image-wrapper .inline-image {
+  margin: 0;
+  display: block;
+}
+
+.annotatable-image-wrapper:hover {
+  box-shadow: 0 0 0 2px var(--comment-border);
+}
+
+.annotatable-image-wrapper.annotated-comment {
+  box-shadow: 0 0 0 2px var(--comment-border);
+}
+
+.annotatable-image-wrapper.annotated-deletion {
+  box-shadow: 0 0 0 2px var(--deletion-text);
+}
+
+.annotatable-image-wrapper.annotated-deletion .inline-image {
+  opacity: 0.5;
+}
+
+
 /* === Code Blocks === */
 .block-code-wrapper {
   position: relative;
@@ -760,6 +791,20 @@ body {
   justify-content: center;
   user-select: none;
   cursor: grab;
+  transition: box-shadow var(--transition-fast);
+}
+
+.mermaid-diagram:hover {
+  box-shadow: inset 0 0 0 2px var(--comment-border);
+}
+
+.mermaid-diagram.annotated-comment {
+  box-shadow: inset 0 0 0 2px var(--comment-border);
+}
+
+.mermaid-diagram.annotated-deletion {
+  box-shadow: inset 0 0 0 2px var(--deletion-text);
+  opacity: 0.5;
 }
 
 .mermaid-error {
@@ -1166,6 +1211,13 @@ body {
   font-size: 0.8125rem;
   color: var(--text);
   line-height: 1.4;
+}
+
+.panel-element-icon {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-right: 0.25rem;
+  color: var(--comment-border);
 }
 
 /* === Table of Contents === */

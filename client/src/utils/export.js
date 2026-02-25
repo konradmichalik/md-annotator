@@ -26,8 +26,36 @@ export function formatAnnotationsForExport(annotations, blocks, filePath) {
   sorted.forEach((ann, index) => {
     const block = blocks.find(blk => blk.id === ann.blockId)
     const blockStartLine = block?.startLine || 1
-    const blockContent = block?.content || ''
 
+    // Element-level annotations
+    if (ann.targetType === 'image') {
+      const isDeletion = ann.type === 'DELETION'
+      const label = isDeletion ? 'Remove image' : 'Comment on image'
+      output += `## ${index + 1}. ${label} (Line ${blockStartLine})\n\n`
+      output += `Image: \`${ann.originalText}\`\n\n`
+      if (ann.imageAlt) { output += `Alt text: "${ann.imageAlt}"\n\n` }
+      if (ann.imageSrc) { output += `Source: ${ann.imageSrc}\n\n` }
+      if (isDeletion) {
+        output += `> User wants this image removed from the document.\n\n`
+      } else {
+        output += `> ${ann.text ?? ''}\n\n`
+      }
+      return
+    }
+    if (ann.targetType === 'diagram') {
+      const isDeletion = ann.type === 'DELETION'
+      const label = isDeletion ? 'Remove Mermaid diagram' : 'Comment on Mermaid diagram'
+      output += `## ${index + 1}. ${label} (Line ${blockStartLine})\n\n`
+      output += `\`\`\`mermaid\n${block?.content || ann.originalText}\n\`\`\`\n\n`
+      if (isDeletion) {
+        output += `> User wants this diagram removed from the document.\n\n`
+      } else {
+        output += `> ${ann.text ?? ''}\n\n`
+      }
+      return
+    }
+
+    const blockContent = block?.content || ''
     const textBeforeSelection = blockContent.slice(0, ann.startOffset)
     const linesBeforeSelection = (textBeforeSelection.match(/\n/g) || []).length
     const startLine = blockStartLine + linesBeforeSelection
@@ -101,18 +129,24 @@ export function formatAnnotationsForJsonExport(annotations, filePath, contentHas
     filePath,
     contentHash,
     exportedAt: new Date().toISOString(),
-    annotations: annotations.map(ann => ({
-      id: ann.id,
-      blockId: ann.blockId,
-      startOffset: ann.startOffset,
-      endOffset: ann.endOffset,
-      type: ann.type,
-      text: ann.text,
-      originalText: ann.originalText,
-      createdAt: ann.createdAt,
-      startMeta: ann.startMeta,
-      endMeta: ann.endMeta
-    }))
+    annotations: annotations.map(ann => {
+      const base = {
+        id: ann.id,
+        blockId: ann.blockId,
+        startOffset: ann.startOffset,
+        endOffset: ann.endOffset,
+        type: ann.type,
+        text: ann.text,
+        originalText: ann.originalText,
+        createdAt: ann.createdAt,
+        startMeta: ann.startMeta,
+        endMeta: ann.endMeta
+      }
+      if (ann.targetType) { base.targetType = ann.targetType }
+      if (ann.imageAlt !== undefined) { base.imageAlt = ann.imageAlt }
+      if (ann.imageSrc !== undefined) { base.imageSrc = ann.imageSrc }
+      return base
+    })
   }
 }
 
@@ -128,7 +162,7 @@ export function downloadAsJsonFile(data, filename = 'annotations.json') {
  */
 const REQUIRED_ANNOTATION_FIELDS = [
   'id', 'blockId', 'startOffset', 'endOffset',
-  'type', 'originalText', 'startMeta', 'endMeta'
+  'type', 'originalText'
 ]
 
 export function validateAnnotationImport(data) {
@@ -168,11 +202,18 @@ export function validateAnnotationImport(data) {
     if (ann.text !== null && ann.text !== undefined && typeof ann.text !== 'string') {
       return { valid: false, error: 'Annotation text must be a string or null' }
     }
-    if (!ann.startMeta || typeof ann.startMeta !== 'object') {
-      return { valid: false, error: 'Annotation startMeta must be an object' }
+    if (ann.targetType && ann.targetType !== 'image' && ann.targetType !== 'diagram') {
+      return { valid: false, error: `Invalid annotation targetType: ${ann.targetType}` }
     }
-    if (!ann.endMeta || typeof ann.endMeta !== 'object') {
-      return { valid: false, error: 'Annotation endMeta must be an object' }
+    // Element annotations (image/diagram) have null startMeta/endMeta
+    const isElement = ann.targetType === 'image' || ann.targetType === 'diagram'
+    if (!isElement) {
+      if (!ann.startMeta || typeof ann.startMeta !== 'object') {
+        return { valid: false, error: 'Annotation startMeta must be an object' }
+      }
+      if (!ann.endMeta || typeof ann.endMeta !== 'object') {
+        return { valid: false, error: 'Annotation endMeta must be an object' }
+      }
     }
   }
   return {
