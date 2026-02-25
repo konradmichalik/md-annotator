@@ -202,6 +202,9 @@ export function validateAnnotationImport(data) {
     if (ann.text !== null && ann.text !== undefined && typeof ann.text !== 'string') {
       return { valid: false, error: 'Annotation text must be a string or null' }
     }
+    if (ann.targetType && ann.targetType !== 'image' && ann.targetType !== 'diagram') {
+      return { valid: false, error: `Invalid annotation targetType: ${ann.targetType}` }
+    }
     // Element annotations (image/diagram) have null startMeta/endMeta
     const isElement = ann.targetType === 'image' || ann.targetType === 'diagram'
     if (!isElement) {
@@ -211,9 +214,6 @@ export function validateAnnotationImport(data) {
       if (!ann.endMeta || typeof ann.endMeta !== 'object') {
         return { valid: false, error: 'Annotation endMeta must be an object' }
       }
-    }
-    if (ann.targetType && ann.targetType !== 'image' && ann.targetType !== 'diagram') {
-      return { valid: false, error: `Invalid annotation targetType: ${ann.targetType}` }
     }
   }
   return {
