@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useMemo } from 'react'
 
 const MoreIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -29,7 +29,13 @@ export function AnnotationPanel({
   const globalEditRef = useRef(null)
 
   const globalComments = annotations.filter(a => a.targetType === 'global')
-  const textAnnotations = annotations.filter(a => a.targetType !== 'global')
+  const textAnnotations = useMemo(() => {
+    const items = annotations.filter(a => a.targetType !== 'global')
+    return items.sort((a, b) =>
+      (a.blockId || '').localeCompare(b.blockId || '', undefined, { numeric: true })
+      || (a.startOffset || 0) - (b.startOffset || 0)
+    )
+  }, [annotations])
 
   const handleImportClick = () => {
     setMenuOpen(false)
