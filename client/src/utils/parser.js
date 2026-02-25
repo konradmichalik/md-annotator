@@ -173,7 +173,7 @@ export function parseMarkdownToBlocks(markdown) {
           i++
           while (i < lines.length) {
             htmlLines.push(lines[i])
-            if (lines[i].includes('-->')) break
+            if (lines[i].includes('-->')) { break }
             i++
           }
         }
@@ -204,7 +204,7 @@ export function parseMarkdownToBlocks(markdown) {
           i++
           while (i < lines.length) {
             htmlLines.push(lines[i])
-            if (closePattern.test(lines[i])) break
+            if (closePattern.test(lines[i])) { break }
             i++
           }
         }
