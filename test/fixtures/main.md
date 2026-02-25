@@ -23,9 +23,9 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
 
 Here is a preview of the annotation interface:
 
-![Annotation UI](https://placehold.co/800x400/2e3440/eceff4?text=md-annotator+UI)
+![Annotation UI](./assets/placeholder-wide.svg)
 
-You can also see inline images like this: The logo ![Logo](https://placehold.co/24x24/5e81ac/fff?text=M) appears next to the title.
+You can also see inline images like this: The logo ![Logo](./assets/placeholder-icon.svg) appears next to the title.
 
 ## Architecture
 

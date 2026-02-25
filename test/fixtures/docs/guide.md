@@ -54,7 +54,7 @@ These links behave normally (open in new browser tab):
 
 ## Workflow Diagram
 
-![Annotation workflow](https://placehold.co/600x300/a3be8c/2e3440?text=Select+→+Annotate+→+Submit)
+![Annotation workflow](../assets/placeholder-workflow.svg)
 
 ## Annotation Workflow
 
