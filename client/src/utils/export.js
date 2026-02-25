@@ -18,12 +18,22 @@ export function formatAnnotationsForExport(annotations, blocks, filePath) {
     return a.startOffset - b.startOffset
   })
 
+  const globalComments = sorted.filter(a => a.targetType === 'global')
+  const regularAnnotations = sorted.filter(a => a.targetType !== 'global')
+
   let output = `# Annotation Feedback\n\n`
   output += `**File:** \`${filePath}\`\n\n`
   output += `**Count:** ${annotations.length} annotation${annotations.length > 1 ? 's' : ''}\n\n`
   output += `---\n\n`
 
-  sorted.forEach((ann, index) => {
+  if (globalComments.length > 0) {
+    output += `## General Feedback\n\n`
+    globalComments.forEach(ann => {
+      output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n\n`
+    })
+  }
+
+  regularAnnotations.forEach((ann, index) => {
     const block = blocks.find(blk => blk.id === ann.blockId)
     const blockStartLine = block?.startLine || 1
 
@@ -38,7 +48,7 @@ export function formatAnnotationsForExport(annotations, blocks, filePath) {
       if (isDeletion) {
         output += `> User wants this image removed from the document.\n\n`
       } else {
-        output += `> ${ann.text ?? ''}\n\n`
+        output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n\n`
       }
       return
     }
@@ -50,7 +60,7 @@ export function formatAnnotationsForExport(annotations, blocks, filePath) {
       if (isDeletion) {
         output += `> User wants this diagram removed from the document.\n\n`
       } else {
-        output += `> ${ann.text ?? ''}\n\n`
+        output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n\n`
       }
       return
     }
@@ -73,6 +83,12 @@ export function formatAnnotationsForExport(annotations, blocks, filePath) {
       output += `Comment (${lineRef})\n\n`
       output += `\`\`\`\n${ann.originalText}\n\`\`\`\n\n`
       output += `> ${ann.text}\n\n`
+    } else if (ann.type === 'INSERTION') {
+      output += `Insert text (${lineRef})\n\n`
+      if (ann.afterContext) {
+        output += `After: \`${ann.afterContext}\`\n\n`
+      }
+      output += `\`\`\`\n${ann.text}\n\`\`\`\n\n`
     }
   })
 
@@ -145,6 +161,7 @@ export function formatAnnotationsForJsonExport(annotations, filePath, contentHas
       if (ann.targetType) { base.targetType = ann.targetType }
       if (ann.imageAlt !== undefined) { base.imageAlt = ann.imageAlt }
       if (ann.imageSrc !== undefined) { base.imageSrc = ann.imageSrc }
+      if (ann.afterContext !== undefined) { base.afterContext = ann.afterContext }
       return base
     })
   }
@@ -193,7 +210,7 @@ export function validateAnnotationImport(data) {
     if (ann.startOffset < 0 || ann.endOffset < 0 || ann.endOffset < ann.startOffset) {
       return { valid: false, error: 'Invalid annotation offset values' }
     }
-    if (ann.type !== 'DELETION' && ann.type !== 'COMMENT') {
+    if (ann.type !== 'DELETION' && ann.type !== 'COMMENT' && ann.type !== 'INSERTION') {
       return { valid: false, error: `Invalid annotation type: ${ann.type}` }
     }
     if (typeof ann.originalText !== 'string') {
@@ -202,12 +219,13 @@ export function validateAnnotationImport(data) {
     if (ann.text !== null && ann.text !== undefined && typeof ann.text !== 'string') {
       return { valid: false, error: 'Annotation text must be a string or null' }
     }
-    if (ann.targetType && ann.targetType !== 'image' && ann.targetType !== 'diagram') {
+    if (ann.targetType && ann.targetType !== 'image' && ann.targetType !== 'diagram' && ann.targetType !== 'global') {
       return { valid: false, error: `Invalid annotation targetType: ${ann.targetType}` }
     }
-    // Element annotations (image/diagram) have null startMeta/endMeta
-    const isElement = ann.targetType === 'image' || ann.targetType === 'diagram'
-    if (!isElement) {
+    // Element annotations (image/diagram/global) and insertions have null startMeta/endMeta
+    const isElement = ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'global'
+    const isInsertion = ann.type === 'INSERTION'
+    if (!isElement && !isInsertion) {
       if (!ann.startMeta || typeof ann.startMeta !== 'object') {
         return { valid: false, error: 'Annotation startMeta must be an object' }
       }

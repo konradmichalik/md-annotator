@@ -908,6 +908,8 @@ body {
 .toolbar-btn-delete:hover { background: var(--deletion-bg); }
 .toolbar-btn-comment { color: var(--comment-border); }
 .toolbar-btn-comment:hover { background: var(--comment-bg); }
+.toolbar-btn-insert { color: #88c0d0; }
+.toolbar-btn-insert:hover { background: rgb(136 192 208 / 12%); }
 .toolbar-btn-cancel { color: var(--text-muted); }
 .toolbar-btn-cancel:hover { background: var(--bg-secondary); }
 
@@ -1164,6 +1166,16 @@ body {
 .panel-type-badge.comment {
   background: var(--comment-bg);
   color: var(--comment-border);
+}
+
+.panel-type-badge.insertion {
+  background: rgb(136 192 208 / 15%);
+  color: #88c0d0;
+}
+
+.panel-type-badge.global {
+  background: rgb(94 129 172 / 15%);
+  color: var(--primary);
 }
 
 .panel-item-actions {
@@ -1692,4 +1704,67 @@ a:hover { opacity: 0.8; }
 .update-banner-notes:hover {
   background: var(--bg-secondary);
   color: var(--text);
+}
+
+/* === Global Comments Section === */
+.panel-global-section {
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-global-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem 0.25rem;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.panel-global-comment {
+  padding: 0.625rem 1rem;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.panel-global-comment:hover {
+  background: var(--bg-card);
+}
+
+.panel-global-comment.selected {
+  background: var(--bg);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.panel-global-textarea {
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  resize: vertical;
+  min-height: 2.5rem;
+  outline: none;
+  margin-top: 0.25rem;
+}
+
+.panel-global-textarea:focus {
+  border-color: var(--primary);
+}
+
+/* === Insertion Marker === */
+.insertion-marker-temp {
+  display: inline;
+  border-left: 2px solid #88c0d0;
+  animation: insertion-blink 1s step-end infinite;
+  pointer-events: none;
+}
+
+@keyframes insertion-blink {
+  50% { opacity: 0; }
 }

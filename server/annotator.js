@@ -58,8 +58,20 @@ export async function startAnnotatorServer(options) {
     app.use(express.static(clientPath))
   }
 
-  // Serve static files from project directory (for images, etc.)
-  app.use(express.static(process.cwd()))
+  // Serve static files from markdown file directories (for relative images, etc.)
+  const servedDirs = new Set()
+  for (const fp of filePaths) {
+    const dir = dirname(fp)
+    if (!servedDirs.has(dir)) {
+      servedDirs.add(dir)
+      app.use(express.static(dir))
+    }
+  }
+
+  // Fallback: also serve from cwd for absolute-style paths
+  if (!servedDirs.has(process.cwd())) {
+    app.use(express.static(process.cwd()))
+  }
 
   // Health check
   app.get('/health', (_req, res) => {
