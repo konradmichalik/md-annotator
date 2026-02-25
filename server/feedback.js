@@ -3,6 +3,36 @@
  */
 function formatAnnotation(ann, block, heading) {
   const blockStartLine = block?.startLine || 1
+
+  // Element-level annotations (image or diagram)
+  if (ann.targetType === 'image') {
+    const isDeletion = ann.type === 'DELETION'
+    const label = isDeletion ? 'Remove image' : 'Comment on image'
+    let output = `${heading} ${label} (Line ${blockStartLine})\n`
+    output += `Image: \`${ann.originalText}\`\n`
+    if (ann.imageAlt) { output += `Alt text: "${ann.imageAlt}"\n` }
+    if (ann.imageSrc) { output += `Source: ${ann.imageSrc}\n` }
+    if (isDeletion) {
+      output += `> User wants this image removed from the document.\n`
+    } else {
+      output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n`
+    }
+    return output + '\n'
+  }
+
+  if (ann.targetType === 'diagram') {
+    const isDeletion = ann.type === 'DELETION'
+    const label = isDeletion ? 'Remove Mermaid diagram' : 'Comment on Mermaid diagram'
+    let output = `${heading} ${label} (Line ${blockStartLine})\n`
+    output += `\`\`\`mermaid\n${block?.content || ann.originalText}\n\`\`\`\n`
+    if (isDeletion) {
+      output += `> User wants this diagram removed from the document.\n`
+    } else {
+      output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n`
+    }
+    return output + '\n'
+  }
+
   const blockContent = block?.content || ''
   const textBeforeSelection = blockContent.slice(0, ann.startOffset)
   const linesBeforeSelection = (textBeforeSelection.match(/\n/g) || []).length
