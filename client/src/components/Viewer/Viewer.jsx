@@ -340,13 +340,13 @@ export const Viewer = forwardRef(function Viewer({
   // Computed sets for annotated elements
   const annotatedImages = useMemo(() => {
     const map = new Map()
-    annotations.filter(a => a.targetType === 'image').forEach(a => map.set(`${a.blockId}::${a.imageSrc}`, a.type))
+    annotations.filter(a => a.targetType === 'image').forEach(a => { map.set(`${a.blockId}::${a.imageSrc}`, a.type) })
     return map
   }, [annotations])
 
   const annotatedDiagramBlocks = useMemo(() => {
     const map = new Map()
-    annotations.filter(a => a.targetType === 'diagram').forEach(a => map.set(a.blockId, a.type))
+    annotations.filter(a => a.targetType === 'diagram').forEach(a => { map.set(a.blockId, a.type) })
     return map
   }, [annotations])
 
