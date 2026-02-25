@@ -20,9 +20,7 @@ describe('config', () => {
     expect(config.jsonLimit).toBe('10mb')
   })
 
-  it('browser defaults to null when env not set', () => {
-    if (!process.env.MD_ANNOTATOR_BROWSER) {
-      expect(config.browser).toBeNull()
-    }
+  it.skipIf(process.env.MD_ANNOTATOR_BROWSER)('browser defaults to null when env not set', () => {
+    expect(config.browser).toBeNull()
   })
 })

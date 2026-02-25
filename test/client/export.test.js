@@ -89,6 +89,7 @@ describe('formatAnnotationsForJsonExport', () => {
     expect(exported.originalText).toBe('Hello')
     expect(exported.startMeta).toBeDefined()
     expect(exported.endMeta).toBeDefined()
+    expect(exported.createdAt).toBe('2024-01-01T00:00:00Z')
   })
 })
 

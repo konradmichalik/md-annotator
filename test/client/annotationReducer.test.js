@@ -264,9 +264,13 @@ describe('annotationReducer', () => {
 
   describe('immutability', () => {
     it('does not mutate state on ADD', () => {
-      const state = { ...initialAnnotationState }
-      const frozen = Object.freeze(state)
-      expect(() => annotationReducer(frozen, { type: 'ADD', annotation: makeAnnotation() })).not.toThrow()
+      const state = Object.freeze({
+        annotations: Object.freeze([]),
+        history: Object.freeze([]),
+        redo: Object.freeze([]),
+        lastAction: null
+      })
+      expect(() => annotationReducer(state, { type: 'ADD', annotation: makeAnnotation() })).not.toThrow()
     })
   })
 })

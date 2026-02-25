@@ -96,6 +96,14 @@ describe('parseMarkdownToBlocks', () => {
       expect(blocks).toHaveLength(1)
       expect(blocks[0].content).toBe('')
     })
+
+    it('handles unclosed code block gracefully', () => {
+      const md = '```js\nconst x = 1'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0].type).toBe('code')
+      expect(blocks[0].content).toBe('const x = 1')
+    })
   })
 
   describe('list items', () => {
