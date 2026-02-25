@@ -57,6 +57,10 @@ For local development, see the [Development](#development) section.
 ### 🔄 Update
 
 ```bash
+# Update the marketplace cache first
+claude plugin marketplace update md-annotator
+
+# Then update the plugin
 claude plugin update annotate@md-annotator
 ```
 

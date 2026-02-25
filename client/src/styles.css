@@ -591,6 +591,18 @@ body {
   margin: 2rem 0;
 }
 
+.block-html {
+  margin: 1rem 0;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+
+.block-html img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+}
+
 .inline-code {
   background: var(--bg-secondary);
   padding: 0.125rem 0.375rem;

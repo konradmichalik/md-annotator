@@ -1,3 +1,17 @@
+const HTML_BLOCK_TAGS = new Set([
+  'address', 'article', 'aside', 'blockquote', 'center', 'dd', 'details',
+  'dialog', 'dir', 'div', 'dl', 'dt', 'fieldset', 'figcaption', 'figure',
+  'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'hgroup',
+  'hr', 'iframe', 'main', 'menu', 'nav', 'ol', 'p', 'picture', 'pre',
+  'section', 'source', 'summary', 'table', 'tbody', 'td', 'template',
+  'tfoot', 'th', 'thead', 'tr', 'ul', 'video'
+])
+
+const HTML_VOID_TAGS = new Set([
+  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+  'link', 'meta', 'param', 'source', 'track', 'wbr'
+])
+
 /**
  * Simplified markdown parser that splits content into linear blocks.
  * Designed for predictable text-anchoring (not AST-based).
@@ -146,6 +160,70 @@ export function parseMarkdownToBlocks(markdown) {
         startLine: tableStartLine
       })
       continue
+    }
+
+    // HTML blocks
+    if (trimmed.startsWith('<')) {
+      // HTML comments
+      if (trimmed.startsWith('<!--')) {
+        flush()
+        const htmlStartLine = currentLineNum
+        const htmlLines = [line]
+        if (!trimmed.includes('-->')) {
+          i++
+          while (i < lines.length) {
+            htmlLines.push(lines[i])
+            if (lines[i].includes('-->')) { break }
+            i++
+          }
+        }
+        blocks.push({
+          id: `block-${currentId++}`,
+          type: 'html',
+          content: htmlLines.join('\n'),
+          order: currentId,
+          startLine: htmlStartLine
+        })
+        continue
+      }
+
+      // Block-level HTML tags
+      const tagMatch = trimmed.match(/^<([a-zA-Z][a-zA-Z0-9]*)[\s>/]/)
+      if (tagMatch && HTML_BLOCK_TAGS.has(tagMatch[1].toLowerCase())) {
+        flush()
+        const tagName = tagMatch[1].toLowerCase()
+        const htmlStartLine = currentLineNum
+        const htmlLines = [line]
+
+        const isSelfClosing = trimmed.endsWith('/>')
+        const isVoid = HTML_VOID_TAGS.has(tagName)
+        const hasSameLineClose = new RegExp(`</${tagName}\\s*>`, 'i').test(trimmed)
+
+        if (!isSelfClosing && !isVoid && !hasSameLineClose) {
+          const closePattern = new RegExp(`</${tagName}\\s*>`, 'i')
+          const openPattern = new RegExp(`<${tagName}[\\s>/]`, 'i')
+          let depth = 1
+          i++
+          while (i < lines.length) {
+            htmlLines.push(lines[i])
+            if (openPattern.test(lines[i])) { depth++ }
+            if (closePattern.test(lines[i])) {
+              depth--
+              if (depth === 0) { break }
+            }
+            i++
+          }
+        }
+
+        blocks.push({
+          id: `block-${currentId++}`,
+          type: 'html',
+          content: htmlLines.join('\n'),
+          order: currentId,
+          startLine: htmlStartLine
+        })
+        continue
+      }
     }
 
     // Empty lines separate paragraphs

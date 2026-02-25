@@ -29,6 +29,7 @@
   "license": "MIT",
   "dependencies": {
     "cors": "^2.8.5",
+    "dompurify": "^3.3.1",
     "express": "^4.21.0",
     "highlight.js": "^11.11.0",
     "mermaid": "^11.12.3",

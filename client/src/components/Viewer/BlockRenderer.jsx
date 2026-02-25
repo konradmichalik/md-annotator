@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify'
 import { InlineMarkdown } from './InlineMarkdown.jsx'
 
 export function slugify(text) {
@@ -86,6 +87,17 @@ export function BlockRenderer({ block, onImageClick, annotatedImages }) {
         </div>
       )
     }
+
+    case 'html':
+      return (
+        <div
+          className="block-html"
+          data-block-id={block.id}
+          dangerouslySetInnerHTML={{
+            __html: DOMPurify.sanitize(block.content)
+          }}
+        />
+      )
 
     case 'hr':
       return <hr className="block-hr" data-block-id={block.id} />
