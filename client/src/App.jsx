@@ -85,18 +85,26 @@ export default function App() {
   }, [activeFileIndex])
 
   // Handle DOM highlight side effects based on reducer lastAction
+  // Element annotations (image/diagram) have no web-highlighter DOM, so skip them
   useEffect(() => {
     const { lastAction } = activeAnnState
     if (!lastAction || lastAction === prevLastActionRef.current) {return}
     prevLastActionRef.current = lastAction
 
+    const isElement = (ann) => ann?.targetType === 'image' || ann?.targetType === 'diagram'
+
     if (lastAction.type === 'delete') {
-      viewerRef.current?.removeHighlight(lastAction.annotation.id)
+      if (!isElement(lastAction.annotation)) {
+        viewerRef.current?.removeHighlight(lastAction.annotation.id)
+      }
     } else if (lastAction.type === 'edit') {
-      viewerRef.current?.updateHighlightType(lastAction.updated.id, lastAction.updated.type)
+      if (!isElement(lastAction.updated)) {
+        viewerRef.current?.updateHighlightType(lastAction.updated.id, lastAction.updated.type)
+      }
     } else if (lastAction.type === 'undo') {
       const { entry } = lastAction
-      if (entry.action === 'add') {
+      if (isElement(entry.annotation)) {/* no-op for element annotations */}
+      else if (entry.action === 'add') {
         viewerRef.current?.removeHighlight(entry.annotation.id)
       } else if (entry.action === 'delete') {
         viewerRef.current?.restoreHighlight(entry.annotation)
@@ -105,7 +113,8 @@ export default function App() {
       }
     } else if (lastAction.type === 'redo') {
       const { entry } = lastAction
-      if (entry.action === 'add') {
+      if (isElement(entry.annotation)) {/* no-op for element annotations */}
+      else if (entry.action === 'add') {
         viewerRef.current?.restoreHighlight(entry.annotation)
       } else if (entry.action === 'delete') {
         viewerRef.current?.removeHighlight(entry.annotation.id)

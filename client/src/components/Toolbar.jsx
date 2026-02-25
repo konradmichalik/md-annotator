@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
-export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, requestedStep: requestedStepProp, editAnnotation }) {
+export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, requestedStep: requestedStepProp, editAnnotation, elementMode }) {
   const [step, setStep] = useState('menu')
   const [inputValue, setInputValue] = useState('')
   const [position, setPosition] = useState(null)
@@ -22,7 +22,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
       setStep('menu')
       setInputValue('')
     }
-  }, [highlightElement, requestedStepProp, editAnnotation])
+  }, [highlightElement, requestedStepProp, editAnnotation, elementMode])
 
   useEffect(() => {
     if (!highlightElement) {
@@ -34,7 +34,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
       const rect = highlightElement.getBoundingClientRect()
       const toolbarTop = rect.top - 48
 
-      if (step === 'menu' && (rect.bottom < 0 || rect.top > window.innerHeight)) {
+      if (rect.bottom < 0 || rect.top > window.innerHeight) {
         onClose()
         return
       }

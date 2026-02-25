@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, forwardRef, useImperativeHandle, useCallback } from 'react'
+import { useRef, useState, useEffect, useMemo, forwardRef, useImperativeHandle, useCallback } from 'react'
 import Highlighter from 'web-highlighter'
 import 'highlight.js/styles/github-dark.css'
 import { Toolbar } from '../Toolbar.jsx'
@@ -88,6 +88,8 @@ export const Viewer = forwardRef(function Viewer({
       })
     },
     restoreHighlight(ann) {
+      // Skip element annotations — they have no web-highlighter DOM
+      if (ann.targetType === 'image' || ann.targetType === 'diagram') {return true}
       const highlighter = highlighterRef.current
       if (!highlighter) {return false}
       const wasRestoring = isRestoringRef.current
@@ -129,6 +131,11 @@ export const Viewer = forwardRef(function Viewer({
       highlighter.addClass(type.toLowerCase(), id)
     },
     openEditToolbar(ann) {
+      // Route element annotations to the element-specific method
+      if (ann.targetType === 'image' || ann.targetType === 'diagram') {
+        this.openElementEditToolbar(ann)
+        return
+      }
       const highlighter = highlighterRef.current
       if (!highlighter) {return}
       if (pendingSourceRef.current) {
@@ -142,6 +149,24 @@ export const Viewer = forwardRef(function Viewer({
           setToolbarState({ element: doms[0], annotation: ann, mode: 'edit' })
         }, 300)
       }
+    },
+    openElementEditToolbar(ann) {
+      let targetEl = null
+      if (ann.targetType === 'image') {
+        targetEl = containerRef.current?.querySelector(
+          `[data-block-id="${ann.blockId}"] .annotatable-image-wrapper[data-image-src="${CSS.escape(ann.imageSrc)}"]`
+        )
+      } else if (ann.targetType === 'diagram') {
+        targetEl = containerRef.current?.querySelector(
+          `[data-block-id="${ann.blockId}"] .mermaid-diagram`
+        ) || containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
+      }
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setTimeout(() => {
+          setToolbarState({ element: targetEl, annotation: ann, mode: 'edit', elementMode: true })
+        }, 300)
+      }
     }
   }))
 
@@ -150,7 +175,7 @@ export const Viewer = forwardRef(function Viewer({
 
     const highlighter = new Highlighter({
       $root: containerRef.current,
-      exceptSelectors: ['.annotation-toolbar', 'button', '.code-copy-btn'],
+      exceptSelectors: ['.annotation-toolbar', 'button', '.code-copy-btn', '.annotatable-image-wrapper', '.mermaid-diagram', '.mermaid-controls'],
       wrapTag: 'mark',
       style: { className: 'annotation-highlight' }
     })
@@ -220,8 +245,38 @@ export const Viewer = forwardRef(function Viewer({
   }, [annotations])
 
   const handleAnnotate = useCallback((type, text) => {
+    if (!toolbarState) {return}
+
+    // Element annotations (image/diagram) bypass web-highlighter
+    if (toolbarState.elementMode) {
+      if (toolbarState.mode === 'edit') {
+        onEditAnnotationRef.current(toolbarState.annotation.id, type, text)
+      } else {
+        const { elementData } = toolbarState
+        const newAnnotation = {
+          id: crypto.randomUUID(),
+          blockId: elementData.blockId,
+          startOffset: 0,
+          endOffset: 0,
+          type,
+          targetType: elementData.targetType,
+          text: text || null,
+          originalText: elementData.originalText,
+          createdAt: Date.now(),
+          startMeta: null,
+          endMeta: null,
+          imageAlt: elementData.imageAlt,
+          imageSrc: elementData.imageSrc
+        }
+        onAddAnnotationRef.current(newAnnotation)
+      }
+      setToolbarState(null)
+      setRequestedToolbarStep(null)
+      return
+    }
+
     const highlighter = highlighterRef.current
-    if (!toolbarState || !highlighter) {return}
+    if (!highlighter) {return}
 
     if (toolbarState.mode === 'edit') {
       const { annotation } = toolbarState
@@ -240,7 +295,7 @@ export const Viewer = forwardRef(function Viewer({
   }, [toolbarState])
 
   const handleToolbarClose = useCallback(() => {
-    if (toolbarState?.mode !== 'edit' && toolbarState && highlighterRef.current) {
+    if (!toolbarState?.elementMode && toolbarState?.mode !== 'edit' && toolbarState?.source && highlighterRef.current) {
       highlighterRef.current.remove(toolbarState.source.id)
     }
     pendingSourceRef.current = null
@@ -282,6 +337,79 @@ export const Viewer = forwardRef(function Viewer({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [toolbarState, handleAnnotate, handleToolbarClose])
 
+  // Computed sets for annotated elements
+  const annotatedImages = useMemo(() => {
+    const map = new Map()
+    annotations.filter(a => a.targetType === 'image').forEach(a => map.set(`${a.blockId}::${a.imageSrc}`, a.type))
+    return map
+  }, [annotations])
+
+  const annotatedDiagramBlocks = useMemo(() => {
+    const map = new Map()
+    annotations.filter(a => a.targetType === 'diagram').forEach(a => map.set(a.blockId, a.type))
+    return map
+  }, [annotations])
+
+  const handleImageClick = useCallback(({ alt, src, blockId, element }) => {
+    // Close any pending text highlight
+    if (pendingSourceRef.current && highlighterRef.current) {
+      highlighterRef.current.remove(pendingSourceRef.current.id)
+      pendingSourceRef.current = null
+    }
+
+    // Check for existing annotation on this image
+    const existing = annotationsRef.current.find(
+      a => a.targetType === 'image' && a.blockId === blockId && a.imageSrc === src
+    )
+    if (existing) {
+      onSelectAnnotation(existing.id)
+      setToolbarState({ element, annotation: existing, mode: 'edit', elementMode: true })
+      setRequestedToolbarStep(null)
+    } else {
+      setToolbarState({
+        element,
+        elementMode: true,
+        elementData: {
+          targetType: 'image',
+          blockId,
+          imageAlt: alt,
+          imageSrc: src,
+          originalText: `![${alt}](${src})`
+        }
+      })
+      setRequestedToolbarStep(null)
+    }
+  }, [onSelectAnnotation])
+
+  const handleDiagramClick = useCallback(({ blockId, element, content }) => {
+    // Close any pending text highlight
+    if (pendingSourceRef.current && highlighterRef.current) {
+      highlighterRef.current.remove(pendingSourceRef.current.id)
+      pendingSourceRef.current = null
+    }
+
+    // Check for existing annotation on this diagram
+    const existing = annotationsRef.current.find(
+      a => a.targetType === 'diagram' && a.blockId === blockId
+    )
+    if (existing) {
+      onSelectAnnotation(existing.id)
+      setToolbarState({ element, annotation: existing, mode: 'edit', elementMode: true })
+      setRequestedToolbarStep(null)
+    } else {
+      setToolbarState({
+        element,
+        elementMode: true,
+        elementData: {
+          targetType: 'diagram',
+          blockId,
+          originalText: content
+        }
+      })
+      setRequestedToolbarStep(null)
+    }
+  }, [onSelectAnnotation])
+
   const handleLinkClick = useCallback((e) => {
     const anchor = e.target.closest('a[href]')
     if (!anchor) {return}
@@ -297,11 +425,21 @@ export const Viewer = forwardRef(function Viewer({
       <article ref={containerRef} className="viewer-article" onClick={handleLinkClick}>
         {blocks.map(block =>
           block.type === 'code' && block.language === 'mermaid' ? (
-            <MermaidBlock key={block.id} block={block} />
+            <MermaidBlock
+              key={block.id}
+              block={block}
+              onDiagramClick={handleDiagramClick}
+              annotationType={annotatedDiagramBlocks.get(block.id) || null}
+            />
           ) : block.type === 'code' ? (
             <CodeBlock key={block.id} block={block} />
           ) : (
-            <BlockRenderer key={block.id} block={block} />
+            <BlockRenderer
+              key={block.id}
+              block={block}
+              onImageClick={handleImageClick}
+              annotatedImages={annotatedImages}
+            />
           )
         )}
         <Toolbar
@@ -311,6 +449,7 @@ export const Viewer = forwardRef(function Viewer({
           onDelete={handleToolbarDelete}
           requestedStep={requestedToolbarStep}
           editAnnotation={toolbarState?.mode === 'edit' ? toolbarState.annotation : null}
+          elementMode={toolbarState?.elementMode || false}
         />
       </article>
     </div>

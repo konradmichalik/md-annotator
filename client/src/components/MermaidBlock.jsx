@@ -90,7 +90,7 @@ function applyView(svgEl, base, zoom, pan) {
   svgEl.setAttribute('viewBox', `${vbX} ${vbY} ${zoomedWidth} ${zoomedHeight}`)
 }
 
-export function MermaidBlock({ block }) {
+export function MermaidBlock({ block, onDiagramClick, annotationType }) {
   const containerRef = useRef(null)
   const [svg, setSvg] = useState('')
   const [error, setError] = useState(null)
@@ -252,6 +252,25 @@ export function MermaidBlock({ block }) {
     applyView(svgEl, base, zoom, panOffsetRef.current)
   }, [])
 
+  const handleMouseUp = useCallback((e) => {
+    if (!isDraggingRef.current) { return }
+    isDraggingRef.current = false
+    if (containerRef.current) { containerRef.current.style.cursor = 'grab' }
+
+    // Detect click (no significant drag) — only on mouseUp, not mouseLeave
+    if (e && dragStartRef.current) {
+      const dx = e.clientX - dragStartRef.current.x
+      const dy = e.clientY - dragStartRef.current.y
+      if (Math.abs(dx) < 5 && Math.abs(dy) < 5) {
+        onDiagramClick?.({
+          blockId: block.id,
+          element: containerRef.current,
+          content: block.content
+        })
+      }
+    }
+  }, [onDiagramClick, block.id, block.content])
+
   const stopDragging = useCallback(() => {
     if (!isDraggingRef.current) { return }
     isDraggingRef.current = false
@@ -338,11 +357,11 @@ export function MermaidBlock({ block }) {
       {!showSource && svg && (
         <div
           ref={containerRef}
-          className="mermaid-diagram"
+          className={`mermaid-diagram${annotationType === 'DELETION' ? ' annotated-deletion' : annotationType ? ' annotated-comment' : ''}`}
           dangerouslySetInnerHTML={{ __html: svg }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
-          onMouseUp={stopDragging}
+          onMouseUp={handleMouseUp}
           onMouseLeave={stopDragging}
         />
       )}

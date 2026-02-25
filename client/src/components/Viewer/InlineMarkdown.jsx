@@ -9,7 +9,7 @@ function handleAnchorClick(e, href) {
   }
 }
 
-export function InlineMarkdown({ text }) {
+export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId }) {
   const parts = []
   let remaining = text
   let key = 0
@@ -39,8 +39,22 @@ export function InlineMarkdown({ text }) {
     // Images: ![alt](url)
     match = remaining.match(/^!\[([^\]]*)\]\(([^)]+)\)/)
     if (match) {
+      const imgAlt = match[1]
+      const imgSrc = match[2]
+      const annotationType = annotatedImages?.get(`${blockId}::${imgSrc}`)
+      const annClass = annotationType === 'DELETION' ? ' annotated-deletion' : annotationType ? ' annotated-comment' : ''
       parts.push(
-        <img key={key++} src={match[2]} alt={match[1]} className="inline-image" />
+        <span
+          key={key++}
+          className={`annotatable-image-wrapper${annClass}`}
+          data-image-src={imgSrc}
+          onClick={(e) => {
+            e.stopPropagation()
+            onImageClick?.({ alt: imgAlt, src: imgSrc, blockId, element: e.currentTarget })
+          }}
+        >
+          <img src={imgSrc} alt={imgAlt} className="inline-image annotatable-image" />
+        </span>
       )
       remaining = remaining.slice(match[0].length)
       continue

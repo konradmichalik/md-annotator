@@ -28,17 +28,17 @@ function parseTableContent(content) {
   return { headers, rows }
 }
 
-export function BlockRenderer({ block }) {
+export function BlockRenderer({ block, onImageClick, annotatedImages }) {
   switch (block.type) {
     case 'heading': {
       const Tag = `h${block.level || 1}`
-      return <Tag id={slugify(block.content)} className={`heading heading-${block.level || 1}`} data-block-id={block.id}><InlineMarkdown text={block.content} /></Tag>
+      return <Tag id={slugify(block.content)} className={`heading heading-${block.level || 1}`} data-block-id={block.id}><InlineMarkdown text={block.content} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={block.id} /></Tag>
     }
 
     case 'blockquote':
       return (
         <blockquote className="block-blockquote" data-block-id={block.id}>
-          <InlineMarkdown text={block.content} />
+          <InlineMarkdown text={block.content} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={block.id} />
         </blockquote>
       )
 
@@ -55,7 +55,7 @@ export function BlockRenderer({ block }) {
               : bullet}
           </span>
           <span className={isCheckbox && block.checked ? 'checked-text' : ''}>
-            <InlineMarkdown text={block.content} />
+            <InlineMarkdown text={block.content} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={block.id} />
           </span>
         </div>
       )
@@ -69,7 +69,7 @@ export function BlockRenderer({ block }) {
             <thead>
               <tr>
                 {headers.map((header, i) => (
-                  <th key={i}><InlineMarkdown text={header} /></th>
+                  <th key={i}><InlineMarkdown text={header} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={block.id} /></th>
                 ))}
               </tr>
             </thead>
@@ -77,7 +77,7 @@ export function BlockRenderer({ block }) {
               {rows.map((row, rowIdx) => (
                 <tr key={rowIdx}>
                   {row.map((cell, cellIdx) => (
-                    <td key={cellIdx}><InlineMarkdown text={cell} /></td>
+                    <td key={cellIdx}><InlineMarkdown text={cell} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={block.id} /></td>
                   ))}
                 </tr>
               ))}
@@ -93,7 +93,7 @@ export function BlockRenderer({ block }) {
     default:
       return (
         <p className="block-paragraph" data-block-id={block.id}>
-          <InlineMarkdown text={block.content} />
+          <InlineMarkdown text={block.content} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={block.id} />
         </p>
       )
   }
