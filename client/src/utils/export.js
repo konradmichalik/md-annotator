@@ -29,7 +29,7 @@ export function formatAnnotationsForExport(annotations, blocks, filePath) {
   if (globalComments.length > 0) {
     output += `## General Feedback\n\n`
     globalComments.forEach(ann => {
-      output += `> ${ann.text ?? ''}\n\n`
+      output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n\n`
     })
   }
 
@@ -48,7 +48,7 @@ export function formatAnnotationsForExport(annotations, blocks, filePath) {
       if (isDeletion) {
         output += `> User wants this image removed from the document.\n\n`
       } else {
-        output += `> ${ann.text ?? ''}\n\n`
+        output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n\n`
       }
       return
     }
@@ -60,7 +60,7 @@ export function formatAnnotationsForExport(annotations, blocks, filePath) {
       if (isDeletion) {
         output += `> User wants this diagram removed from the document.\n\n`
       } else {
-        output += `> ${ann.text ?? ''}\n\n`
+        output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n\n`
       }
       return
     }

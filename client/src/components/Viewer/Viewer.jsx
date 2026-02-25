@@ -244,8 +244,9 @@ export const Viewer = forwardRef(function Viewer({
       if (pendingSourceRef.current) {return}
       if (isRestoringRef.current) {return}
 
-      // Ignore clicks on toolbar, buttons, code blocks, images, diagrams
-      if (e.target.closest('.annotation-toolbar, button, .code-copy-btn, .annotatable-image-wrapper, .mermaid-diagram, .mermaid-controls')) {return}
+      // Ignore clicks on interactive/UI targets and links
+      if (e.defaultPrevented) {return}
+      if (e.target.closest('.annotation-toolbar, button, a[href], .code-copy-btn, .annotatable-image-wrapper, .mermaid-diagram, .mermaid-controls')) {return}
 
       requestAnimationFrame(() => {
         // If web-highlighter created a pending source in the meantime, don't interfere
@@ -329,6 +330,15 @@ export const Viewer = forwardRef(function Viewer({
 
     // Insertion annotations bypass web-highlighter
     if (toolbarState.insertionMode) {
+      const insertionText = typeof text === 'string' ? text.trim() : ''
+      // Clean up marker regardless of whether we create an annotation
+      removeInsertionMarker(toolbarState.element)
+      if (!insertionText) {
+        setToolbarState(null)
+        setRequestedToolbarStep(null)
+        window.getSelection()?.removeAllRanges()
+        return
+      }
       const { blockId, offset, afterContext } = toolbarState.insertionData
       const newAnnotation = {
         id: crypto.randomUUID(),
@@ -336,15 +346,13 @@ export const Viewer = forwardRef(function Viewer({
         startOffset: offset,
         endOffset: offset,
         type: 'INSERTION',
-        text: text || '',
+        text: insertionText,
         afterContext,
         originalText: '',
         createdAt: Date.now(),
         startMeta: null,
         endMeta: null
       }
-      // Remove temporary marker and normalize DOM
-      removeInsertionMarker(toolbarState.element)
       onAddAnnotationRef.current(newAnnotation)
       setToolbarState(null)
       setRequestedToolbarStep(null)
