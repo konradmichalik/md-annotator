@@ -135,11 +135,11 @@ export async function startAnnotatorServer(options) {
 
   // Heartbeat monitor — resolve as disconnected if client goes silent
   const heartbeatInterval = setInterval(() => {
-    if (heartbeatReceived && Date.now() - lastHeartbeat > 6000) {
+    if (heartbeatReceived && Date.now() - lastHeartbeat > config.heartbeatTimeoutMs) {
       clearInterval(heartbeatInterval)
       safeResolve({ disconnected: true })
     }
-  }, 3000)
+  }, 5000)
   heartbeatInterval.unref()
 
   // Stop function
