@@ -505,10 +505,10 @@ export default function App() {
             {reconnectState === 'failed' && (
               <p className="done-hint">Could not reconnect to the server.</p>
             )}
-            {totalAnnotationCount > 0 && (
+            {annotations.length > 0 && (
               <div className="done-actions">
                 <p className="done-backup-info">
-                  {totalAnnotationCount} annotation{totalAnnotationCount !== 1 ? 's' : ''} not yet submitted.
+                  {annotations.length} annotation{annotations.length !== 1 ? 's' : ''} in this file not yet submitted.
                 </p>
                 <button onClick={() => setExportModalOpen(true)} className="btn btn-feedback">
                   Export Annotations
