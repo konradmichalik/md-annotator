@@ -13,6 +13,7 @@ import { initialAnnotationState } from './state/annotationReducer.js'
 import { filesReducer } from './state/filesReducer.js'
 import { useAutoClose } from './hooks/useAutoClose.js'
 import { useResizablePanel } from './hooks/useResizablePanel.js'
+import { useServerConnection } from './hooks/useServerConnection.js'
 import './styles.css'
 
 // Theme: 'light' | 'dark' | 'auto'
@@ -472,23 +473,7 @@ export default function App() {
     } catch { /* server shuts down */ }
   }
 
-  const [serverGone, setServerGone] = useState(false)
-
-  useEffect(() => {
-    if (serverGone) {return}
-    const ping = async () => {
-      try {
-        const res = await fetch('/api/heartbeat', { method: 'POST' })
-        if (!res.ok) {throw new Error('heartbeat failed')}
-      } catch {
-        setServerGone(true)
-        clearInterval(intervalId)
-      }
-    }
-    ping()
-    const intervalId = setInterval(ping, 2000)
-    return () => clearInterval(intervalId)
-  }, [serverGone])
+  const { serverGone, reconnectState } = useServerConnection({ submitted })
 
   const { state: autoCloseState, enableAndStart } = useAutoClose(submitted)
   const { width: panelWidth, handleMouseDown: handlePanelResize } = useResizablePanel('md-annotator-panel-width', 280, 1)
@@ -514,9 +499,34 @@ export default function App() {
             <p className="done-message">
               The server is no longer available. Your annotations have not been submitted.
             </p>
-            <p className="done-hint">You can close this tab.</p>
+            {reconnectState === 'reconnecting' && (
+              <p className="done-hint">Attempting to reconnect...</p>
+            )}
+            {reconnectState === 'failed' && (
+              <p className="done-hint">Could not reconnect to the server.</p>
+            )}
+            {totalAnnotationCount > 0 && (
+              <div className="done-actions">
+                <p className="done-backup-info">
+                  {totalAnnotationCount} annotation{totalAnnotationCount !== 1 ? 's' : ''} not yet submitted.
+                </p>
+                <button onClick={() => setExportModalOpen(true)} className="btn btn-feedback">
+                  Export Annotations
+                </button>
+              </div>
+            )}
           </div>
         </div>
+        <ExportModal
+          isOpen={exportModalOpen}
+          onClose={() => setExportModalOpen(false)}
+          annotations={annotations}
+          blocks={blocks}
+          filePath={filePath}
+          contentHash={activeFile?.contentHash}
+          onToast={showToast}
+        />
+        {toast && <div className="toast">{toast}</div>}
       </div>
     )
   }
