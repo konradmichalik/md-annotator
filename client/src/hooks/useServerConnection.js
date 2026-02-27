@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 
 const MAX_FAILURES = 3
+const HEARTBEAT_INTERVAL_MS = 3000
+const HEARTBEAT_FETCH_TIMEOUT_MS = 5000
+
+function pingHeartbeat(signal) {
+  return fetch('/api/heartbeat', { method: 'POST', signal, cache: 'no-store' })
+}
 
 /**
  * Manages server heartbeat and automatic reconnection.
@@ -24,7 +30,7 @@ export function useServerConnection({ submitted }) {
     failCountRef.current = 0
 
     const workerCode = `
-      setInterval(() => self.postMessage('tick'), 3000)
+      setInterval(() => self.postMessage('tick'), ${HEARTBEAT_INTERVAL_MS})
       self.postMessage('tick')
     `
     const blob = new Blob([workerCode], { type: 'application/javascript' })
@@ -32,14 +38,21 @@ export function useServerConnection({ submitted }) {
     const worker = new Worker(blobUrl)
 
     let stopped = false
+    let abortController = null
 
     worker.onmessage = async () => {
       if (stopped) {return}
+      abortController = new AbortController()
+      const timeoutId = setTimeout(() => abortController.abort(), HEARTBEAT_FETCH_TIMEOUT_MS)
       try {
-        const res = await fetch('/api/heartbeat', { method: 'POST' })
+        const res = await pingHeartbeat(abortController.signal)
+        clearTimeout(timeoutId)
+        if (stopped) {return}
         if (!res.ok) {throw new Error('heartbeat failed')}
         failCountRef.current = 0
       } catch {
+        clearTimeout(timeoutId)
+        if (stopped) {return}
         failCountRef.current++
         if (failCountRef.current >= MAX_FAILURES) {
           stopped = true
@@ -50,6 +63,7 @@ export function useServerConnection({ submitted }) {
 
     return () => {
       stopped = true
+      if (abortController) {abortController.abort()}
       worker.terminate()
       URL.revokeObjectURL(blobUrl)
     }
@@ -64,16 +78,22 @@ export function useServerConnection({ submitted }) {
     const tryReconnect = async () => {
       for (let i = 0; i < 10; i++) {
         if (cancelled) {return}
-        await new Promise(r => setTimeout(r, 3000))
+        await new Promise(r => setTimeout(r, HEARTBEAT_INTERVAL_MS))
         if (cancelled) {return}
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), HEARTBEAT_FETCH_TIMEOUT_MS)
         try {
-          const res = await fetch('/api/heartbeat', { method: 'POST' })
+          const res = await pingHeartbeat(controller.signal)
+          clearTimeout(timeoutId)
+          if (cancelled) {return}
           if (res.ok) {
             setReconnectState(null)
             setServerGone(false)
             return
           }
         } catch {
+          clearTimeout(timeoutId)
+          if (cancelled) {return}
           // Still disconnected
         }
       }

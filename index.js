@@ -18,7 +18,7 @@ Options:
 Environment:
   MD_ANNOTATOR_PORT      Base port (default: 3000)
   MD_ANNOTATOR_BROWSER   Custom browser app name
-  MD_ANNOTATOR_TIMEOUT   Heartbeat timeout in ms (default: 30000, min: 5000)
+  MD_ANNOTATOR_TIMEOUT   Heartbeat timeout in ms (default: 30000, range: 5000–300000)
 
 Examples:
   md-annotator README.md
