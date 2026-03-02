@@ -1,0 +1,76 @@
+import { useEffect } from 'react'
+
+const CloseIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"/>
+    <line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+)
+
+export function FeedbackNotesModal({ isOpen, onClose, notesGroups, totalFiles }) {
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {onClose()}
+    }
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape)
+      return () => document.removeEventListener('keydown', handleEscape)
+    }
+  }, [isOpen, onClose])
+
+  if (!isOpen) {return null}
+
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {onClose()}
+  }
+
+  const isMultiFile = totalFiles > 1
+
+  return (
+    <div className="modal-backdrop" onClick={handleBackdropClick}>
+      <div
+        className="modal notes-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="notes-modal-title"
+      >
+        <div className="modal-header">
+          <h2 id="notes-modal-title">AI Notes</h2>
+          <button className="modal-close" onClick={onClose} title="Close" aria-label="Close notes">
+            <CloseIcon />
+          </button>
+        </div>
+        <div className="modal-body">
+          {notesGroups.map(({ filePath, notes }) => (
+            <div key={filePath}>
+              {isMultiFile && (
+                <h3 className="notes-modal-file-heading">
+                  {filePath.split('/').pop()}
+                </h3>
+              )}
+              <ul className="notes-modal-list">
+                {notes.map(ann => (
+                  <li key={ann.id} className="notes-modal-item">
+                    <p className="notes-modal-text">{ann.text}</p>
+                    {ann.originalText && (
+                      <p className="notes-modal-context">
+                        &ldquo;{ann.originalText.length > 80
+                          ? ann.originalText.slice(0, 80) + '...'
+                          : ann.originalText}&rdquo;
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-approve" onClick={onClose}>
+            Got it
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
