@@ -28,14 +28,22 @@ export function AnnotationPanel({
   const [editingGlobalText, setEditingGlobalText] = useState('')
   const globalEditRef = useRef(null)
 
-  const globalComments = annotations.filter(a => a.targetType === 'global')
+  const noteAnnotations = useMemo(
+    () => annotations.filter(a => a.type === 'NOTES'),
+    [annotations]
+  )
+  const userAnnotations = useMemo(
+    () => annotations.filter(a => a.type !== 'NOTES'),
+    [annotations]
+  )
+  const globalComments = userAnnotations.filter(a => a.targetType === 'global')
   const textAnnotations = useMemo(() => {
-    const items = annotations.filter(a => a.targetType !== 'global')
+    const items = userAnnotations.filter(a => a.targetType !== 'global')
     return items.sort((a, b) =>
       (a.blockId || '').localeCompare(b.blockId || '', undefined, { numeric: true })
       || (a.startOffset || 0) - (b.startOffset || 0)
     )
-  }, [annotations])
+  }, [userAnnotations])
 
   const handleImportClick = () => {
     setMenuOpen(false)
@@ -121,7 +129,7 @@ export function AnnotationPanel({
     return null
   }
 
-  const hasAnnotations = annotations.length > 0
+  const hasAnnotations = userAnnotations.length > 0
 
   const moreMenu = (
     <div className="panel-menu" ref={menuRef}>
@@ -148,7 +156,7 @@ export function AnnotationPanel({
       <input ref={fileInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileSelect} />
       <div className="panel-header">
         <h2>Annotations</h2>
-        <span className="panel-badge">{annotations.length}</span>
+        <span className="panel-badge">{userAnnotations.length}</span>
         <button className="panel-icon-btn" onClick={onAddGlobalComment} title="Add general comment" aria-label="Add general comment">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10"/>
@@ -160,14 +168,6 @@ export function AnnotationPanel({
       </div>
       {globalComments.length > 0 && (
         <div className="panel-global-section">
-          <div className="panel-global-section-header">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="2" y1="12" x2="22" y2="12"/>
-              <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
-            </svg>
-            General Feedback
-          </div>
           {globalComments.map(ann => (
             <div
               key={ann.id}
@@ -204,24 +204,34 @@ export function AnnotationPanel({
                 </div>
               </div>
               {editingGlobalId === ann.id ? (
-                <textarea
-                  ref={globalEditRef}
-                  className="panel-global-textarea"
-                  value={editingGlobalText}
-                  onChange={(e) => setEditingGlobalText(e.target.value)}
-                  onBlur={() => handleGlobalEditSave(ann.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                <div className="panel-global-edit">
+                  <textarea
+                    ref={globalEditRef}
+                    className="panel-global-textarea"
+                    value={editingGlobalText}
+                    onChange={(e) => setEditingGlobalText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault()
+                        handleGlobalEditSave(ann.id)
+                      }
+                      if (e.key === 'Escape') {
+                        setEditingGlobalId(null)
+                        setEditingGlobalText('')
+                      }
+                    }}
+                    placeholder="Add your comment..."
+                  />
+                  <button
+                    className="panel-global-save-btn"
+                    onMouseDown={(e) => {
                       e.preventDefault()
                       handleGlobalEditSave(ann.id)
-                    }
-                    if (e.key === 'Escape') {
-                      setEditingGlobalId(null)
-                      setEditingGlobalText('')
-                    }
-                  }}
-                  placeholder="Add your comment..."
-                />
+                    }}
+                  >
+                    Save
+                  </button>
+                </div>
               ) : (
                 <p className="panel-comment-text">
                   {ann.text || <span style={{ opacity: 0.5, fontStyle: 'italic' }}>Click edit to add comment...</span>}
@@ -231,14 +241,14 @@ export function AnnotationPanel({
           ))}
         </div>
       )}
-      {textAnnotations.length === 0 && globalComments.length === 0 ? (
+      {textAnnotations.length === 0 && globalComments.length === 0 && noteAnnotations.length === 0 ? (
         <p className="panel-empty">Select text, click an image, or click a diagram to add annotations.</p>
       ) : textAnnotations.length === 0 ? null : (
-      <ul className="panel-list">
+      <ul className="panel-list" style={noteAnnotations.length > 0 ? { borderBottom: '1px solid var(--border)' } : undefined}>
         {textAnnotations.map(ann => {
           const isElement = ann.targetType === 'image' || ann.targetType === 'diagram'
           const isInsertion = ann.type === 'INSERTION'
-          const badgeLabel = ann.type === 'DELETION' ? 'Delete' : ann.type === 'INSERTION' ? 'Insert' : 'Comment'
+          const badgeLabel = ann.type === 'DELETION' ? 'Delete' : ann.type === 'INSERTION' ? 'Insert' : ann.type === 'NOTES' ? 'Note' : 'Comment'
           const badgeClass = ann.type.toLowerCase()
 
           return (
@@ -333,6 +343,38 @@ export function AnnotationPanel({
           )
         })}
       </ul>
+      )}
+      {noteAnnotations.length > 0 && (
+        <div className="panel-notes-section">
+          <div className="panel-header panel-header-notes">
+            <h2>Notes</h2>
+            <span className="panel-badge">{noteAnnotations.length}</span>
+          </div>
+          {noteAnnotations.map(ann => (
+            <div
+              key={ann.id}
+              className={`panel-note-item${ann.id === selectedAnnotationId ? ' selected' : ''}`}
+              onClick={() => {
+                onSelect(ann.id)
+                if (ann.targetType === 'global') {return}
+                const el = document.querySelector(`[data-highlight-id="${ann.id}"]`)
+                  || document.querySelector(`[data-block-id="${ann.blockId}"]`)
+                if (el) {el.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              }}
+            >
+              <div className="panel-item-header">
+                <span className="panel-type-badge notes">Note</span>
+              </div>
+              <p className="panel-comment-text">{ann.text}</p>
+              {ann.originalText && (
+                <p className="panel-original-text">"{ann.originalText.length > 60
+                  ? ann.originalText.slice(0, 60) + '...'
+                  : ann.originalText}"</p>
+              )}
+            </div>
+          ))}
+          <p className="panel-notes-hint">Added by AI as feedback on applied changes.</p>
+        </div>
       )}
     </aside>
   )

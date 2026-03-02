@@ -77,14 +77,19 @@ function sortAnnotations(annotations, blocks) {
  * Single file delegates to exportFeedback. Multi-file groups by file.
  */
 export function exportMultiFileFeedback(files) {
-  const filesWithAnnotations = files.filter(f => f.annotations?.length > 0)
+  // Exclude NOTES (read-only AI notes) from feedback
+  const filesFiltered = files.map(f => ({
+    ...f,
+    annotations: (f.annotations || []).filter(a => a.type !== 'NOTES')
+  }))
+  const filesWithAnnotations = filesFiltered.filter(f => f.annotations.length > 0)
 
   if (filesWithAnnotations.length === 0) {
     return 'No annotations.'
   }
 
-  if (files.length === 1) {
-    return exportFeedback(files[0].annotations, files[0].blocks)
+  if (filesFiltered.length === 1) {
+    return exportFeedback(filesFiltered[0].annotations, filesFiltered[0].blocks)
   }
 
   const totalCount = filesWithAnnotations.reduce((sum, f) => sum + f.annotations.length, 0)
@@ -120,16 +125,19 @@ export function exportMultiFileFeedback(files) {
  * Format annotations as readable Markdown feedback for Claude.
  */
 export function exportFeedback(annotations, blocks) {
-  if (annotations.length === 0) {
+  // Exclude NOTES (read-only AI notes) from feedback
+  const filtered = annotations.filter(a => a.type !== 'NOTES')
+
+  if (filtered.length === 0) {
     return 'No annotations.'
   }
 
-  const sorted = sortAnnotations(annotations, blocks)
+  const sorted = sortAnnotations(filtered, blocks)
   const globalComments = sorted.filter(a => a.targetType === 'global')
   const regularAnnotations = sorted.filter(a => a.targetType !== 'global')
 
   let output = `# Annotation Feedback\n\n`
-  output += `${annotations.length} annotation${annotations.length > 1 ? 's' : ''}:\n\n`
+  output += `${filtered.length} annotation${filtered.length > 1 ? 's' : ''}:\n\n`
 
   if (globalComments.length > 0) {
     output += `## General Feedback\n\n`

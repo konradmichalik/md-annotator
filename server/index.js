@@ -14,13 +14,14 @@ export { startAnnotatorServer } from './annotator.js'
  * Accepts a single file path (string) or an array of file paths.
  * Returns an object with port, waitForDecision(), and shutdown().
  */
-export async function createServer(targetFilePaths, origin = 'cli') {
+export async function createServer(targetFilePaths, origin = 'cli', options = {}) {
   const filePaths = Array.isArray(targetFilePaths) ? targetFilePaths : [targetFilePaths]
   let resolveDecision
 
   const server = await startAnnotatorServer({
     filePaths,
     origin,
+    feedbackNotes: options.feedbackNotes || null,
   })
 
   // Create a wrapper promise that can be resolved by signals

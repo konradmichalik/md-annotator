@@ -13,10 +13,22 @@ import portfinder from 'portfinder'
 import { config } from './config.js'
 import { createApiRouter } from './routes.js'
 import { readMarkdownFile } from './file.js'
+import { convertNotesToAnnotations } from './notes.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST_PATH = join(__dirname, '..', 'client', 'dist')
 const DEV_PATH = join(__dirname, '..', 'client')
+
+/**
+ * Resolve notes for a specific file from the feedbackNotes array.
+ * Notes apply to the first file only (multi-file uses one invocation per file).
+ */
+function resolveNotesForFile(feedbackNotes, fileIndex, content) {
+  if (!Array.isArray(feedbackNotes) || fileIndex !== 0) {
+    return []
+  }
+  return convertNotesToAnnotations(feedbackNotes, content)
+}
 
 /**
  * Start the annotator server with configurable options.
@@ -36,6 +48,7 @@ export async function startAnnotatorServer(options) {
     origin = 'cli',
     htmlContent = null,
     onReady = null,
+    feedbackNotes = null,
   } = options
 
   const filePaths = filePathsOpt || (filePath ? [filePath] : [])
@@ -90,11 +103,12 @@ export async function startAnnotatorServer(options) {
 
   // Compute content hash per file for annotation persistence
   const stores = await Promise.all(
-    filePaths.map(async (fp) => {
+    filePaths.map(async (fp, index) => {
       try {
         const content = await readMarkdownFile(fp)
         const contentHash = createHash('sha256').update(content).digest('hex')
-        return { absolutePath: fp, contentHash, annotations: [] }
+        const notes = resolveNotesForFile(feedbackNotes, index, content)
+        return { absolutePath: fp, contentHash, annotations: notes }
       } catch (_e) {
         return { absolutePath: fp, contentHash: null, annotations: [] }
       }
