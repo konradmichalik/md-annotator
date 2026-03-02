@@ -61,7 +61,7 @@ For local development, see the [Development](#development) section.
 
 ```bash
 # Update the CLI
-npm update -g md-annotator
+npm install -g md-annotator@latest
 
 # Update the marketplace cache and plugin
 claude plugin marketplace update md-annotator && claude plugin update annotate@md-annotator
