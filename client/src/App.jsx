@@ -5,6 +5,7 @@ import { Viewer } from './components/Viewer/Viewer.jsx'
 import { AnnotationPanel } from './components/AnnotationPanel.jsx'
 import { TableOfContents } from './components/TableOfContents.jsx'
 import { ExportModal } from './components/ExportModal.jsx'
+import { FeedbackNotesModal } from './components/FeedbackNotesModal.jsx'
 import { validateAnnotationImport } from './utils/export.js'
 import { getTextStats } from './utils/textStats.js'
 import { UpdateBanner } from './components/UpdateBanner.jsx'
@@ -69,11 +70,13 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed)
   const [tocCollapsed, setTocCollapsed] = useState(getInitialTocCollapsed)
   const [exportModalOpen, setExportModalOpen] = useState(false)
+  const [notesModalOpen, setNotesModalOpen] = useState(false)
   const [toast, setToast] = useState(null)
   const [origin, setOrigin] = useState('cli')
   const viewerRef = useRef(null)
   const prevLastActionRef = useRef(null)
   const toastTimerRef = useRef(null)
+  const notesShownRef = useRef(false)
   const filesRef = useRef(files)
   filesRef.current = files
 
@@ -92,6 +95,12 @@ export default function App() {
   const totalAnnotationCount = files.reduce((sum, f) =>
     sum + f.annState.annotations.filter(a => a.type !== 'NOTES').length, 0
   )
+  const notesGroups = files
+    .map(f => ({
+      filePath: f.path,
+      notes: f.annState.annotations.filter(a => a.type === 'NOTES')
+    }))
+    .filter(g => g.notes.length > 0)
 
   // Dispatch annotation actions to active file
   const annDispatch = useCallback((annAction) => {
@@ -237,6 +246,18 @@ export default function App() {
       if (loaded) {loadAnnotations(loaded)}
     })
   }, [loadFiles, loadAnnotations])
+
+  // Show feedback notes modal once after annotations are loaded
+  useEffect(() => {
+    if (notesShownRef.current || files.length === 0) {return}
+    const hasNotes = files.some(f =>
+      f.annState.annotations.some(a => a.type === 'NOTES')
+    )
+    if (hasNotes) {
+      notesShownRef.current = true
+      setNotesModalOpen(true)
+    }
+  }, [files])
 
   // Restore highlights when switching files (Viewer remounts via key)
   const prevFileIndexRef = useRef(0)
@@ -784,6 +805,13 @@ export default function App() {
         filePath={filePath}
         contentHash={activeFile?.contentHash}
         onToast={showToast}
+      />
+
+      <FeedbackNotesModal
+        isOpen={notesModalOpen}
+        onClose={() => setNotesModalOpen(false)}
+        notesGroups={notesGroups}
+        totalFiles={files.length}
       />
 
       <UpdateBanner />

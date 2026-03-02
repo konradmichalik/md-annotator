@@ -1901,6 +1901,55 @@ a:hover { opacity: 0.8; }
   opacity: 0.7;
 }
 
+/* === AI Notes Modal === */
+.notes-modal {
+  max-width: 520px;
+}
+
+.notes-modal-file-heading {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.notes-modal-file-heading:not(:first-child) {
+  margin-top: 1rem;
+}
+
+.notes-modal-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.notes-modal-item {
+  padding: 0.625rem 0.75rem;
+  border-left: 3px solid var(--success);
+  background: var(--success-bg);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.notes-modal-text {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.notes-modal-context {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
 /* === Global Comments Section === */
 .panel-global-section {
   border-bottom: 1px solid var(--border);
