@@ -11,6 +11,13 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
     if (step === 'input') {inputRef.current?.focus()}
   }, [step])
 
+  // NOTES annotations are read-only — close toolbar immediately
+  useEffect(() => {
+    if (editAnnotation?.type === 'NOTES') {
+      onClose()
+    }
+  }, [editAnnotation, onClose])
+
   useEffect(() => {
     if (editAnnotation) {
       setStep('menu')

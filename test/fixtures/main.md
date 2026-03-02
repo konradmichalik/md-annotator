@@ -1,6 +1,6 @@
 # Main Document
 
-This is the main test document for multi-file support.
+This is the main test document for multi-file support. It exercises all major features of the annotation interface: text selection, deletions, comments, linked navigation between files, image and diagram annotations, code blocks, and tables.
 
 ## Quick Links
 

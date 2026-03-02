@@ -89,7 +89,9 @@ export default function App() {
   const { annotations } = activeAnnState
   const blocks = activeFile?.blocks || []
   const filePath = activeFile?.path || ''
-  const totalAnnotationCount = files.reduce((sum, f) => sum + f.annState.annotations.length, 0)
+  const totalAnnotationCount = files.reduce((sum, f) =>
+    sum + f.annState.annotations.filter(a => a.type !== 'NOTES').length, 0
+  )
 
   // Dispatch annotation actions to active file
   const annDispatch = useCallback((annAction) => {
@@ -462,7 +464,7 @@ export default function App() {
     try {
       const feedbackFiles = files.map(f => ({
         path: f.path,
-        annotations: f.annState.annotations,
+        annotations: f.annState.annotations.filter(a => a.type !== 'NOTES'),
         blocks: f.blocks
       }))
       await fetch('/api/feedback', {

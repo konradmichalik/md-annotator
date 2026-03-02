@@ -90,7 +90,7 @@ function applyView(svgEl, base, zoom, pan) {
   svgEl.setAttribute('viewBox', `${vbX} ${vbY} ${zoomedWidth} ${zoomedHeight}`)
 }
 
-export function MermaidBlock({ block, onDiagramClick, annotationType }) {
+export function MermaidBlock({ block, onDiagramClick, annotationType, hasNote, onNoteClick }) {
   const containerRef = useRef(null)
   const [svg, setSvg] = useState('')
   const [error, setError] = useState(null)
@@ -295,7 +295,17 @@ export function MermaidBlock({ block, onDiagramClick, annotationType }) {
   }
 
   return (
-    <div className="mermaid-block" data-block-id={block.id}>
+    <div className={`mermaid-block${hasNote ? ' block-has-note' : ''}`} data-block-id={block.id}>
+      {hasNote && (
+        <span
+          className="block-note-border"
+          onClick={(e) => { e.stopPropagation(); onNoteClick?.(block.id) }}
+          title="AI Note — click to view"
+          role="button"
+          tabIndex={-1}
+          aria-label="View AI note"
+        />
+      )}
       {/* Controls */}
       <div className="mermaid-controls">
         <button

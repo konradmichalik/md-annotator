@@ -29,16 +29,37 @@ function parseTableContent(content) {
   return { headers, rows }
 }
 
-export function BlockRenderer({ block, onImageClick, annotatedImages }) {
+function NoteBorder({ blockId, onClick }) {
+  return (
+    <span
+      className="block-note-border"
+      onClick={(e) => { e.stopPropagation(); onClick(blockId) }}
+      title="AI Note — click to view"
+      role="button"
+      tabIndex={-1}
+      aria-label="View AI note"
+    />
+  )
+}
+
+export function BlockRenderer({ block, onImageClick, annotatedImages, hasNote, onNoteClick }) {
+  const noteClass = hasNote ? ' block-has-note' : ''
+
   switch (block.type) {
     case 'heading': {
       const Tag = `h${block.level || 1}`
-      return <Tag id={slugify(block.content)} className={`heading heading-${block.level || 1}`} data-block-id={block.id}><InlineMarkdown text={block.content} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={block.id} /></Tag>
+      return (
+        <Tag id={slugify(block.content)} className={`heading heading-${block.level || 1}${noteClass}`} data-block-id={block.id}>
+          {hasNote && <NoteBorder blockId={block.id} onClick={onNoteClick} />}
+          <InlineMarkdown text={block.content} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={block.id} />
+        </Tag>
+      )
     }
 
     case 'blockquote':
       return (
-        <blockquote className="block-blockquote" data-block-id={block.id}>
+        <blockquote className={`block-blockquote${noteClass}`} data-block-id={block.id}>
+          {hasNote && <NoteBorder blockId={block.id} onClick={onNoteClick} />}
           <InlineMarkdown text={block.content} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={block.id} />
         </blockquote>
       )
@@ -49,7 +70,8 @@ export function BlockRenderer({ block, onImageClick, annotatedImages }) {
       const bullets = ['\u2022', '\u25E6', '\u25AA']
       const bullet = bullets[Math.min(block.level || 0, 2)]
       return (
-        <div className="block-list-item" data-block-id={block.id} style={{ marginLeft: `${indent}rem` }}>
+        <div className={`block-list-item${noteClass}`} data-block-id={block.id} style={{ marginLeft: `${indent}rem` }}>
+          {hasNote && <NoteBorder blockId={block.id} onClick={onNoteClick} />}
           <span className="list-marker">
             {isCheckbox
               ? (block.checked ? '\u2611' : '\u2610')
@@ -65,7 +87,8 @@ export function BlockRenderer({ block, onImageClick, annotatedImages }) {
     case 'table': {
       const { headers, rows } = parseTableContent(block.content)
       return (
-        <div className="block-table-wrapper" data-block-id={block.id}>
+        <div className={`block-table-wrapper${noteClass}`} data-block-id={block.id}>
+          {hasNote && <NoteBorder blockId={block.id} onClick={onNoteClick} />}
           <table className="block-table">
             <thead>
               <tr>
@@ -91,7 +114,7 @@ export function BlockRenderer({ block, onImageClick, annotatedImages }) {
     case 'html':
       return (
         <div
-          className="block-html"
+          className={`block-html${noteClass}`}
           data-block-id={block.id}
           dangerouslySetInnerHTML={{
             __html: DOMPurify.sanitize(block.content)
@@ -100,11 +123,12 @@ export function BlockRenderer({ block, onImageClick, annotatedImages }) {
       )
 
     case 'hr':
-      return <hr className="block-hr" data-block-id={block.id} />
+      return <hr className={`block-hr${noteClass}`} data-block-id={block.id} />
 
     default:
       return (
-        <p className="block-paragraph" data-block-id={block.id}>
+        <p className={`block-paragraph${noteClass}`} data-block-id={block.id}>
+          {hasNote && <NoteBorder blockId={block.id} onClick={onNoteClick} />}
           <InlineMarkdown text={block.content} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={block.id} />
         </p>
       )

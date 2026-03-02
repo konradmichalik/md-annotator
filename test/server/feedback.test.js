@@ -150,7 +150,7 @@ describe('exportMultiFileFeedback', () => {
     expect(output).toContain('### 2.')
   })
 
-  it('skips files without annotations', () => {
+  it('skips files without annotations and uses single-file format', () => {
     const files = [
       { path: '/a.md', annotations: [], blocks: [] },
       {
@@ -161,7 +161,8 @@ describe('exportMultiFileFeedback', () => {
     ]
     const output = exportMultiFileFeedback(files)
     expect(output).not.toContain('## File: /a.md')
-    expect(output).toContain('## File: /b.md')
-    expect(output).toContain('1 annotation across 1 file')
+    // Single annotated file → delegates to single-file format (no file headers)
+    expect(output).not.toContain('## File: /b.md')
+    expect(output).toContain('1 annotation')
   })
 })

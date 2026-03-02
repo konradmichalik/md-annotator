@@ -96,8 +96,8 @@ export const Viewer = forwardRef(function Viewer({
       })
     },
     restoreHighlight(ann) {
-      // Skip element/global/insertion annotations — they have no web-highlighter DOM
-      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'global' || ann.type === 'INSERTION') {return true}
+      // Skip element/global/insertion/notes annotations — they have no web-highlighter DOM
+      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'global' || ann.type === 'INSERTION' || ann.type === 'NOTES') {return true}
       const highlighter = highlighterRef.current
       if (!highlighter) {return false}
       const wasRestoring = isRestoringRef.current
@@ -228,6 +228,8 @@ export const Viewer = forwardRef(function Viewer({
       const ann = annotationsRef.current.find(a => a.id === id)
       if (!ann) {return}
       onSelectAnnotation(id)
+      // NOTES are read-only — select but don't open edit toolbar
+      if (ann.type === 'NOTES') {return}
       const doms = highlighter.getDoms(id)
       if (doms?.length > 0) {
         setToolbarState({ element: doms[0], annotation: ann, mode: 'edit' })
@@ -246,7 +248,7 @@ export const Viewer = forwardRef(function Viewer({
 
       // Ignore clicks on interactive/UI targets and links
       if (e.defaultPrevented) {return}
-      if (e.target.closest('.annotation-toolbar, button, a[href], .code-copy-btn, .annotatable-image-wrapper, .mermaid-diagram, .mermaid-controls')) {return}
+      if (e.target.closest('.annotation-toolbar, button, a[href], .code-copy-btn, .annotatable-image-wrapper, .mermaid-diagram, .mermaid-controls, .block-note-border')) {return}
 
       requestAnimationFrame(() => {
         // If web-highlighter created a pending source in the meantime, don't interfere
@@ -466,6 +468,19 @@ export const Viewer = forwardRef(function Viewer({
     return map
   }, [annotations])
 
+  const noteBlockIds = useMemo(() => {
+    const map = new Map()
+    annotations.filter(a => a.type === 'NOTES' && a.blockId).forEach(a => {
+      if (!map.has(a.blockId)) { map.set(a.blockId, a.id) }
+    })
+    return map
+  }, [annotations])
+
+  const handleNoteClick = useCallback((blockId) => {
+    const annId = noteBlockIds.get(blockId)
+    if (annId) { onSelectAnnotation(annId) }
+  }, [noteBlockIds, onSelectAnnotation])
+
   const handleImageClick = useCallback(({ alt, src, blockId, element }) => {
     // Close any pending text highlight
     if (pendingSourceRef.current && highlighterRef.current) {
@@ -546,15 +561,19 @@ export const Viewer = forwardRef(function Viewer({
               block={block}
               onDiagramClick={handleDiagramClick}
               annotationType={annotatedDiagramBlocks.get(block.id) || null}
+              hasNote={noteBlockIds.has(block.id)}
+              onNoteClick={handleNoteClick}
             />
           ) : block.type === 'code' ? (
-            <CodeBlock key={block.id} block={block} />
+            <CodeBlock key={block.id} block={block} hasNote={noteBlockIds.has(block.id)} onNoteClick={handleNoteClick} />
           ) : (
             <BlockRenderer
               key={block.id}
               block={block}
               onImageClick={handleImageClick}
               annotatedImages={annotatedImages}
+              hasNote={noteBlockIds.has(block.id)}
+              onNoteClick={handleNoteClick}
             />
           )
         )}

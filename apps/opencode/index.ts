@@ -31,7 +31,7 @@ export const MdAnnotatorPlugin: Plugin = async (ctx) => {
     tool: {
       annotate_markdown: tool({
         description:
-          "Open markdown file(s) for interactive user annotation and review. The user can highlight text to mark deletions or add comments, then submit feedback.",
+          "Open markdown file(s) for interactive user annotation and review. The user can highlight text to mark deletions or add comments, then submit feedback. Optionally pass feedbackNotes to display AI notes about changes made.",
         args: {
           filePath: tool.schema
             .string()
@@ -41,6 +41,15 @@ export const MdAnnotatorPlugin: Plugin = async (ctx) => {
             .array(tool.schema.string())
             .optional()
             .describe("Array of absolute paths to markdown files to annotate"),
+          feedbackNotes: tool.schema
+            .array(
+              tool.schema.object({
+                text: tool.schema.string().describe("Note text explaining the change"),
+                line: tool.schema.number().optional().describe("Line number in the file (omit for general notes)"),
+              })
+            )
+            .optional()
+            .describe("AI notes to display as read-only annotations in the UI"),
         },
 
         async execute(args) {
@@ -53,6 +62,7 @@ export const MdAnnotatorPlugin: Plugin = async (ctx) => {
             filePaths: paths,
             origin: "opencode",
             htmlContent,
+            feedbackNotes: args.feedbackNotes || null,
             onReady: async (url: string) => {
               await openBrowser(url);
             },

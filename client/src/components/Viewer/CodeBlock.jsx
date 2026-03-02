@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import hljs from 'highlight.js'
 
-export function CodeBlock({ block, onHover, onLeave, isHovered }) {
+export function CodeBlock({ block, onHover, onLeave, isHovered, hasNote, onNoteClick }) {
   const [copied, setCopied] = useState(false)
   const containerRef = useRef(null)
   const codeRef = useRef(null)
@@ -33,11 +33,21 @@ export function CodeBlock({ block, onHover, onLeave, isHovered }) {
   return (
     <div
       ref={containerRef}
-      className={`block-code-wrapper${isHovered ? ' hovered' : ''}`}
+      className={`block-code-wrapper${isHovered ? ' hovered' : ''}${hasNote ? ' block-has-note' : ''}`}
       data-block-id={block.id}
       onMouseEnter={() => onHover?.(containerRef.current)}
       onMouseLeave={() => onLeave?.()}
     >
+      {hasNote && (
+        <span
+          className="block-note-border"
+          onClick={(e) => { e.stopPropagation(); onNoteClick?.(block.id) }}
+          title="AI Note — click to view"
+          role="button"
+          tabIndex={-1}
+          aria-label="View AI note"
+        />
+      )}
       <button onClick={handleCopy} className="code-copy-btn" title={copied ? 'Copied!' : 'Copy code'}>
         {copied ? '\u2713' : '\u2398'}
       </button>
