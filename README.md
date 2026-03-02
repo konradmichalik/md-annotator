@@ -45,6 +45,9 @@
 ### 📦 Installation
 
 ```bash
+# Install the CLI
+npm install -g md-annotator
+
 # Add the marketplace
 claude plugin marketplace add konradmichalik/md-annotator
 
