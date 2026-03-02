@@ -1,6 +1,6 @@
 {
   "name": "md-annotator",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Browser-based Markdown annotator for AI-assisted review",
   "type": "module",
   "bin": {
@@ -9,7 +9,8 @@
   "files": [
     "index.js",
     "server",
-    "client/dist"
+    "client/dist",
+    "client/src/utils"
   ],
   "scripts": {
     "start": "node index.js",
