@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useUpdateCheck } from '../hooks/useUpdateCheck.js'
 
-const UPDATE_COMMAND = 'claude plugin marketplace update md-annotator && claude plugin update annotate@md-annotator'
+const UPDATE_COMMAND = 'npm update -g md-annotator && claude plugin marketplace update md-annotator && claude plugin update annotate@md-annotator'
 
 export function UpdateBanner() {
   const updateInfo = useUpdateCheck()
