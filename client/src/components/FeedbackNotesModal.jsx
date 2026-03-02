@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 const CloseIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -8,13 +8,21 @@ const CloseIcon = () => (
 )
 
 export function FeedbackNotesModal({ isOpen, onClose, notesGroups, totalFiles }) {
+  const dialogRef = useRef(null)
+  const prevFocusedRef = useRef(null)
+
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {onClose()}
     }
     if (isOpen) {
+      prevFocusedRef.current = document.activeElement
       document.addEventListener('keydown', handleEscape)
-      return () => document.removeEventListener('keydown', handleEscape)
+      dialogRef.current?.focus()
+      return () => {
+        document.removeEventListener('keydown', handleEscape)
+        prevFocusedRef.current?.focus?.()
+      }
     }
   }, [isOpen, onClose])
 
@@ -29,6 +37,8 @@ export function FeedbackNotesModal({ isOpen, onClose, notesGroups, totalFiles })
   return (
     <div className="modal-backdrop" onClick={handleBackdropClick}>
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="modal notes-modal"
         role="dialog"
         aria-modal="true"
