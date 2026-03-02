@@ -61,7 +61,7 @@ function createLineAnnotation(note, blocks, contentLines) {
   const blockLines = block.content.split('\n')
 
   // Find which line within the block corresponds to the target line
-  const lineWithinBlock = line - block.startLine
+  const lineWithinBlock = Math.min(line - block.startLine, blockLines.length - 1)
   let startOffset = 0
   for (let i = 0; i < lineWithinBlock && i < blockLines.length; i++) {
     startOffset += blockLines[i].length + 1 // +1 for newline

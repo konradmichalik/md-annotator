@@ -88,8 +88,8 @@ export function exportMultiFileFeedback(files) {
     return 'No annotations.'
   }
 
-  if (filesFiltered.length === 1) {
-    return exportFeedback(filesFiltered[0].annotations, filesFiltered[0].blocks)
+  if (filesWithAnnotations.length === 1) {
+    return exportFeedback(filesWithAnnotations[0].annotations, filesWithAnnotations[0].blocks)
   }
 
   const totalCount = filesWithAnnotations.reduce((sum, f) => sum + f.annotations.length, 0)

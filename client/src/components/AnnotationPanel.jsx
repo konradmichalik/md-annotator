@@ -224,8 +224,12 @@ export function AnnotationPanel({
                   />
                   <button
                     className="panel-global-save-btn"
+                    type="button"
                     onMouseDown={(e) => {
                       e.preventDefault()
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation()
                       handleGlobalEditSave(ann.id)
                     }}
                   >
