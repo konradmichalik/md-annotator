@@ -24,7 +24,7 @@ export function convertNotesToAnnotations(notes, markdownContent) {
   return notes
     .filter(note => note && typeof note.text === 'string' && note.text.trim())
     .map(note => {
-      if (note.line != null && typeof note.line === 'number' && note.line > 0) {
+      if (note.line !== null && typeof note.line === 'number' && note.line > 0) {
         return createLineAnnotation(note, blocks, contentLines)
       }
       return createGlobalAnnotation(note)
