@@ -32,39 +32,29 @@
 - **Update Notifications** -- Banner when a new GitHub release is available
 - **Heartbeat Detection** -- Graceful shutdown when the browser tab is closed
 - **IDE Integration** -- Annotate the currently open file in VSCode, Cursor, or JetBrains without arguments
+- **Iterative Review** -- AI agent applies your feedback and re-opens the annotator for another review round until you approve
 
-## Prerequisites
+## 📋 Prerequisites
 
 - **Node.js** 22+ and **npm**
 - A modern **browser** (opens automatically)
+
+## 🔗 Integrations
+
+*md-annotator* supports the following integrations:
+
+- [**Claude Code**](#-claude-code-plugin) -- Plugin with `/annotate:md` slash command
+- [**OpenCode**](#-opencode-plugin) -- Plugin with `annotate_markdown` tool and `/annotate:md` command
+- [**Standalone CLI**](#-standalone-cli) -- Use directly from the terminal without an AI agent
 
 ## 🔌 Claude Code Plugin
 
 *md-annotator* is a Claude Code plugin. After installation the slash command `/annotate:md` is available in any Claude Code session.
 
-### 📦 Installation
+### 📦 Installation & Update
 
 ```bash
-# Install the CLI
-npm install -g md-annotator
-
-# Add the marketplace
-claude plugin marketplace add konradmichalik/md-annotator
-
-# Install the plugin
-claude plugin install annotate@md-annotator --scope user
-```
-
-For local development, see the [Development](#development) section.
-
-### 🔄 Update
-
-```bash
-# Update the CLI
-npm install -g md-annotator@latest
-
-# Update the marketplace cache and plugin
-claude plugin marketplace update md-annotator && claude plugin update annotate@md-annotator
+curl -fsSL https://konradmichalik.github.io/md-annotator/install.sh | bash
 ```
 
 ### 🚀 Usage
@@ -82,42 +72,42 @@ Or, with IDE integration (VSCode/Cursor/JetBrains), just run without arguments t
 /annotate:md
 ```
 
-This opens the file in your browser. You can then:
-
-- **Select text** to see the annotation toolbar
-- **Delete** -- marks text as struck-through (red)
-- **Comment** -- highlights text (yellow) and adds a comment
-- **Insert** -- place the cursor to add new text at that position
-- **Global Comment** -- add general feedback via the "+" button in the annotation panel
-- **Annotate images & diagrams** -- click on images or Mermaid diagrams to comment or delete them
-- **View annotations** in the sidebar panel on the right
-- **Export** annotations as Markdown or JSON
-- **Approve** or **Submit Feedback** when done
-
 ## 🔷 OpenCode Plugin
 
 *md-annotator* is also available as an OpenCode plugin.
 
-### 📦 Installation
+### 📦 Installation & Update
 
-Add to your `opencode.json`:
+```bash
+curl -fsSL https://konradmichalik.github.io/md-annotator/install.sh | bash
+```
+
+Then add to your `opencode.json`:
 
 ```json
 {
-  "plugins": ["@md-annotator/opencode"]
+  "plugin": ["@md-annotator/opencode@latest"]
 }
 ```
 
+> [!NOTE]
+> See [OpenCode documentation](https://opencode.ai/docs/plugins) for more details.
+
 ### 🚀 Usage
 
-The agent can use the `annotate_markdown` tool:
+Use the `/annotate:md` command in the chat:
+
+```
+/annotate:md README.md
+/annotate:md docs/api.md docs/guide.md
+```
+
+The agent can also use the `annotate_markdown` tool directly:
 
 ```
 annotate_markdown({ filePath: "/path/to/file.md" })
 annotate_markdown({ filePaths: ["/path/to/a.md", "/path/to/b.md"] })
 ```
-
-Or use the `/annotate:md` command in the chat.
 
 ## 💻 Standalone CLI
 
@@ -129,9 +119,6 @@ md-annotator README.md
 
 # Multiple files (opens with tab bar)
 md-annotator docs/api.md docs/guide.md
-
-# Or link globally first
-npm link
 
 # Show help
 md-annotator --help
@@ -146,25 +133,25 @@ The server starts on an available port (default 3000) and opens your browser aut
 | `MD_ANNOTATOR_PORT` | Override the server port (default: 3000) |
 | `MD_ANNOTATOR_BROWSER` | Custom browser application |
 
+## 📝 How It Works
+
+Once a file is opened in the browser, you can:
+
+- **Select text** to see the annotation toolbar
+- **Delete** -- marks text as struck-through (red)
+- **Comment** -- highlights text (yellow) and adds a comment
+- **Insert** -- place the cursor to add new text at that position
+- **Global Comment** -- add general feedback via the "+" button in the annotation panel
+- **Annotate images & diagrams** -- click on images or Mermaid diagrams to comment or delete them
+- **View annotations** in the sidebar panel on the right
+- **Export** annotations as Markdown or JSON
+- **Approve** or **Submit Feedback** when done
+
+When used with an AI agent (Claude Code or OpenCode), submitting feedback triggers the agent to apply your changes to the file. The agent then re-opens the annotator for another review round, so you can verify the edits and provide further feedback if needed. This review loop continues until you approve the result.
+
 ## 🛠️ Development
 
-```bash
-# Clone and build
-git clone https://github.com/konradmichalik/md-annotator.git
-cd md-annotator
-npm install && npm run build
-
-# Install local plugin for testing
-claude plugin install ./apps/claude-code --scope user
-
-# Development commands
-npm run dev:client   # Vite dev server with HMR (client only)
-npm run build        # Production build (single-file HTML)
-npm run dev          # CLI with --watch
-
-# Test plugin without permanent installation
-claude --plugin-dir ./apps/claude-code
-```
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for setup, build commands, and local plugin testing.
 
 ## 📄 License
 
