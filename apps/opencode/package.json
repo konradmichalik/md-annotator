@@ -1,6 +1,6 @@
 {
   "name": "md-annotator-opencode",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "OpenCode plugin for interactive markdown annotation",
   "license": "MIT",
   "type": "module",
