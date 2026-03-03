@@ -116,7 +116,7 @@ export default function App() {
 
     const hasNoHighlighter = (ann) =>
       ann?.targetType === 'image' || ann?.targetType === 'diagram' ||
-      ann?.targetType === 'global' || ann?.type === 'INSERTION'
+      ann?.targetType === 'global'
 
     if (lastAction.type === 'delete') {
       if (!hasNoHighlighter(lastAction.annotation)) {

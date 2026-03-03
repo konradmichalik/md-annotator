@@ -16,6 +16,39 @@ function removeInsertionMarker(el) {
   }
 }
 
+function createPersistentInsertionMarker(id, blockEl, offset) {
+  const marker = document.createElement('span')
+  marker.className = 'insertion-marker'
+  marker.dataset.highlightId = id
+  marker.dataset.insertionId = id
+  marker.textContent = '\u200B'
+
+  const range = document.createRange()
+  const walker = document.createTreeWalker(blockEl, NodeFilter.SHOW_TEXT)
+  let charCount = 0
+  let placed = false
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode
+    if (node.parentElement?.closest('.insertion-marker')) continue
+    const len = node.textContent.length
+    if (charCount + len >= offset) {
+      range.setStart(node, offset - charCount)
+      range.collapse(true)
+      range.insertNode(marker)
+      placed = true
+      break
+    }
+    charCount += len
+  }
+
+  if (!placed) {
+    blockEl.appendChild(marker)
+  }
+
+  return marker
+}
+
 export const Viewer = forwardRef(function Viewer({
   blocks,
   annotations,
@@ -96,8 +129,16 @@ export const Viewer = forwardRef(function Viewer({
       })
     },
     restoreHighlight(ann) {
-      // Skip element/global/insertion/notes annotations — they have no web-highlighter DOM
-      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'global' || ann.type === 'INSERTION' || ann.type === 'NOTES') {return true}
+      if (ann.type === 'INSERTION') {
+        const blockEl = containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
+        if (!blockEl) return false
+        const existing = blockEl.querySelector(`[data-insertion-id="${ann.id}"]`)
+        if (!existing) {
+          createPersistentInsertionMarker(ann.id, blockEl, ann.startOffset)
+        }
+        return true
+      }
+      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'global' || ann.type === 'NOTES') {return true}
       const highlighter = highlighterRef.current
       if (!highlighter) {return false}
       const wasRestoring = isRestoringRef.current
@@ -248,7 +289,7 @@ export const Viewer = forwardRef(function Viewer({
 
       // Ignore clicks on interactive/UI targets and links
       if (e.defaultPrevented) {return}
-      if (e.target.closest('.annotation-toolbar, button, a[href], .code-copy-btn, .annotatable-image-wrapper, .mermaid-diagram, .mermaid-controls, .block-note-border')) {return}
+      if (e.target.closest('.annotation-toolbar, button, a[href], .code-copy-btn, .annotatable-image-wrapper, .mermaid-diagram, .mermaid-controls, .block-note-border, .insertion-marker')) {return}
 
       requestAnimationFrame(() => {
         // If web-highlighter created a pending source in the meantime, don't interfere
@@ -296,13 +337,26 @@ export const Viewer = forwardRef(function Viewer({
       })
     }
 
+    const handleInsertionMarkerClick = (e) => {
+      const marker = e.target.closest('.insertion-marker[data-insertion-id]')
+      if (!marker) return
+      e.stopPropagation()
+      const annId = marker.dataset.insertionId
+      const ann = annotationsRef.current.find(a => a.id === annId)
+      if (!ann) return
+      onSelectAnnotation(annId)
+      setToolbarState({ element: marker, annotation: ann, mode: 'edit', insertionEdit: true })
+      setRequestedToolbarStep(null)
+    }
+
     const container = containerRef.current
     container.addEventListener('click', handleCursorClick)
+    container.addEventListener('click', handleInsertionMarkerClick)
 
     return () => {
-      // Clean up any lingering insertion markers
       container?.querySelectorAll('.insertion-marker-temp').forEach(removeInsertionMarker)
       container?.removeEventListener('click', handleCursorClick)
+      container?.removeEventListener('click', handleInsertionMarkerClick)
       highlighter.dispose()
     }
   }, [onSelectAnnotation])
@@ -333,7 +387,6 @@ export const Viewer = forwardRef(function Viewer({
     // Insertion annotations bypass web-highlighter
     if (toolbarState.insertionMode) {
       const insertionText = typeof text === 'string' ? text.trim() : ''
-      // Clean up marker regardless of whether we create an annotation
       removeInsertionMarker(toolbarState.element)
       if (!insertionText) {
         setToolbarState(null)
@@ -342,8 +395,9 @@ export const Viewer = forwardRef(function Viewer({
         return
       }
       const { blockId, offset, afterContext } = toolbarState.insertionData
+      const annId = crypto.randomUUID()
       const newAnnotation = {
-        id: crypto.randomUUID(),
+        id: annId,
         blockId,
         startOffset: offset,
         endOffset: offset,
@@ -354,6 +408,10 @@ export const Viewer = forwardRef(function Viewer({
         createdAt: Date.now(),
         startMeta: null,
         endMeta: null
+      }
+      const blockEl = containerRef.current?.querySelector(`[data-block-id="${blockId}"]`)
+      if (blockEl) {
+        createPersistentInsertionMarker(annId, blockEl, offset)
       }
       onAddAnnotationRef.current(newAnnotation)
       setToolbarState(null)

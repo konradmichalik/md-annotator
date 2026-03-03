@@ -2035,6 +2035,33 @@ a:hover { opacity: 0.8; }
 }
 
 /* === Insertion Marker === */
+.insertion-marker {
+  display: inline;
+  border-left: 2px solid #88c0d0;
+  cursor: pointer;
+  position: relative;
+}
+
+.insertion-marker::after {
+  content: '+';
+  position: absolute;
+  top: -0.6em;
+  left: -0.4em;
+  font-size: 0.65em;
+  font-weight: 700;
+  color: #88c0d0;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.insertion-marker:hover {
+  border-left-color: #5e81ac;
+}
+
+.insertion-marker:hover::after {
+  color: #5e81ac;
+}
+
 .insertion-marker-temp {
   display: inline;
   border-left: 2px solid #88c0d0;
