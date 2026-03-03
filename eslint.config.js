@@ -49,6 +49,6 @@ export default [
     }
   },
   {
-    ignores: ['node_modules/**', 'client/dist/**']
+    ignores: ['node_modules/**', 'client/dist/**', 'apps/**/dist/**', 'apps/**/node_modules/**']
   }
 ]

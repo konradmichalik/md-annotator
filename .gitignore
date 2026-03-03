@@ -1,6 +1,7 @@
 node_modules/
 dist/
 client/dist/
+apps/opencode/annotator.html
 .env
 .env.*
 .DS_Store
@@ -8,3 +9,4 @@ client/dist/
 package-lock.json
 IDEAS.md
 plans/
+opencode.json

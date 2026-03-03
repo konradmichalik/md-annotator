@@ -2,7 +2,6 @@
   "name": "@md-annotator/opencode",
   "version": "0.5.3",
   "description": "OpenCode plugin for interactive markdown annotation",
-  "author": "k.michalik",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
@@ -20,13 +19,17 @@
     "ai-agent"
   ],
   "scripts": {
-    "build": "cp ../../client/dist/index.html ./annotator.html && tsup index.ts --format esm --dts --external @opencode-ai/plugin",
+    "build": "cp ../../client/dist/index.html ./annotator.html && tsup",
     "postinstall": "mkdir -p ${XDG_CONFIG_HOME:-$HOME/.config}/opencode/command && cp ./commands/*.md ${XDG_CONFIG_HOME:-$HOME/.config}/opencode/command/ 2>/dev/null || true"
   },
   "dependencies": {
     "@opencode-ai/plugin": "^1.1.10"
   },
   "devDependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "open": "^10.1.0",
+    "portfinder": "^1.0.32",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
   }
