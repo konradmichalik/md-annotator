@@ -76,12 +76,13 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
       const href = match[2]
       const isAnchor = href.startsWith('#')
       const isExternal = href.startsWith('http://') || href.startsWith('https://')
+      const linkContent = <InlineMarkdown text={match[1]} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={blockId} />
       if (isAnchor) {
-        parts.push(<a key={key++} href={href} onClick={(e) => handleAnchorClick(e, href)}>{match[1]}</a>)
+        parts.push(<a key={key++} href={href} onClick={(e) => handleAnchorClick(e, href)}>{linkContent}</a>)
       } else if (isExternal) {
         parts.push(
           <a key={key++} href={href} target="_blank" rel="noopener noreferrer" className="external-link">
-            {match[1]}
+            {linkContent}
             <svg className="external-link-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
               <polyline points="15 3 21 3 21 9" />
@@ -90,7 +91,7 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
           </a>
         )
       } else {
-        parts.push(<a key={key++} href={href} target="_blank" rel="noopener noreferrer">{match[1]}</a>)
+        parts.push(<a key={key++} href={href} target="_blank" rel="noopener noreferrer">{linkContent}</a>)
       }
       remaining = remaining.slice(match[0].length)
       continue
