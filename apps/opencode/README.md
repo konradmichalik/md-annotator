@@ -1,4 +1,4 @@
-# @md-annotator/opencode
+# md-annotator-opencode
 
 OpenCode plugin for interactive markdown annotation.
 
@@ -8,7 +8,7 @@ Add to your `opencode.json`:
 
 ```json
 {
-  "plugins": ["@md-annotator/opencode"]
+  "plugins": ["md-annotator-opencode"]
 }
 ```
 

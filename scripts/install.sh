@@ -2,7 +2,7 @@
 set -e
 
 REPO="konradmichalik/md-annotator"
-PACKAGE_NAME="@md-annotator/opencode"
+PACKAGE_NAME="md-annotator-opencode"
 
 echo "md-annotator — OpenCode Plugin Installer"
 echo ""
@@ -51,8 +51,8 @@ COMMAND_EOF
 echo "Installed /annotate:md command to ${OPENCODE_COMMANDS_DIR}/annotate:md.md"
 
 # Clear cached OpenCode plugin to force fresh download on next run
-rm -rf "$HOME/.cache/opencode/node_modules/@md-annotator" 2>/dev/null || true
-rm -rf "$HOME/.bun/install/cache/@md-annotator" 2>/dev/null || true
+rm -rf "$HOME/.cache/opencode/node_modules/@md-annotator" "$HOME/.cache/opencode/node_modules/md-annotator-opencode" 2>/dev/null || true
+rm -rf "$HOME/.bun/install/cache/@md-annotator" "$HOME/.bun/install/cache/md-annotator-opencode" 2>/dev/null || true
 echo "Cleared OpenCode plugin cache"
 
 echo ""

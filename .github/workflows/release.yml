@@ -39,7 +39,7 @@ jobs:
         run: npm run build
         working-directory: apps/opencode
 
-      - name: Publish @md-annotator/opencode to npm
+      - name: Publish md-annotator-opencode to npm
         run: npm publish --access public
         working-directory: apps/opencode
         env:

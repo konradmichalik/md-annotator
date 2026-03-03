@@ -86,7 +86,7 @@ Then add to your `opencode.json`:
 
 ```json
 {
-  "plugin": ["@md-annotator/opencode@latest"]
+  "plugin": ["md-annotator-opencode@latest"]
 }
 ```
 
