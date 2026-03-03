@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useUpdateCheck } from '../hooks/useUpdateCheck.js'
 
-const UPDATE_COMMAND = 'npm install -g md-annotator@latest && claude plugin marketplace update md-annotator && claude plugin update annotate@md-annotator'
+const UPDATE_COMMAND = 'curl -fsSL https://konradmichalik.github.io/md-annotator/install.sh | bash'
 
 export function UpdateBanner() {
   const updateInfo = useUpdateCheck()
