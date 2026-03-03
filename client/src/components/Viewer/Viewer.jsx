@@ -30,7 +30,7 @@ function createPersistentInsertionMarker(id, blockEl, offset) {
 
   while (walker.nextNode()) {
     const node = walker.currentNode
-    if (node.parentElement?.closest('.insertion-marker')) continue
+    if (node.parentElement?.closest('.insertion-marker')) { continue }
     const len = node.textContent.length
     if (charCount + len >= offset) {
       range.setStart(node, offset - charCount)
@@ -131,7 +131,7 @@ export const Viewer = forwardRef(function Viewer({
     restoreHighlight(ann) {
       if (ann.type === 'INSERTION') {
         const blockEl = containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
-        if (!blockEl) return false
+        if (!blockEl) {return false}
         const existing = blockEl.querySelector(`[data-insertion-id="${ann.id}"]`)
         if (!existing) {
           createPersistentInsertionMarker(ann.id, blockEl, ann.startOffset)
@@ -339,11 +339,11 @@ export const Viewer = forwardRef(function Viewer({
 
     const handleInsertionMarkerClick = (e) => {
       const marker = e.target.closest('.insertion-marker[data-insertion-id]')
-      if (!marker) return
+      if (!marker) {return}
       e.stopPropagation()
       const annId = marker.dataset.insertionId
       const ann = annotationsRef.current.find(a => a.id === annId)
-      if (!ann) return
+      if (!ann) {return}
       onSelectAnnotation(annId)
       setToolbarState({ element: marker, annotation: ann, mode: 'edit', insertionEdit: true })
       setRequestedToolbarStep(null)
