@@ -79,7 +79,7 @@ export function useFileAutocomplete(value, cursorPos) {
 
   useEffect(() => {
     fetchWorkspaceFiles().then(f => {
-      if (f.length > 0) { setFiles(f) }
+      setFiles(f)
     })
   }, [])
 

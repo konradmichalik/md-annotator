@@ -13,11 +13,16 @@ export function FileAutocomplete({ items, activeIndex, onSelect }) {
   if (items.length === 0) { return null }
 
   return (
-    <div className="file-autocomplete" role="listbox">
+    <div
+      className="file-autocomplete"
+      role="listbox"
+      aria-activedescendant={items[activeIndex] ? `file-option-${activeIndex}` : undefined}
+    >
       <ul ref={listRef} className="file-autocomplete-list">
         {items.map((file, i) => (
           <li
             key={file}
+            id={`file-option-${i}`}
             role="option"
             aria-selected={i === activeIndex}
             className={`file-autocomplete-item${i === activeIndex ? ' active' : ''}`}

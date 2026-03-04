@@ -2208,7 +2208,7 @@ a:hover { opacity: 0.8; }
   overflow: hidden;
   pointer-events: none;
   white-space: pre-wrap;
-  word-wrap: break-word;
+  overflow-wrap: break-word;
   color: transparent;
 }
 

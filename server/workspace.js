@@ -10,7 +10,7 @@ const EXCLUDE_DIRS = new Set([
 
 function gitListFiles(cwd) {
   return new Promise((resolve, reject) => {
-    execFile('git', ['ls-files'], { cwd, maxBuffer: 10 * 1024 * 1024 }, (err, stdout) => {
+    execFile('git', ['ls-files'], { cwd, maxBuffer: 10 * 1024 * 1024, timeout: 10_000 }, (err, stdout) => {
       if (err) { return reject(err) }
       const files = stdout.split('\n').filter(Boolean)
       resolve(files.slice(0, MAX_FILES))

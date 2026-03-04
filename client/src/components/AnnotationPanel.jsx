@@ -127,14 +127,17 @@ export function AnnotationPanel({
       if (newest && !newest.text) {
         setEditingGlobalId(newest.id)
         setEditingGlobalText('')
+        setGlobalCursorPos(0)
       }
     }
     prevGlobalCountRef.current = globalComments.length
   }, [globalComments])
 
   const handleGlobalEditStart = (ann) => {
+    const next = ann.text || ''
     setEditingGlobalId(ann.id)
-    setEditingGlobalText(ann.text || '')
+    setEditingGlobalText(next)
+    setGlobalCursorPos(next.length)
   }
 
   const handleGlobalEditSave = (id) => {

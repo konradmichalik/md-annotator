@@ -41,17 +41,22 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
 
   useEffect(() => {
     if (editAnnotation) {
+      const next = editAnnotation.text || ''
       setStep('menu')
-      setInputValue(editAnnotation.text || '')
+      setInputValue(next)
+      setCursorPos(next.length)
     } else if (insertionMode) {
       setStep('menu')
       setInputValue('')
+      setCursorPos(0)
     } else if (requestedStepProp) {
       setStep('input')
       setInputValue('')
+      setCursorPos(0)
     } else {
       setStep('menu')
       setInputValue('')
+      setCursorPos(0)
     }
   }, [highlightElement, requestedStepProp, editAnnotation, elementMode, insertionMode])
 
