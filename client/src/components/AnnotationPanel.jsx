@@ -1,4 +1,8 @@
 import { useRef, useState, useEffect, useMemo } from 'react'
+import { useFileAutocomplete } from '../hooks/useFileAutocomplete.js'
+import { FileAutocomplete } from './FileAutocomplete.jsx'
+import { FileReferenceText } from './FileReferenceText.jsx'
+import { TextareaBackdrop } from './TextareaBackdrop.jsx'
 
 const MoreIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -26,7 +30,25 @@ export function AnnotationPanel({
   const [menuOpen, setMenuOpen] = useState(false)
   const [editingGlobalId, setEditingGlobalId] = useState(null)
   const [editingGlobalText, setEditingGlobalText] = useState('')
+  const [globalCursorPos, setGlobalCursorPos] = useState(0)
   const globalEditRef = useRef(null)
+
+  const globalAutocomplete = useFileAutocomplete(editingGlobalText, globalCursorPos)
+
+  const applyGlobalAutocomplete = (index) => {
+    const result = globalAutocomplete.accept(index)
+    if (result) {
+      setEditingGlobalText(result.newValue)
+      setGlobalCursorPos(result.newCursorPos)
+      requestAnimationFrame(() => {
+        if (globalEditRef.current) {
+          globalEditRef.current.selectionStart = result.newCursorPos
+          globalEditRef.current.selectionEnd = result.newCursorPos
+          globalEditRef.current.focus()
+        }
+      })
+    }
+  }
 
   const noteAnnotations = useMemo(
     () => annotations.filter(a => a.type === 'NOTES'),
@@ -105,14 +127,17 @@ export function AnnotationPanel({
       if (newest && !newest.text) {
         setEditingGlobalId(newest.id)
         setEditingGlobalText('')
+        setGlobalCursorPos(0)
       }
     }
     prevGlobalCountRef.current = globalComments.length
   }, [globalComments])
 
   const handleGlobalEditStart = (ann) => {
+    const next = ann.text || ''
     setEditingGlobalId(ann.id)
-    setEditingGlobalText(ann.text || '')
+    setEditingGlobalText(next)
+    setGlobalCursorPos(next.length)
   }
 
   const handleGlobalEditSave = (id) => {
@@ -204,13 +229,28 @@ export function AnnotationPanel({
                 </div>
               </div>
               {editingGlobalId === ann.id ? (
-                <div className="panel-global-edit">
-                  <textarea
-                    ref={globalEditRef}
+                <div className="panel-global-edit" style={{ position: 'relative' }}>
+                  <div className="textarea-backdrop-wrap">
+                    <TextareaBackdrop value={editingGlobalText} textareaRef={globalEditRef} />
+                    <textarea
+                      ref={globalEditRef}
                     className="panel-global-textarea"
                     value={editingGlobalText}
-                    onChange={(e) => setEditingGlobalText(e.target.value)}
+                    aria-expanded={globalAutocomplete.isOpen}
+                    aria-autocomplete="list"
+                    onChange={(e) => {
+                      setEditingGlobalText(e.target.value)
+                      setGlobalCursorPos(e.target.selectionStart)
+                    }}
+                    onSelect={(e) => setGlobalCursorPos(e.target.selectionStart)}
                     onKeyDown={(e) => {
+                      const action = globalAutocomplete.handleKeyDown(e)
+                      if (action === 'accept') {
+                        applyGlobalAutocomplete()
+                        return
+                      }
+                      if (action) { return }
+
                       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                         e.preventDefault()
                         handleGlobalEditSave(ann.id)
@@ -221,7 +261,15 @@ export function AnnotationPanel({
                       }
                     }}
                     placeholder="Add your comment..."
-                  />
+                    />
+                  </div>
+                  {globalAutocomplete.isOpen && (
+                    <FileAutocomplete
+                      items={globalAutocomplete.items}
+                      activeIndex={globalAutocomplete.activeIndex}
+                      onSelect={applyGlobalAutocomplete}
+                    />
+                  )}
                   <button
                     className="panel-global-save-btn"
                     type="button"
@@ -238,7 +286,7 @@ export function AnnotationPanel({
                 </div>
               ) : (
                 <p className="panel-comment-text">
-                  {ann.text || <span style={{ opacity: 0.5, fontStyle: 'italic' }}>Click edit to add comment...</span>}
+                  {ann.text ? <FileReferenceText text={ann.text} /> : <span style={{ opacity: 0.5, fontStyle: 'italic' }}>Click edit to add comment...</span>}
                 </p>
               )}
             </div>
@@ -342,7 +390,7 @@ export function AnnotationPanel({
                 ? ann.originalText.slice(0, 80) + '...'
                 : ann.originalText}"</p>
             )}
-            {ann.text && <p className="panel-comment-text">{ann.text}</p>}
+            {ann.text && <p className="panel-comment-text"><FileReferenceText text={ann.text} /></p>}
           </li>
           )
         })}

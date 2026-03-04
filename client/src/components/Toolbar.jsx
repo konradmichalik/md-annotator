@@ -1,11 +1,32 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { useFileAutocomplete } from '../hooks/useFileAutocomplete.js'
+import { FileAutocomplete } from './FileAutocomplete.jsx'
+import { TextareaBackdrop } from './TextareaBackdrop.jsx'
 
 export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, requestedStep: requestedStepProp, editAnnotation, elementMode, insertionMode }) {
   const [step, setStep] = useState('menu')
   const [inputValue, setInputValue] = useState('')
   const [position, setPosition] = useState(null)
+  const [cursorPos, setCursorPos] = useState(0)
   const inputRef = useRef(null)
+
+  const autocomplete = useFileAutocomplete(inputValue, cursorPos)
+
+  const applyAutocomplete = (index) => {
+    const result = autocomplete.accept(index)
+    if (result) {
+      setInputValue(result.newValue)
+      setCursorPos(result.newCursorPos)
+      requestAnimationFrame(() => {
+        if (inputRef.current) {
+          inputRef.current.selectionStart = result.newCursorPos
+          inputRef.current.selectionEnd = result.newCursorPos
+          inputRef.current.focus()
+        }
+      })
+    }
+  }
 
   useEffect(() => {
     if (step === 'input') {inputRef.current?.focus()}
@@ -20,17 +41,22 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
 
   useEffect(() => {
     if (editAnnotation) {
+      const next = editAnnotation.text || ''
       setStep('menu')
-      setInputValue(editAnnotation.text || '')
+      setInputValue(next)
+      setCursorPos(next.length)
     } else if (insertionMode) {
       setStep('menu')
       setInputValue('')
+      setCursorPos(0)
     } else if (requestedStepProp) {
       setStep('input')
       setInputValue('')
+      setCursorPos(0)
     } else {
       setStep('menu')
       setInputValue('')
+      setCursorPos(0)
     }
   }, [highlightElement, requestedStepProp, editAnnotation, elementMode, insertionMode])
 
@@ -44,6 +70,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
       if (e.key.length !== 1) {return}
       e.preventDefault()
       setInputValue(e.key)
+      setCursorPos(e.key.length)
       setStep('input')
     }
     document.addEventListener('keydown', handleKeyDown)
@@ -204,15 +231,30 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
           )}
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="toolbar-input">
-          <textarea
-            ref={inputRef}
-            rows={1}
-            className="toolbar-textarea"
+        <form onSubmit={handleSubmit} className="toolbar-input" style={{ position: 'relative' }}>
+          <div className="textarea-backdrop-wrap">
+            <TextareaBackdrop value={inputValue} textareaRef={inputRef} />
+            <textarea
+              ref={inputRef}
+              rows={1}
+              className="toolbar-textarea"
             placeholder={insertionMode ? "Text to insert..." : "Add a comment..."}
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            aria-expanded={autocomplete.isOpen}
+            aria-autocomplete="list"
+            onChange={(e) => {
+              setInputValue(e.target.value)
+              setCursorPos(e.target.selectionStart)
+            }}
+            onSelect={(e) => setCursorPos(e.target.selectionStart)}
             onKeyDown={(e) => {
+              const action = autocomplete.handleKeyDown(e)
+              if (action === 'accept') {
+                applyAutocomplete()
+                return
+              }
+              if (action) { return }
+
               if (e.key === 'Escape') {
                 editAnnotation ? onClose() : setStep('menu')
               }
@@ -222,6 +264,14 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
               }
             }}
           />
+          </div>
+          {autocomplete.isOpen && (
+            <FileAutocomplete
+              items={autocomplete.items}
+              activeIndex={autocomplete.activeIndex}
+              onSelect={applyAutocomplete}
+            />
+          )}
           <button type="submit" disabled={!inputValue.trim()} className="toolbar-submit">
             Save
           </button>

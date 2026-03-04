@@ -3,6 +3,7 @@ import { relative, resolve, dirname, isAbsolute } from 'node:path'
 import { createHash } from 'node:crypto'
 import { readMarkdownFile, isMarkdownFile } from './file.js'
 import { exportFeedback, exportMultiFileFeedback } from './feedback.js'
+import { listWorkspaceFiles } from './workspace.js'
 
 function success(data) {
   return { success: true, data }
@@ -14,6 +15,16 @@ function failure(error) {
 
 export function createApiRouter(filePaths, resolveDecision, origin = 'cli', stores = []) {
   const router = Router()
+
+  // Workspace file listing for @-reference autocomplete
+  router.get('/api/workspace/files', async (_req, res) => {
+    try {
+      const files = await listWorkspaceFiles()
+      res.json(success({ files }))
+    } catch (error) {
+      res.status(500).json(failure(error.message))
+    }
+  })
 
   // Multi-file endpoint — returns all files
   router.get('/api/files', async (_req, res) => {
