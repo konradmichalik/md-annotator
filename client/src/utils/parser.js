@@ -101,16 +101,38 @@ export function parseMarkdownToBlocks(markdown) {
       continue
     }
 
-    // Blockquotes
+    // Blockquotes & GitHub alerts
     if (trimmed.startsWith('>')) {
       flush()
-      blocks.push({
-        id: `block-${currentId++}`,
-        type: 'blockquote',
-        content: trimmed.replace(/^>\s*/, ''),
-        order: currentId,
-        startLine: currentLineNum
-      })
+      const blockquoteStartLine = currentLineNum
+      const bqLines = [trimmed.replace(/^>\s*/, '')]
+
+      // Collect consecutive blockquote lines
+      while (i + 1 < lines.length && lines[i + 1].trim().startsWith('>')) {
+        i++
+        bqLines.push(lines[i].trim().replace(/^>\s*/, ''))
+      }
+
+      // Check for GitHub alert syntax: [!NOTE], [!TIP], etc.
+      const alertMatch = bqLines[0].match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]$/)
+      if (alertMatch) {
+        blocks.push({
+          id: `block-${currentId++}`,
+          type: 'alert',
+          alertType: alertMatch[1].toLowerCase(),
+          content: bqLines.slice(1).join('\n'),
+          order: currentId,
+          startLine: blockquoteStartLine
+        })
+      } else {
+        blocks.push({
+          id: `block-${currentId++}`,
+          type: 'blockquote',
+          content: bqLines.join('\n'),
+          order: currentId,
+          startLine: blockquoteStartLine
+        })
+      }
       continue
     }
 
