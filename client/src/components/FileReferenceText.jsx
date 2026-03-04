@@ -1,7 +1,7 @@
 const FILE_REF_REGEX = /(?:^|(?<=\s))@([\w./_-][\w./_-]*)/g
 
 export function parseFileReferences(text) {
-  if (!text) return null
+  if (!text) { return null }
   const parts = []
   let lastIndex = 0
   let hasRefs = false
@@ -19,7 +19,7 @@ export function parseFileReferences(text) {
     lastIndex = start + fullMatch.length
   }
 
-  if (!hasRefs) return null
+  if (!hasRefs) { return null }
   if (lastIndex < text.length) {
     parts.push({ type: 'text', value: text.slice(lastIndex) })
   }
@@ -28,7 +28,7 @@ export function parseFileReferences(text) {
 
 export function FileReferenceText({ text }) {
   const parts = parseFileReferences(text)
-  if (!parts) return text
+  if (!parts) { return text }
 
   return parts.map((part, i) =>
     part.type === 'ref' ? (

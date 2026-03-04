@@ -5,31 +5,31 @@ const MAX_VISIBLE = 10
 // --- Pure helpers (exported for testing) ---
 
 export function detectTrigger(value, cursorPos) {
-  if (cursorPos === 0) return null
+  if (cursorPos === 0) { return null }
   for (let i = cursorPos - 1; i >= 0; i--) {
     const ch = value[i]
     if (ch === '@') {
       if (i === 0 || /\s/.test(value[i - 1])) {
         const query = value.slice(i + 1, cursorPos)
-        if (query.includes('\n')) return null
+        if (query.includes('\n')) { return null }
         return { triggerIndex: i, query }
       }
       return null
     }
-    if (ch === '\n') return null
+    if (ch === '\n') { return null }
   }
   return null
 }
 
 export function filterFiles(files, query) {
-  if (!query) return files.slice(0, MAX_VISIBLE)
+  if (!query) { return files.slice(0, MAX_VISIBLE) }
   const lower = query.toLowerCase()
   const matches = files.filter(f => f.toLowerCase().includes(lower))
   matches.sort((a, b) => {
     const aStarts = a.toLowerCase().startsWith(lower)
     const bStarts = b.toLowerCase().startsWith(lower)
-    if (aStarts && !bStarts) return -1
-    if (!aStarts && bStarts) return 1
+    if (aStarts && !bStarts) { return -1 }
+    if (!aStarts && bStarts) { return 1 }
     return a.localeCompare(b)
   })
   return matches.slice(0, MAX_VISIBLE)
@@ -51,11 +51,11 @@ let cachedFiles = null
 let fetchPromise = null
 
 function fetchWorkspaceFiles() {
-  if (cachedFiles !== null) return Promise.resolve(cachedFiles)
-  if (fetchPromise) return fetchPromise
+  if (cachedFiles !== null) { return Promise.resolve(cachedFiles) }
+  if (fetchPromise) { return fetchPromise }
   fetchPromise = fetch('/api/workspace/files')
     .then(r => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      if (!r.ok) { throw new Error(`HTTP ${r.status}`) }
       return r.json()
     })
     .then(json => {
@@ -79,7 +79,7 @@ export function useFileAutocomplete(value, cursorPos) {
 
   useEffect(() => {
     fetchWorkspaceFiles().then(f => {
-      if (f.length > 0) setFiles(f)
+      if (f.length > 0) { setFiles(f) }
     })
   }, [])
 
@@ -99,7 +99,7 @@ export function useFileAutocomplete(value, cursorPos) {
     && trigger.triggerIndex !== dismissedTriggerIndex
 
   const items = useMemo(() => {
-    if (!isOpen) return []
+    if (!isOpen) { return [] }
     return filterFiles(files, trigger.query)
   }, [isOpen, files, trigger?.query])
 
@@ -110,7 +110,7 @@ export function useFileAutocomplete(value, cursorPos) {
   const showDropdown = isOpen && items.length > 0
 
   const handleKeyDown = useCallback((e) => {
-    if (!showDropdown) return null
+    if (!showDropdown) { return null }
 
     if (e.key === 'Escape') {
       e.preventDefault()
@@ -140,7 +140,7 @@ export function useFileAutocomplete(value, cursorPos) {
   }, [showDropdown, items.length, trigger?.triggerIndex])
 
   const accept = useCallback((index) => {
-    if (!trigger || !items[index ?? activeIndex]) return null
+    if (!trigger || !items[index ?? activeIndex]) { return null }
     const filePath = items[index ?? activeIndex]
     return insertFileReference(value, trigger.triggerIndex, cursorPos, filePath)
   }, [trigger, items, activeIndex, value, cursorPos])

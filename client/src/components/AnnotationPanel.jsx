@@ -246,7 +246,7 @@ export function AnnotationPanel({
                         applyGlobalAutocomplete()
                         return
                       }
-                      if (action) return
+                      if (action) { return }
 
                       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                         e.preventDefault()

@@ -7,7 +7,7 @@ export function TextareaBackdrop({ value, textareaRef }) {
   useEffect(() => {
     const textarea = textareaRef?.current
     const backdrop = backdropRef.current
-    if (!textarea || !backdrop) return
+    if (!textarea || !backdrop) { return }
 
     const syncScroll = () => {
       backdrop.scrollTop = textarea.scrollTop
@@ -19,7 +19,7 @@ export function TextareaBackdrop({ value, textareaRef }) {
   }, [textareaRef])
 
   const parts = parseFileReferences(value)
-  if (!parts) return null
+  if (!parts) { return null }
 
   return (
     <div ref={backdropRef} className="textarea-backdrop" aria-hidden="true">

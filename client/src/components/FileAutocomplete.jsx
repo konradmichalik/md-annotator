@@ -10,7 +10,7 @@ export function FileAutocomplete({ items, activeIndex, onSelect }) {
     }
   }, [activeIndex])
 
-  if (items.length === 0) return null
+  if (items.length === 0) { return null }
 
   return (
     <div className="file-autocomplete" role="listbox">

@@ -248,7 +248,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
                 applyAutocomplete()
                 return
               }
-              if (action) return
+              if (action) { return }
 
               if (e.key === 'Escape') {
                 editAnnotation ? onClose() : setStep('menu')
