@@ -442,6 +442,10 @@ body {
   color: var(--warning);
 }
 
+.done-icon--feedback svg {
+  transform: translate(-1px, 1px);
+}
+
 .done-title {
   font-size: 1.5rem;
   font-weight: 600;
