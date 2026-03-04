@@ -4,7 +4,9 @@ description: Annotate a markdown file in the browser
 
 Use the `annotate_markdown` tool to open the specified file for interactive review.
 
-If a file path is provided as an argument, use that file.
+**Arguments:** $ARGUMENTS
+
+If arguments contain file path(s), use those files.
 Otherwise, ask the user which markdown file they want to annotate.
 
 The user can:
