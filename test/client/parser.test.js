@@ -171,10 +171,45 @@ describe('parseMarkdownToBlocks', () => {
       expect(blocks[0].content).toBe('Spaced quote')
     })
 
-    it('treats consecutive blockquote lines as separate blocks', () => {
+    it('merges consecutive blockquote lines into a single block', () => {
       const md = '> Line one\n> Line two'
       const blocks = parseMarkdownToBlocks(md)
-      expect(blocks).toHaveLength(2)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0].content).toBe('Line one\nLine two')
+    })
+  })
+
+  describe('GitHub alert boxes', () => {
+    it('parses > [!NOTE] as alert block', () => {
+      const md = '> [!NOTE]\n> This is a note.'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0]).toMatchObject({
+        type: 'alert',
+        alertType: 'note',
+        content: 'This is a note.'
+      })
+    })
+
+    it('parses all five alert types', () => {
+      for (const type of ['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION']) {
+        const blocks = parseMarkdownToBlocks(`> [!${type}]\n> Text`)
+        expect(blocks[0].type).toBe('alert')
+        expect(blocks[0].alertType).toBe(type.toLowerCase())
+      }
+    })
+
+    it('collects multi-line alert content', () => {
+      const md = '> [!WARNING]\n> Line one\n> Line two'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0].content).toBe('Line one\nLine two')
+    })
+
+    it('does not treat unknown types as alerts', () => {
+      const md = '> [!UNKNOWN]\n> Some text'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks[0].type).toBe('blockquote')
     })
   })
 

@@ -582,35 +582,35 @@ body {
 
 .block-alert--note {
   border-color: #478be6;
-  background: rgba(71, 139, 230, 0.08);
+  background: rgb(71 139 230 / 8%);
   color: var(--text);
 }
 .block-alert--note .block-alert-title { color: #478be6; }
 
 .block-alert--tip {
   border-color: #3fb950;
-  background: rgba(63, 185, 80, 0.08);
+  background: rgb(63 185 80 / 8%);
   color: var(--text);
 }
 .block-alert--tip .block-alert-title { color: #3fb950; }
 
 .block-alert--important {
   border-color: #a371f7;
-  background: rgba(163, 113, 247, 0.08);
+  background: rgb(163 113 247 / 8%);
   color: var(--text);
 }
 .block-alert--important .block-alert-title { color: #a371f7; }
 
 .block-alert--warning {
   border-color: #d29922;
-  background: rgba(210, 153, 34, 0.08);
+  background: rgb(210 153 34 / 8%);
   color: var(--text);
 }
 .block-alert--warning .block-alert-title { color: #d29922; }
 
 .block-alert--caution {
   border-color: #f85149;
-  background: rgba(248, 81, 73, 0.08);
+  background: rgb(248 81 73 / 8%);
   color: var(--text);
 }
 .block-alert--caution .block-alert-title { color: #f85149; }
