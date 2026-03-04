@@ -39,7 +39,7 @@ export function insertFileReference(value, triggerIndex, cursorPos, filePath) {
   const before = value.slice(0, triggerIndex)
   const after = value.slice(cursorPos)
   const reference = `@${filePath}`
-  const needsSpace = after.length > 0 && after[0] !== ' '
+  const needsSpace = after.length === 0 || !/\s/.test(after[0])
   const newValue = before + reference + (needsSpace ? ' ' : '') + after
   const newCursorPos = before.length + reference.length + (needsSpace ? 1 : 0)
   return { newValue, newCursorPos }

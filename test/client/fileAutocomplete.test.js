@@ -77,8 +77,8 @@ describe('filterFiles', () => {
 describe('insertFileReference', () => {
   it('replaces @query with @filepath', () => {
     const result = insertFileReference('hello @sr', 6, 9, 'src/App.jsx')
-    expect(result.newValue).toBe('hello @src/App.jsx')
-    expect(result.newCursorPos).toBe(18)
+    expect(result.newValue).toBe('hello @src/App.jsx ')
+    expect(result.newCursorPos).toBe(19)
   })
 
   it('adds space before remaining text', () => {
@@ -88,7 +88,7 @@ describe('insertFileReference', () => {
 
   it('handles @ at end of text', () => {
     const result = insertFileReference('see @', 4, 5, 'README.md')
-    expect(result.newValue).toBe('see @README.md')
+    expect(result.newValue).toBe('see @README.md ')
   })
 
   it('does not add extra space when next char is space', () => {
@@ -98,8 +98,8 @@ describe('insertFileReference', () => {
 
   it('handles empty text before @', () => {
     const result = insertFileReference('@', 0, 1, 'index.js')
-    expect(result.newValue).toBe('@index.js')
-    expect(result.newCursorPos).toBe(9)
+    expect(result.newValue).toBe('@index.js ')
+    expect(result.newCursorPos).toBe(10)
   })
 })
 
