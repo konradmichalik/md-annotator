@@ -77,8 +77,24 @@ export default function App() {
   const prevLastActionRef = useRef(null)
   const toastTimerRef = useRef(null)
   const notesShownRef = useRef(false)
+  const errorTimerRef = useRef(null)
   const filesRef = useRef(files)
   filesRef.current = files
+
+  const setErrorStatus = useCallback((msg) => {
+    setStatus(msg)
+    if (errorTimerRef.current) {clearTimeout(errorTimerRef.current)}
+    errorTimerRef.current = setTimeout(() => {
+      setStatus(prev => (prev === msg ? '' : prev))
+      errorTimerRef.current = null
+    }, 5000)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (errorTimerRef.current) {clearTimeout(errorTimerRef.current)}
+    }
+  }, [])
 
   const showToast = useCallback((message) => {
     if (toastTimerRef.current) {clearTimeout(toastTimerRef.current)}
@@ -201,10 +217,10 @@ export default function App() {
         setStatus('Select text to annotate, then Approve or Submit Feedback.')
         return loadedFiles
       } else {
-        setStatus('Error: ' + json.error)
+        setErrorStatus('Error: ' + json.error)
       }
     } catch (err) {
-      setStatus('Error: ' + err.message)
+      setErrorStatus('Error: ' + err.message)
     }
     return null
   }, [])
@@ -439,10 +455,10 @@ export default function App() {
         filesDispatch({ type: 'ADD_FILE', file: newFile })
         setActiveFileIndex(currentFiles.length)
       } else {
-        setStatus(`Could not open file: ${json.error}`)
+        setErrorStatus(`Could not open file: ${json.error}`)
       }
     } catch (err) {
-      setStatus(`Error opening file: ${err.message}`)
+      setErrorStatus(`Error opening file: ${err.message}`)
     }
   }, [filePath])
 
@@ -626,7 +642,7 @@ export default function App() {
         }
       }
     } catch (err) {
-      setStatus('Error reloading: ' + err.message)
+      setErrorStatus('Error reloading: ' + err.message)
     }
   }
 

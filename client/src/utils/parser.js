@@ -61,7 +61,7 @@ export function parseMarkdownToBlocks(markdown) {
     }
 
     // Horizontal Rule
-    if (trimmed === '---' || trimmed === '***') {
+    if (/^([-*_])\s*(\1\s*){2,}$/.test(trimmed)) {
       flush()
       blocks.push({
         id: `block-${currentId++}`,

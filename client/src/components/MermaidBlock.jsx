@@ -300,9 +300,10 @@ export function MermaidBlock({ block, onDiagramClick, annotationType, hasNote, o
         <span
           className="block-note-border"
           onClick={(e) => { e.stopPropagation(); onNoteClick?.(block.id) }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onNoteClick?.(block.id) } }}
           title="AI Note — click to view"
           role="button"
-          tabIndex={-1}
+          tabIndex={0}
           aria-label="View AI note"
         />
       )}
