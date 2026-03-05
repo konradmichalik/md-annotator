@@ -50,13 +50,13 @@ function formatAnnotation(ann, block, heading) {
   } else if (ann.type === 'COMMENT') {
     output += `Comment on (${lineRef})\n`
     output += `\`\`\`\n${ann.originalText}\n\`\`\`\n`
-    output += `> ${ann.text.replace(/\n/g, '\n> ')}\n`
+    output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n`
   } else if (ann.type === 'INSERTION') {
     output += `Insert text (${lineRef})\n`
     if (ann.afterContext) {
       output += `After: \`${ann.afterContext}\`\n`
     }
-    output += `\`\`\`\n${ann.text}\n\`\`\`\n`
+    output += `\`\`\`\n${ann.text ?? ''}\n\`\`\`\n`
     output += `> User wants this text inserted at this point in the document.\n`
   }
 
