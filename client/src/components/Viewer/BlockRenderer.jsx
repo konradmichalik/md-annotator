@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react'
 import DOMPurify from 'dompurify'
 import { InlineMarkdown } from './InlineMarkdown.jsx'
 
@@ -58,6 +59,16 @@ function AlertIcon({ type }) {
     default:
       return null
   }
+}
+
+function HtmlBlock({ block, noteClass }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.innerHTML = DOMPurify.sanitize(block.content)
+    }
+  }, [block.content])
+  return <div ref={ref} className={`block-html${noteClass}`} data-block-id={block.id} />
 }
 
 export function BlockRenderer({ block, onImageClick, annotatedImages, hasNote, onNoteClick }) {
@@ -143,13 +154,7 @@ export function BlockRenderer({ block, onImageClick, annotatedImages, hasNote, o
 
     case 'html':
       return (
-        <div
-          className={`block-html${noteClass}`}
-          data-block-id={block.id}
-          dangerouslySetInnerHTML={{
-            __html: DOMPurify.sanitize(block.content)
-          }}
-        />
+        <HtmlBlock block={block} noteClass={noteClass} />
       )
 
     case 'hr':
