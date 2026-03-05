@@ -21,6 +21,7 @@
 - **Multi-File Support** -- Review multiple files in one session with a tabbed interface
 - **Linked Navigation** -- Click relative `.md` links to open them as new tabs (wiki-style browsing)
 - **Mermaid Diagrams** -- Renders `mermaid` code blocks as interactive diagrams with zoom, pan, and source toggle (adapts to light/dark theme)
+- **File References** -- Type `@` in comments to autocomplete and reference other project files
 - **Export & Import** -- Export annotations as Markdown or JSON; re-import JSON to continue a review later
 - **Annotation Persistence** -- Annotations auto-save to the server and survive page reloads (validated by content hash)
 - **Undo / Redo** -- Full undo/redo history for annotations (`Cmd+Z` / `Cmd+Shift+Z`)
