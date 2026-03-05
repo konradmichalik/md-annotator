@@ -13,6 +13,7 @@ const MoreIcon = () => (
 const MAX_IMPORT_SIZE = 5 * 1024 * 1024 // 5 MB
 
 const handleActivateKey = (e, handler) => {
+  if (e.target !== e.currentTarget) {return}
   if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault()
     handler()

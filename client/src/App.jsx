@@ -84,7 +84,16 @@ export default function App() {
   const setErrorStatus = useCallback((msg) => {
     setStatus(msg)
     if (errorTimerRef.current) {clearTimeout(errorTimerRef.current)}
-    errorTimerRef.current = setTimeout(() => setStatus(''), 5000)
+    errorTimerRef.current = setTimeout(() => {
+      setStatus(prev => (prev === msg ? '' : prev))
+      errorTimerRef.current = null
+    }, 5000)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (errorTimerRef.current) {clearTimeout(errorTimerRef.current)}
+    }
   }, [])
 
   const showToast = useCallback((message) => {
