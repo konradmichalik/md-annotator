@@ -12,6 +12,13 @@ const MoreIcon = () => (
 
 const MAX_IMPORT_SIZE = 5 * 1024 * 1024 // 5 MB
 
+const handleActivateKey = (e, handler) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault()
+    handler()
+  }
+}
+
 export function AnnotationPanel({
   annotations,
   selectedAnnotationId,
@@ -58,7 +65,7 @@ export function AnnotationPanel({
     () => annotations.filter(a => a.type !== 'NOTES'),
     [annotations]
   )
-  const globalComments = userAnnotations.filter(a => a.targetType === 'global')
+  const globalComments = useMemo(() => userAnnotations.filter(a => a.targetType === 'global'), [userAnnotations])
   const textAnnotations = useMemo(() => {
     const items = userAnnotations.filter(a => a.targetType !== 'global')
     return items.sort((a, b) =>
@@ -197,7 +204,10 @@ export function AnnotationPanel({
             <div
               key={ann.id}
               className={`panel-global-comment${ann.id === selectedAnnotationId ? ' selected' : ''}`}
+              role="button"
+              tabIndex={0}
               onClick={() => onSelect(ann.id)}
+              onKeyDown={(e) => handleActivateKey(e, () => onSelect(ann.id))}
             >
               <div className="panel-item-header">
                 <span className="panel-type-badge global">General</span>
@@ -210,6 +220,7 @@ export function AnnotationPanel({
                       handleGlobalEditStart(ann)
                     }}
                     title="Edit comment"
+                    aria-label="Edit comment"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
@@ -223,6 +234,7 @@ export function AnnotationPanel({
                       onDelete(ann.id)
                     }}
                     title="Remove comment"
+                    aria-label="Remove comment"
                   >
                     ×
                   </button>
@@ -303,29 +315,34 @@ export function AnnotationPanel({
           const badgeLabel = ann.type === 'DELETION' ? 'Delete' : ann.type === 'INSERTION' ? 'Insert' : ann.type === 'NOTES' ? 'Note' : 'Comment'
           const badgeClass = ann.type.toLowerCase()
 
+          const handleItemClick = () => {
+            onSelect(ann.id)
+            if (isInsertion) {
+              const blockEl = document.querySelector(`[data-block-id="${ann.blockId}"]`)
+              if (blockEl) {blockEl.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+            } else if (isElement) {
+              let targetEl = null
+              if (ann.targetType === 'image') {
+                targetEl = document.querySelector(`[data-block-id="${ann.blockId}"] .annotatable-image-wrapper[data-image-src="${CSS.escape(ann.imageSrc)}"]`)
+              } else if (ann.targetType === 'diagram') {
+                targetEl = document.querySelector(`[data-block-id="${ann.blockId}"] .mermaid-diagram`)
+                  || document.querySelector(`[data-block-id="${ann.blockId}"]`)
+              }
+              if (targetEl) {targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+            } else {
+              const el = document.querySelector(`[data-highlight-id="${ann.id}"]`)
+              if (el) {el.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+            }
+          }
+
           return (
           <li
             key={ann.id}
             className={`panel-item${ann.id === selectedAnnotationId ? ' selected' : ''} panel-item-${ann.type.toLowerCase()}`}
-            onClick={() => {
-              onSelect(ann.id)
-              if (isInsertion) {
-                const blockEl = document.querySelector(`[data-block-id="${ann.blockId}"]`)
-                if (blockEl) {blockEl.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-              } else if (isElement) {
-                let targetEl = null
-                if (ann.targetType === 'image') {
-                  targetEl = document.querySelector(`[data-block-id="${ann.blockId}"] .annotatable-image-wrapper[data-image-src="${CSS.escape(ann.imageSrc)}"]`)
-                } else if (ann.targetType === 'diagram') {
-                  targetEl = document.querySelector(`[data-block-id="${ann.blockId}"] .mermaid-diagram`)
-                    || document.querySelector(`[data-block-id="${ann.blockId}"]`)
-                }
-                if (targetEl) {targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-              } else {
-                const el = document.querySelector(`[data-highlight-id="${ann.id}"]`)
-                if (el) {el.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-              }
-            }}
+            role="button"
+            tabIndex={0}
+            onClick={handleItemClick}
+            onKeyDown={(e) => handleActivateKey(e, handleItemClick)}
           >
             <div className="panel-item-header">
               <span className={`panel-type-badge ${badgeClass}`}>
@@ -339,6 +356,7 @@ export function AnnotationPanel({
                     onEdit(ann.id)
                   }}
                   title="Edit annotation"
+                  aria-label="Edit annotation"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
@@ -351,6 +369,7 @@ export function AnnotationPanel({
                     onDelete(ann.id)
                   }}
                   title="Remove annotation"
+                  aria-label="Remove annotation"
                 >
                   ×
                 </button>
@@ -402,17 +421,23 @@ export function AnnotationPanel({
             <h2>Notes</h2>
             <span className="panel-badge">{noteAnnotations.length}</span>
           </div>
-          {noteAnnotations.map(ann => (
+          {noteAnnotations.map(ann => {
+            const handleNoteClick = () => {
+              onSelect(ann.id)
+              if (ann.targetType === 'global') {return}
+              const el = document.querySelector(`[data-highlight-id="${ann.id}"]`)
+                || document.querySelector(`[data-block-id="${ann.blockId}"]`)
+              if (el) {el.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+            }
+
+            return (
             <div
               key={ann.id}
               className={`panel-note-item${ann.id === selectedAnnotationId ? ' selected' : ''}`}
-              onClick={() => {
-                onSelect(ann.id)
-                if (ann.targetType === 'global') {return}
-                const el = document.querySelector(`[data-highlight-id="${ann.id}"]`)
-                  || document.querySelector(`[data-block-id="${ann.blockId}"]`)
-                if (el) {el.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-              }}
+              role="button"
+              tabIndex={0}
+              onClick={handleNoteClick}
+              onKeyDown={(e) => handleActivateKey(e, handleNoteClick)}
             >
               <div className="panel-item-header">
                 <span className="panel-type-badge notes">Note</span>
@@ -424,7 +449,8 @@ export function AnnotationPanel({
                   : ann.originalText}"</p>
               )}
             </div>
-          ))}
+            )
+          })}
           <p className="panel-notes-hint">Added by AI as feedback on applied changes.</p>
         </div>
       )}

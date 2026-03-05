@@ -35,9 +35,10 @@ function NoteBorder({ blockId, onClick }) {
     <span
       className="block-note-border"
       onClick={(e) => { e.stopPropagation(); onClick(blockId) }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onClick(blockId) } }}
       title="AI Note — click to view"
       role="button"
-      tabIndex={-1}
+      tabIndex={0}
       aria-label="View AI note"
     />
   )

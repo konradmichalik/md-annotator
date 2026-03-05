@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { formatAnnotationsForExport, formatAnnotationsForJsonExport, copyToClipboard, downloadAsFile, downloadAsJsonFile } from '../utils/export.js'
 
 const CopyIcon = () => (
@@ -32,6 +32,8 @@ const ChevronIcon = () => (
 export function ExportModal({ isOpen, onClose, annotations, blocks, filePath, contentHash, onToast }) {
   const [content, setContent] = useState('')
   const [downloadOpen, setDownloadOpen] = useState(false)
+  const dialogRef = useRef(null)
+  const prevFocusedRef = useRef(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -44,8 +46,13 @@ export function ExportModal({ isOpen, onClose, annotations, blocks, filePath, co
       if (e.key === 'Escape') {onClose()}
     }
     if (isOpen) {
+      prevFocusedRef.current = document.activeElement
       document.addEventListener('keydown', handleEscape)
-      return () => document.removeEventListener('keydown', handleEscape)
+      dialogRef.current?.focus()
+      return () => {
+        document.removeEventListener('keydown', handleEscape)
+        prevFocusedRef.current?.focus?.()
+      }
     }
   }, [isOpen, onClose])
 
@@ -83,10 +90,17 @@ export function ExportModal({ isOpen, onClose, annotations, blocks, filePath, co
 
   return (
     <div className="modal-backdrop" onClick={handleBackdropClick}>
-      <div className="modal">
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="export-modal-title"
+      >
         <div className="modal-header">
-          <h2>Export Annotations</h2>
-          <button className="modal-close" onClick={onClose} title="Close">
+          <h2 id="export-modal-title">Export Annotations</h2>
+          <button className="modal-close" onClick={onClose} title="Close" aria-label="Close export dialog">
             <CloseIcon />
           </button>
         </div>

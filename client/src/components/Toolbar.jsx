@@ -85,7 +85,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
 
     const updatePosition = () => {
       const rect = highlightElement.getBoundingClientRect()
-      const toolbarTop = rect.top - 48
+      const toolbarTop = Math.max(4, rect.top - 48)
 
       if (rect.bottom < 0 || rect.top > window.innerHeight) {
         onClose()
@@ -94,7 +94,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
 
       setPosition({
         top: toolbarTop,
-        left: rect.left + rect.width / 2
+        left: Math.max(80, Math.min(rect.left + rect.width / 2, window.innerWidth - 80))
       })
     }
 
@@ -166,6 +166,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
                 onClick={onClose}
                 className="toolbar-btn toolbar-btn-cancel"
                 title="Close"
+                aria-label="Close"
               >
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -189,6 +190,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
                 onClick={onClose}
                 className="toolbar-btn toolbar-btn-cancel"
                 title="Cancel"
+                aria-label="Cancel"
               >
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -222,6 +224,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
                 onClick={onClose}
                 className="toolbar-btn toolbar-btn-cancel"
                 title="Cancel"
+                aria-label="Cancel"
               >
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -275,7 +278,7 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
           <button type="submit" disabled={!inputValue.trim()} className="toolbar-submit">
             Save
           </button>
-          <button type="button" onClick={() => editAnnotation ? onClose() : setStep('menu')} className="toolbar-btn toolbar-btn-cancel">
+          <button type="button" onClick={() => editAnnotation ? onClose() : setStep('menu')} className="toolbar-btn toolbar-btn-cancel" aria-label="Cancel">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
