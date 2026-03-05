@@ -223,7 +223,7 @@ export default function App() {
       setErrorStatus('Error: ' + err.message)
     }
     return null
-  }, [])
+  }, [setErrorStatus])
 
   const loadAnnotations = useCallback(async (loadedFiles) => {
     for (let i = 0; i < loadedFiles.length; i++) {
@@ -460,7 +460,7 @@ export default function App() {
     } catch (err) {
       setErrorStatus(`Error opening file: ${err.message}`)
     }
-  }, [filePath])
+  }, [filePath, setErrorStatus])
 
   useEffect(() => {
     const handleKeyDown = (e) => {
