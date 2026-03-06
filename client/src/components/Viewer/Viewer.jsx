@@ -648,6 +648,17 @@ export const Viewer = forwardRef(function Viewer({
   }, [onSelectAnnotation])
 
   const handleLinkClick = useCallback((e) => {
+    // Anchor links take priority over pinpoint editing
+    const anchor = e.target.closest('a[href]')
+    if (anchor) {
+      const href = anchor.getAttribute('href')
+      if (href && !href.startsWith('#') && !href.startsWith('http://') && !href.startsWith('https://') && MD_LINK_PATTERN.test(href)) {
+        e.preventDefault()
+        onOpenFile?.(href)
+      }
+      return
+    }
+
     // Click on pinpoint-annotated block → open edit toolbar
     const pinpointEl = e.target.closest('.pinpoint-annotated[data-block-id]')
     if (pinpointEl && containerRef.current?.contains(pinpointEl)) {
@@ -657,20 +668,16 @@ export const Viewer = forwardRef(function Viewer({
       )
       if (existing) {
         e.preventDefault()
+        if (pendingSourceRef.current && highlighterRef.current) {
+          highlighterRef.current.remove(pendingSourceRef.current.id)
+          pendingSourceRef.current = null
+        }
         onSelectAnnotation(existing.id)
         setToolbarState({ element: pinpointEl, annotation: existing, mode: 'edit', elementMode: true })
         setRequestedToolbarStep(null)
         return
       }
     }
-
-    const anchor = e.target.closest('a[href]')
-    if (!anchor) {return}
-    const href = anchor.getAttribute('href')
-    if (!href || href.startsWith('#') || href.startsWith('http://') || href.startsWith('https://')) {return}
-    if (!MD_LINK_PATTERN.test(href)) {return}
-    e.preventDefault()
-    onOpenFile?.(href)
   }, [onOpenFile, onSelectAnnotation])
 
   const getBlockLabel = useCallback((blockEl) => {
@@ -687,10 +694,28 @@ export const Viewer = forwardRef(function Viewer({
 
   const handlePinpointClick = useCallback((e) => {
     if (!pinpointMode) {return}
-    if (e.target.closest('.annotation-toolbar, .comment-popover, button, a[href], .code-copy-btn, .mermaid-controls')) {return}
+
+    // Let markdown links use the in-app file opener
+    const anchor = e.target.closest('a[href]')
+    if (anchor) {
+      const href = anchor.getAttribute('href')
+      if (href && !href.startsWith('#') && !href.startsWith('http://') && !href.startsWith('https://') && MD_LINK_PATTERN.test(href)) {
+        e.preventDefault()
+        onOpenFile?.(href)
+      }
+      return
+    }
+
+    if (e.target.closest('.annotation-toolbar, .comment-popover, button, .code-copy-btn, .mermaid-controls')) {return}
 
     e.preventDefault()
     e.stopPropagation()
+
+    // Close any pending text highlight
+    if (pendingSourceRef.current && highlighterRef.current) {
+      highlighterRef.current.remove(pendingSourceRef.current.id)
+      pendingSourceRef.current = null
+    }
 
     let blockEl = e.target
     while (blockEl && !blockEl.dataset?.blockId) {
@@ -722,7 +747,7 @@ export const Viewer = forwardRef(function Viewer({
     }
     setRequestedToolbarStep(null)
     setPinpointTarget({ element: blockEl, label: getBlockLabel(blockEl) })
-  }, [pinpointMode, onSelectAnnotation, getBlockLabel])
+  }, [pinpointMode, onSelectAnnotation, onOpenFile, getBlockLabel])
 
   // Clear pinpoint target when toolbar closes
   useEffect(() => {
