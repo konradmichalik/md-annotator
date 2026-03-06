@@ -3,6 +3,7 @@ import Highlighter from 'web-highlighter'
 import 'highlight.js/styles/github-dark.css'
 import { Toolbar } from '../Toolbar.jsx'
 import { MermaidBlock } from '../MermaidBlock.jsx'
+import { PinpointOverlay } from '../PinpointOverlay.jsx'
 import { BlockRenderer } from './BlockRenderer.jsx'
 import { CodeBlock } from './CodeBlock.jsx'
 
@@ -57,6 +58,7 @@ export const Viewer = forwardRef(function Viewer({
   onDeleteAnnotation,
   onSelectAnnotation,
   onOpenFile,
+  pinpointMode,
   selectedAnnotationId: _selectedAnnotationId
 }, ref) {
   const containerRef = useRef(null)
@@ -69,6 +71,7 @@ export const Viewer = forwardRef(function Viewer({
   const isRestoringRef = useRef(false)
   const [toolbarState, setToolbarState] = useState(null)
   const [requestedToolbarStep, setRequestedToolbarStep] = useState(null)
+  const [pinpointTarget, setPinpointTarget] = useState(null)
 
   useEffect(() => { onAddAnnotationRef.current = onAddAnnotation }, [onAddAnnotation])
   useEffect(() => { onEditAnnotationRef.current = onEditAnnotation }, [onEditAnnotation])
@@ -88,9 +91,11 @@ export const Viewer = forwardRef(function Viewer({
       }
       if (parent?.dataset.blockId) {
         blockId = parent.dataset.blockId
-        const blockText = parent.textContent || ''
-        const beforeText = blockText.split(source.text)[0]
-        startOffset = beforeText?.length || 0
+        // Use DOM Range to calculate exact offset (handles duplicate text correctly)
+        const range = document.createRange()
+        range.selectNodeContents(parent)
+        range.setEnd(el, 0)
+        startOffset = range.toString().length
       }
     }
 
@@ -181,7 +186,7 @@ export const Viewer = forwardRef(function Viewer({
     },
     openEditToolbar(ann) {
       // Route element annotations to the element-specific method
-      if (ann.targetType === 'image' || ann.targetType === 'diagram') {
+      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'pinpoint') {
         this.openElementEditToolbar(ann)
         return
       }
@@ -209,6 +214,8 @@ export const Viewer = forwardRef(function Viewer({
         targetEl = containerRef.current?.querySelector(
           `[data-block-id="${ann.blockId}"] .mermaid-diagram`
         ) || containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
+      } else if (ann.targetType === 'pinpoint') {
+        targetEl = containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
       }
       if (targetEl) {
         targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -257,7 +264,29 @@ export const Viewer = forwardRef(function Viewer({
       if (current?.insertionMode) {
         removeInsertionMarker(current.element)
       }
-      if (current?.mode === 'edit' && current?.annotation?.id === id) {
+
+      // Find all annotations overlapping this click point via DOM ancestry
+      const clickedDom = highlighter.getDoms(id)?.[0]
+      const overlappingIds = new Set()
+      let node = clickedDom
+      while (node && !node.dataset?.blockId) {
+        if (node.dataset?.highlightId) { overlappingIds.add(node.dataset.highlightId) }
+        node = node.parentElement
+      }
+      const overlapping = annotationsRef.current.filter(a => overlappingIds.has(a.id))
+
+      // Cycle through overlapping annotations on repeated clicks
+      let targetAnn
+      if (overlapping.length > 1 && current?.mode === 'edit' && overlapping.some(a => a.id === current.annotation?.id)) {
+        const currentIdx = overlapping.findIndex(a => a.id === current.annotation.id)
+        targetAnn = overlapping[(currentIdx + 1) % overlapping.length]
+      } else {
+        targetAnn = annotationsRef.current.find(a => a.id === id)
+      }
+
+      if (!targetAnn) {return}
+
+      if (current?.mode === 'edit' && current?.annotation?.id === targetAnn.id) {
         setToolbarState(null)
         setRequestedToolbarStep(null)
         return
@@ -266,22 +295,22 @@ export const Viewer = forwardRef(function Viewer({
         highlighter.remove(pendingSourceRef.current.id)
         pendingSourceRef.current = null
       }
-      const ann = annotationsRef.current.find(a => a.id === id)
-      if (!ann) {return}
-      onSelectAnnotation(id)
+      onSelectAnnotation(targetAnn.id)
       // NOTES are read-only — select but don't open edit toolbar
-      if (ann.type === 'NOTES') {return}
-      const doms = highlighter.getDoms(id)
-      if (doms?.length > 0) {
-        setToolbarState({ element: doms[0], annotation: ann, mode: 'edit' })
+      if (targetAnn.type === 'NOTES') {return}
+      const targetDoms = highlighter.getDoms(targetAnn.id)
+      if (targetDoms?.length > 0) {
+        setToolbarState({ element: targetDoms[0], annotation: targetAnn, mode: 'edit' })
         setRequestedToolbarStep(null)
       }
     })
 
     highlighter.run()
 
-    // Insertion mode: detect zero-width cursor placement
+    // Insertion mode: Alt+Click to insert text at cursor position
     const handleCursorClick = (e) => {
+      // Only trigger on Alt+Click
+      if (!e.altKey) {return}
       // Don't interfere with active toolbar or pending highlight
       if (toolbarStateRef.current) {return}
       if (pendingSourceRef.current) {return}
@@ -526,6 +555,25 @@ export const Viewer = forwardRef(function Viewer({
     return map
   }, [annotations])
 
+  const annotatedPinpointBlocks = useMemo(() => {
+    const map = new Map()
+    annotations.filter(a => a.targetType === 'pinpoint').forEach(a => { map.set(a.blockId, a.type) })
+    return map
+  }, [annotations])
+
+  // Apply persistent pinpoint highlighting via CSS classes
+  useEffect(() => {
+    if (!containerRef.current) {return}
+    const blockEls = containerRef.current.querySelectorAll('[data-block-id]')
+    blockEls.forEach(el => {
+      const blockId = el.dataset.blockId
+      const type = annotatedPinpointBlocks.get(blockId)
+      el.classList.toggle('pinpoint-annotated', !!type)
+      el.classList.toggle('pinpoint-deletion', type === 'DELETION')
+      el.classList.toggle('pinpoint-comment', type === 'COMMENT')
+    })
+  }, [annotatedPinpointBlocks])
+
   const noteBlockIds = useMemo(() => {
     const map = new Map()
     annotations.filter(a => a.type === 'NOTES' && a.blockId).forEach(a => {
@@ -600,6 +648,22 @@ export const Viewer = forwardRef(function Viewer({
   }, [onSelectAnnotation])
 
   const handleLinkClick = useCallback((e) => {
+    // Click on pinpoint-annotated block → open edit toolbar
+    const pinpointEl = e.target.closest('.pinpoint-annotated[data-block-id]')
+    if (pinpointEl && containerRef.current?.contains(pinpointEl)) {
+      const blockId = pinpointEl.dataset.blockId
+      const existing = annotationsRef.current.find(
+        a => a.blockId === blockId && a.targetType === 'pinpoint'
+      )
+      if (existing) {
+        e.preventDefault()
+        onSelectAnnotation(existing.id)
+        setToolbarState({ element: pinpointEl, annotation: existing, mode: 'edit', elementMode: true })
+        setRequestedToolbarStep(null)
+        return
+      }
+    }
+
     const anchor = e.target.closest('a[href]')
     if (!anchor) {return}
     const href = anchor.getAttribute('href')
@@ -607,11 +671,73 @@ export const Viewer = forwardRef(function Viewer({
     if (!MD_LINK_PATTERN.test(href)) {return}
     e.preventDefault()
     onOpenFile?.(href)
-  }, [onOpenFile])
+  }, [onOpenFile, onSelectAnnotation])
+
+  const getBlockLabel = useCallback((blockEl) => {
+    const blockId = blockEl.dataset.blockId
+    const block = blocks.find(b => b.id === blockId)
+    if (!block) {return 'Block'}
+    if (block.type === 'heading') {return `Heading ${block.level}`}
+    if (block.type === 'code') {return `Code${block.language ? ` (${block.language})` : ''}`}
+    if (block.type === 'list-item') {return 'List item'}
+    if (block.type === 'blockquote') {return 'Blockquote'}
+    if (block.type === 'hr') {return 'Divider'}
+    return 'Paragraph'
+  }, [blocks])
+
+  const handlePinpointClick = useCallback((e) => {
+    if (!pinpointMode) {return}
+    if (e.target.closest('.annotation-toolbar, .comment-popover, button, a[href], .code-copy-btn, .mermaid-controls')) {return}
+
+    e.preventDefault()
+    e.stopPropagation()
+
+    let blockEl = e.target
+    while (blockEl && !blockEl.dataset?.blockId) {
+      blockEl = blockEl.parentElement
+    }
+    if (!blockEl || !containerRef.current?.contains(blockEl)) {return}
+
+    const blockId = blockEl.dataset.blockId
+    const blockText = blockEl.textContent || ''
+
+    // Check for existing annotation on entire block (pinpoint type)
+    const existing = annotationsRef.current.find(
+      a => a.blockId === blockId && a.targetType === 'pinpoint'
+    )
+
+    if (existing) {
+      onSelectAnnotation(existing.id)
+      setToolbarState({ element: blockEl, annotation: existing, mode: 'edit', elementMode: true })
+    } else {
+      setToolbarState({
+        element: blockEl,
+        elementMode: true,
+        elementData: {
+          targetType: 'pinpoint',
+          blockId,
+          originalText: blockText.length > 200 ? blockText.slice(0, 200) + '...' : blockText
+        }
+      })
+    }
+    setRequestedToolbarStep(null)
+    setPinpointTarget({ element: blockEl, label: getBlockLabel(blockEl) })
+  }, [pinpointMode, onSelectAnnotation, getBlockLabel])
+
+  // Clear pinpoint target when toolbar closes
+  useEffect(() => {
+    if (!toolbarState) {
+      setPinpointTarget(null)
+    }
+  }, [toolbarState])
 
   return (
     <div className="viewer-container">
-      <article ref={containerRef} className="viewer-article" onClick={handleLinkClick}>
+      <article
+        ref={containerRef}
+        className={`viewer-article${pinpointMode ? ' pinpoint-mode' : ''}`}
+        onClick={pinpointMode ? handlePinpointClick : handleLinkClick}
+      >
         {blocks.map(block =>
           block.type === 'code' && block.language === 'mermaid' ? (
             <MermaidBlock
@@ -645,6 +771,7 @@ export const Viewer = forwardRef(function Viewer({
           elementMode={toolbarState?.elementMode || false}
           insertionMode={toolbarState?.insertionMode || false}
         />
+        {pinpointMode && <PinpointOverlay target={pinpointTarget} />}
       </article>
     </div>
   )

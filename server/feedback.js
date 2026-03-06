@@ -20,6 +20,20 @@ function formatAnnotation(ann, block, heading) {
     return output + '\n'
   }
 
+  if (ann.targetType === 'pinpoint') {
+    const isDeletion = ann.type === 'DELETION'
+    const label = isDeletion ? 'Remove block' : 'Comment on block'
+    let output = `${heading} ${label} (Line ${blockStartLine})\n`
+    const preview = (block?.content || ann.originalText || '').slice(0, 200)
+    output += `\`\`\`\n${preview}\n\`\`\`\n`
+    if (isDeletion) {
+      output += `> User wants this block removed from the document.\n`
+    } else {
+      output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n`
+    }
+    return output + '\n'
+  }
+
   if (ann.targetType === 'diagram') {
     const isDeletion = ann.type === 'DELETION'
     const label = isDeletion ? 'Remove Mermaid diagram' : 'Comment on Mermaid diagram'
