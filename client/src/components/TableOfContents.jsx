@@ -61,9 +61,28 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
   const observerRef = useRef(null)
   const tocRef = useRef(null)
 
-  const headings = useMemo(() => blocks.filter(b => b.type === 'heading'), [blocks])
+  const hasIntro = useMemo(() => blocks.length > 0 && blocks[0].type !== 'heading', [blocks])
 
-  const sectionMap = useMemo(() => buildSectionMap(blocks), [blocks])
+  const headings = useMemo(() => {
+    const h = blocks.filter(b => b.type === 'heading')
+    if (hasIntro && h.length > 0) {
+      return [{ id: '__intro__', level: h[0].level, content: 'Introduction' }, ...h]
+    }
+    return h
+  }, [blocks, hasIntro])
+
+  const sectionMap = useMemo(() => {
+    const map = buildSectionMap(blocks)
+    if (hasIntro) {
+      const introBlocks = new Set()
+      for (const block of blocks) {
+        if (block.type === 'heading') { break }
+        introBlocks.add(block.id)
+      }
+      map.set('__intro__', introBlocks)
+    }
+    return map
+  }, [blocks, hasIntro])
 
   const { descendantsMap, parentSet } = useMemo(
     () => buildDescendantsMap(headings),
@@ -89,6 +108,7 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
       return new Map()
     }
     const annotatedBlockIds = annotations.reduce((map, a) => {
+      if (a.type === 'NOTES') {return map}
       map.set(a.blockId, (map.get(a.blockId) || 0) + 1)
       return map
     }, new Map())
@@ -143,13 +163,16 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
       return
     }
 
+    const introBlockId = hasIntro ? blocks[0]?.id : null
+
     const handleIntersect = (entries) => {
       const visible = entries
         .filter(e => e.isIntersecting)
         .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
 
       if (visible.length > 0) {
-        setActiveId(visible[0].target.getAttribute('data-block-id'))
+        const blockId = visible[0].target.getAttribute('data-block-id')
+        setActiveId(blockId === introBlockId ? '__intro__' : blockId)
       }
     }
 
@@ -159,7 +182,16 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
       threshold: 0
     })
 
+    // Observe the first block for the intro section
+    if (introBlockId) {
+      const introEl = viewerEl.querySelector(`[data-block-id="${introBlockId}"]`)
+      if (introEl) {
+        observerRef.current.observe(introEl)
+      }
+    }
+
     headings.forEach(h => {
+      if (h.id === '__intro__') {return}
       const el = viewerEl.querySelector(`[data-block-id="${h.id}"]`)
       if (el) {
         observerRef.current.observe(el)
@@ -183,6 +215,10 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
 
   const handleClick = useCallback((blockId) => {
     const viewerEl = document.querySelector('.viewer-container')
+    if (blockId === '__intro__') {
+      viewerEl?.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
     const target = viewerEl?.querySelector(`[data-block-id="${blockId}"]`)
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -229,7 +265,7 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
                     <span className="toc-toggle toc-toggle--placeholder" aria-hidden="true" />
                   )}
                   <button
-                    className={`toc-item${count > 0 ? ' toc-item--annotated' : ''}`}
+                    className={`toc-item${count > 0 ? ' toc-item--annotated' : ''}${h.id === '__intro__' ? ' toc-item--intro' : ''}`}
                     onClick={() => handleClick(h.id)}
                     title={h.content}
                   >

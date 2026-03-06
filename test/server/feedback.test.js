@@ -150,6 +150,32 @@ describe('exportMultiFileFeedback', () => {
     expect(output).toContain('### 2.')
   })
 
+  it('formats pinpoint annotations with block content', () => {
+    const blocks = [makeBlock({ content: 'Some paragraph text here' })]
+    const annotations = [makeAnnotation({
+      targetType: 'pinpoint',
+      type: 'COMMENT',
+      text: 'This paragraph needs rewriting',
+      originalText: 'Some paragraph text here'
+    })]
+    const output = exportFeedback(annotations, blocks)
+    expect(output).toContain('Comment on block')
+    expect(output).toContain('Some paragraph text here')
+    expect(output).toContain('> This paragraph needs rewriting')
+  })
+
+  it('formats pinpoint deletion annotations', () => {
+    const blocks = [makeBlock({ content: 'Remove this block entirely' })]
+    const annotations = [makeAnnotation({
+      targetType: 'pinpoint',
+      type: 'DELETION',
+      originalText: 'Remove this block entirely'
+    })]
+    const output = exportFeedback(annotations, blocks)
+    expect(output).toContain('Remove block')
+    expect(output).toContain('User wants this block removed')
+  })
+
   it('skips files without annotations and uses single-file format', () => {
     const files = [
       { path: '/a.md', annotations: [], blocks: [] },
