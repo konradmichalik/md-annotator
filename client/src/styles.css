@@ -2215,7 +2215,7 @@ a:hover { opacity: 0.8; }
 }
 
 .panel-header-collapsible:hover {
-  background: var(--bg-hover);
+  background: var(--bg-secondary);
 }
 
 .panel-collapse-icon {

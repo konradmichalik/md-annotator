@@ -143,7 +143,7 @@ export const Viewer = forwardRef(function Viewer({
         }
         return true
       }
-      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'global' || ann.type === 'NOTES') {return true}
+      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'pinpoint' || ann.targetType === 'global' || ann.type === 'NOTES') {return true}
       const highlighter = highlighterRef.current
       if (!highlighter) {return false}
       const wasRestoring = isRestoringRef.current

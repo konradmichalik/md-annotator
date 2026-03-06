@@ -163,13 +163,16 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
       return
     }
 
+    const introBlockId = hasIntro ? blocks[0]?.id : null
+
     const handleIntersect = (entries) => {
       const visible = entries
         .filter(e => e.isIntersecting)
         .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
 
       if (visible.length > 0) {
-        setActiveId(visible[0].target.getAttribute('data-block-id'))
+        const blockId = visible[0].target.getAttribute('data-block-id')
+        setActiveId(blockId === introBlockId ? '__intro__' : blockId)
       }
     }
 
@@ -179,7 +182,16 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
       threshold: 0
     })
 
+    // Observe the first block for the intro section
+    if (introBlockId) {
+      const introEl = viewerEl.querySelector(`[data-block-id="${introBlockId}"]`)
+      if (introEl) {
+        observerRef.current.observe(introEl)
+      }
+    }
+
     headings.forEach(h => {
+      if (h.id === '__intro__') {return}
       const el = viewerEl.querySelector(`[data-block-id="${h.id}"]`)
       if (el) {
         observerRef.current.observe(el)
