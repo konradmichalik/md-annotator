@@ -15,6 +15,7 @@ import { filesReducer } from './state/filesReducer.js'
 import { useAutoClose } from './hooks/useAutoClose.js'
 import { useResizablePanel } from './hooks/useResizablePanel.js'
 import { useServerConnection } from './hooks/useServerConnection.js'
+import { useAnnotationDraft } from './hooks/useAnnotationDraft.js'
 import './styles.css'
 
 // Theme: 'light' | 'dark' | 'auto'
@@ -73,6 +74,7 @@ export default function App() {
   const [notesModalOpen, setNotesModalOpen] = useState(false)
   const [toast, setToast] = useState(null)
   const [origin, setOrigin] = useState('cli')
+  const [pinpointMode, setPinpointMode] = useState(false)
   const viewerRef = useRef(null)
   const prevLastActionRef = useRef(null)
   const toastTimerRef = useRef(null)
@@ -117,6 +119,13 @@ export default function App() {
       notes: f.annState.annotations.filter(a => a.type === 'NOTES')
     }))
     .filter(g => g.notes.length > 0)
+
+  // Draft auto-save and restore
+  const { draftBanner, restoreDraft, dismissDraft } = useAnnotationDraft({
+    annotations,
+    contentHash: activeFile?.contentHash,
+    submitted,
+  })
 
   // Dispatch annotation actions to active file
   const annDispatch = useCallback((annAction) => {
@@ -400,6 +409,18 @@ export default function App() {
     showToast(`Imported ${result.annotations.length} annotation${result.annotations.length !== 1 ? 's' : ''}`)
   }, [activeFile, filePath, annotations, annDispatch, showToast])
 
+  const handleRestoreDraft = useCallback(() => {
+    const restored = restoreDraft()
+    if (restored.length > 0) {
+      viewerRef.current?.clearAllHighlights()
+      annDispatch({ type: 'RESTORE', annotations: restored })
+      setTimeout(() => {
+        viewerRef.current?.restoreHighlights(restored)
+      }, 100)
+      showToast(`Restored ${restored.length} annotation${restored.length !== 1 ? 's' : ''}`)
+    }
+  }, [restoreDraft, annDispatch, showToast])
+
   const handleUndo = useCallback(() => {
     annDispatch({ type: 'UNDO' })
   }, [annDispatch])
@@ -660,6 +681,19 @@ export default function App() {
           <button onClick={handleReloadFile} className="btn btn-sm">Reload</button>
         </div>
       )}
+      {draftBanner && (
+        <div className="draft-banner">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <span>Found {draftBanner.count} unsaved annotation{draftBanner.count !== 1 ? 's' : ''} from {draftBanner.timeAgo}.</span>
+          <button onClick={handleRestoreDraft} className="btn btn-sm">Restore</button>
+          <button onClick={dismissDraft} className="btn btn-sm btn-muted">Dismiss</button>
+        </div>
+      )}
       <header className="app-header">
         <div className="header-left">
           <button
@@ -696,6 +730,29 @@ export default function App() {
           <span className="app-filepath">{filePath}</span>
         </div>
         <div className="header-right">
+          <div className="mode-toggle">
+            <button
+              className={`mode-toggle-btn${!pinpointMode ? ' active' : ''}`}
+              onClick={() => setPinpointMode(false)}
+              title="Selection mode: select text to annotate"
+            >
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M3 10h8M3 15h10" />
+              </svg>
+              Select
+            </button>
+            <button
+              className={`mode-toggle-btn${pinpointMode ? ' active' : ''}`}
+              onClick={() => setPinpointMode(true)}
+              title="Pinpoint mode: click a block to annotate"
+            >
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <circle cx="12" cy="12" r="3" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v4m0 12v4m10-10h-4M6 12H2" />
+              </svg>
+              Pinpoint
+            </button>
+          </div>
           <button
             onClick={handleSubmitFeedback}
             className="btn btn-feedback"
@@ -783,6 +840,7 @@ export default function App() {
           onDeleteAnnotation={handleDeleteAnnotation}
           onSelectAnnotation={handleSelectAnnotation}
           onOpenFile={handleOpenFile}
+          pinpointMode={pinpointMode}
           selectedAnnotationId={selectedAnnotationId}
         />
         {!sidebarCollapsed && (
