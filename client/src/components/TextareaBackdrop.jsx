@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react'
 import { parseFileReferences } from './FileReferenceText.jsx'
+import { getCachedFiles } from '../hooks/useFileAutocomplete.js'
 
 export function TextareaBackdrop({ value, textareaRef }) {
   const backdropRef = useRef(null)
@@ -18,7 +19,7 @@ export function TextareaBackdrop({ value, textareaRef }) {
     return () => textarea.removeEventListener('scroll', syncScroll)
   }, [textareaRef])
 
-  const parts = parseFileReferences(value)
+  const parts = parseFileReferences(value, getCachedFiles())
   if (!parts) { return null }
 
   return (

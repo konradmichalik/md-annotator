@@ -1,17 +1,22 @@
 const FILE_REF_REGEX = /(?:^|(?<=\s))@([\w./_-][\w./_-]*)/g
 
-export function parseFileReferences(text) {
+export function parseFileReferences(text, validFiles) {
   if (!text) { return null }
   const parts = []
   let lastIndex = 0
   let hasRefs = false
 
   for (const match of text.matchAll(FILE_REF_REGEX)) {
-    hasRefs = true
     const fullMatch = match[0]
     const filePath = match[1]
     const start = match.index
 
+    // If validFiles provided, only highlight known files
+    if (validFiles && !validFiles.has(filePath)) {
+      continue
+    }
+
+    hasRefs = true
     if (start > lastIndex) {
       parts.push({ type: 'text', value: text.slice(lastIndex, start) })
     }

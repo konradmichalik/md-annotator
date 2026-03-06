@@ -12,6 +12,14 @@ const MoreIcon = () => (
 
 const MAX_IMPORT_SIZE = 5 * 1024 * 1024 // 5 MB
 
+const flashElement = (el) => {
+  if (!el) {return}
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  el.classList.remove('flash-highlight')
+  void el.offsetWidth
+  el.classList.add('flash-highlight')
+}
+
 const handleActivateKey = (e, handler) => {
   if (e.target !== e.currentTarget) {return}
   if (e.key === 'Enter' || e.key === ' ') {
@@ -35,6 +43,7 @@ export function AnnotationPanel({
 }) {
   const fileInputRef = useRef(null)
   const menuRef = useRef(null)
+  const [notesCollapsed, setNotesCollapsed] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [editingGlobalId, setEditingGlobalId] = useState(null)
   const [editingGlobalText, setEditingGlobalText] = useState('')
@@ -44,18 +53,7 @@ export function AnnotationPanel({
   const globalAutocomplete = useFileAutocomplete(editingGlobalText, globalCursorPos)
 
   const applyGlobalAutocomplete = (index) => {
-    const result = globalAutocomplete.accept(index)
-    if (result) {
-      setEditingGlobalText(result.newValue)
-      setGlobalCursorPos(result.newCursorPos)
-      requestAnimationFrame(() => {
-        if (globalEditRef.current) {
-          globalEditRef.current.selectionStart = result.newCursorPos
-          globalEditRef.current.selectionEnd = result.newCursorPos
-          globalEditRef.current.focus()
-        }
-      })
-    }
+    globalAutocomplete.applyAccept(index, setEditingGlobalText, setGlobalCursorPos, globalEditRef)
   }
 
   const noteAnnotations = useMemo(
@@ -264,7 +262,7 @@ export function AnnotationPanel({
                       }
                       if (action) { return }
 
-                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                      if (e.key === 'Enter' && !e.nativeEvent?.isComposing && (e.metaKey || e.ctrlKey)) {
                         e.preventDefault()
                         handleGlobalEditSave(ann.id)
                       }
@@ -306,12 +304,15 @@ export function AnnotationPanel({
           ))}
         </div>
       )}
-      {textAnnotations.length === 0 && globalComments.length === 0 && noteAnnotations.length === 0 ? (
-        <p className="panel-empty">Select text, click an image, or click a diagram to add annotations.</p>
+      {textAnnotations.length === 0 && globalComments.length === 0 ? (
+        <div className="panel-empty">
+          <p>Select text, click an image, or click a diagram to add annotations.</p>
+          <p className="panel-empty-hint">{navigator.platform?.includes('Mac') ? '⌥' : 'Alt'}+Click to insert text at any position.</p>
+        </div>
       ) : textAnnotations.length === 0 ? null : (
       <ul className="panel-list" style={noteAnnotations.length > 0 ? { borderBottom: '1px solid var(--border)' } : undefined}>
         {textAnnotations.map(ann => {
-          const isElement = ann.targetType === 'image' || ann.targetType === 'diagram'
+          const isElement = ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'pinpoint'
           const isInsertion = ann.type === 'INSERTION'
           const badgeLabel = ann.type === 'DELETION' ? 'Delete' : ann.type === 'INSERTION' ? 'Insert' : ann.type === 'NOTES' ? 'Note' : 'Comment'
           const badgeClass = ann.type.toLowerCase()
@@ -319,8 +320,7 @@ export function AnnotationPanel({
           const handleItemClick = () => {
             onSelect(ann.id)
             if (isInsertion) {
-              const blockEl = document.querySelector(`[data-block-id="${ann.blockId}"]`)
-              if (blockEl) {blockEl.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              flashElement(document.querySelector(`[data-block-id="${ann.blockId}"]`))
             } else if (isElement) {
               let targetEl = null
               if (ann.targetType === 'image') {
@@ -328,11 +328,12 @@ export function AnnotationPanel({
               } else if (ann.targetType === 'diagram') {
                 targetEl = document.querySelector(`[data-block-id="${ann.blockId}"] .mermaid-diagram`)
                   || document.querySelector(`[data-block-id="${ann.blockId}"]`)
+              } else if (ann.targetType === 'pinpoint') {
+                targetEl = document.querySelector(`[data-block-id="${ann.blockId}"]`)
               }
-              if (targetEl) {targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              flashElement(targetEl)
             } else {
-              const el = document.querySelector(`[data-highlight-id="${ann.id}"]`)
-              if (el) {el.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              flashElement(document.querySelector(`[data-highlight-id="${ann.id}"]`))
             }
           }
 
@@ -418,41 +419,54 @@ export function AnnotationPanel({
       )}
       {noteAnnotations.length > 0 && (
         <div className="panel-notes-section">
-          <div className="panel-header panel-header-notes">
+          <button
+            className="panel-header panel-header-notes panel-header-collapsible"
+            onClick={() => setNotesCollapsed(prev => !prev)}
+            aria-expanded={!notesCollapsed}
+          >
+            <svg className={`panel-collapse-icon${notesCollapsed ? '' : ' panel-collapse-icon--expanded'}`} viewBox="0 0 16 16" width="10" height="10">
+              <path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             <h2>Notes</h2>
             <span className="panel-badge">{noteAnnotations.length}</span>
-          </div>
-          {noteAnnotations.map(ann => {
-            const handleNoteClick = () => {
-              onSelect(ann.id)
-              if (ann.targetType === 'global') {return}
-              const el = document.querySelector(`[data-highlight-id="${ann.id}"]`)
-                || document.querySelector(`[data-block-id="${ann.blockId}"]`)
-              if (el) {el.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-            }
+          </button>
+          {!notesCollapsed && (
+            <>
+              {noteAnnotations.map(ann => {
+                const handleNoteClick = () => {
+                  onSelect(ann.id)
+                  if (ann.targetType === 'global') {return}
+                  const el = document.querySelector(`[data-highlight-id="${ann.id}"]`)
+                    || document.querySelector(`[data-block-id="${ann.blockId}"]`)
+                  if (el) {
+                    flashElement(el)
+                  }
+                }
 
-            return (
-            <div
-              key={ann.id}
-              className={`panel-note-item${ann.id === selectedAnnotationId ? ' selected' : ''}`}
-              role="button"
-              tabIndex={0}
-              onClick={handleNoteClick}
-              onKeyDown={(e) => handleActivateKey(e, handleNoteClick)}
-            >
-              <div className="panel-item-header">
-                <span className="panel-type-badge notes">Note</span>
-              </div>
-              <p className="panel-comment-text">{ann.text}</p>
-              {ann.originalText && (
-                <p className="panel-original-text">"{ann.originalText.length > 60
-                  ? ann.originalText.slice(0, 60) + '...'
-                  : ann.originalText}"</p>
-              )}
-            </div>
-            )
-          })}
-          <p className="panel-notes-hint">Added by AI as feedback on applied changes.</p>
+                return (
+                <div
+                  key={ann.id}
+                  className={`panel-note-item${ann.id === selectedAnnotationId ? ' selected' : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={handleNoteClick}
+                  onKeyDown={(e) => handleActivateKey(e, handleNoteClick)}
+                >
+                  <div className="panel-item-header">
+                    <span className="panel-type-badge notes">Note</span>
+                  </div>
+                  <p className="panel-comment-text">{ann.text}</p>
+                  {ann.originalText && (
+                    <p className="panel-original-text">"{ann.originalText.length > 60
+                      ? ann.originalText.slice(0, 60) + '...'
+                      : ann.originalText}"</p>
+                  )}
+                </div>
+                )
+              })}
+              <p className="panel-notes-hint">Added by AI as feedback on applied changes.</p>
+            </>
+          )}
         </div>
       )}
     </aside>

@@ -50,6 +50,10 @@ export function insertFileReference(value, triggerIndex, cursorPos, filePath) {
 let cachedFiles = null
 let fetchPromise = null
 
+export function getCachedFiles() {
+  return cachedFiles ? new Set(cachedFiles) : null
+}
+
 function fetchWorkspaceFiles() {
   if (cachedFiles !== null) { return Promise.resolve(cachedFiles) }
   if (fetchPromise) { return fetchPromise }
@@ -131,7 +135,7 @@ export function useFileAutocomplete(value, cursorPos) {
       return 'navigate'
     }
 
-    if ((e.key === 'Enter' && !e.metaKey && !e.ctrlKey) || e.key === 'Tab') {
+    if ((e.key === 'Enter' && !e.nativeEvent?.isComposing && !e.metaKey && !e.ctrlKey) || e.key === 'Tab') {
       e.preventDefault()
       return 'accept'
     }
@@ -145,11 +149,27 @@ export function useFileAutocomplete(value, cursorPos) {
     return insertFileReference(value, trigger.triggerIndex, cursorPos, filePath)
   }, [trigger, items, activeIndex, value, cursorPos])
 
+  const applyAccept = useCallback((index, setValue, setCursorPos, inputRef) => {
+    const result = accept(index)
+    if (result) {
+      setValue(result.newValue)
+      setCursorPos(result.newCursorPos)
+      requestAnimationFrame(() => {
+        if (inputRef.current) {
+          inputRef.current.selectionStart = result.newCursorPos
+          inputRef.current.selectionEnd = result.newCursorPos
+          inputRef.current.focus()
+        }
+      })
+    }
+  }, [accept])
+
   return {
     isOpen: showDropdown,
     items,
     activeIndex,
     handleKeyDown,
     accept,
+    applyAccept,
   }
 }
