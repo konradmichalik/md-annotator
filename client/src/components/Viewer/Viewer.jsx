@@ -4,6 +4,7 @@ import 'highlight.js/styles/github-dark.css'
 import { Toolbar } from '../Toolbar.jsx'
 import { MermaidBlock } from '../MermaidBlock.jsx'
 import { PlantUMLBlock } from '../PlantUMLBlock.jsx'
+import { KrokiBlock, KROKI_LANGUAGES } from '../KrokiBlock.jsx'
 import { PinpointOverlay } from '../PinpointOverlay.jsx'
 import { BlockRenderer } from './BlockRenderer.jsx'
 import { CodeBlock } from './CodeBlock.jsx'
@@ -61,6 +62,7 @@ export const Viewer = forwardRef(function Viewer({
   onOpenFile,
   pinpointMode,
   plantumlServerUrl,
+  krokiServerUrl,
   selectedAnnotationId: _selectedAnnotationId
 }, ref) {
   const containerRef = useRef(null)
@@ -780,6 +782,16 @@ export const Viewer = forwardRef(function Viewer({
               key={block.id}
               block={block}
               serverUrl={plantumlServerUrl}
+              onDiagramClick={handleDiagramClick}
+              annotationType={annotatedDiagramBlocks.get(block.id) || null}
+              hasNote={noteBlockIds.has(block.id)}
+              onNoteClick={handleNoteClick}
+            />
+          ) : block.type === 'code' && KROKI_LANGUAGES.has(block.language) ? (
+            <KrokiBlock
+              key={block.id}
+              block={block}
+              serverUrl={krokiServerUrl}
               onDiagramClick={handleDiagramClick}
               annotationType={annotatedDiagramBlocks.get(block.id) || null}
               hasNote={noteBlockIds.has(block.id)}
