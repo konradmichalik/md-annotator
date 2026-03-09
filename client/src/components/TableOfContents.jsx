@@ -32,11 +32,13 @@ function buildSectionMap(blocks) {
 
 /**
  * For each heading, find all descendant headings (deeper level until same/higher level).
- * Returns a map of headingId → array of descendant heading ids, and a set of parent ids.
+ * Returns a map of headingId → array of descendant heading ids, a set of parent ids,
+ * and a parentMap (childId → parentId) for ancestor traversal.
  */
 function buildDescendantsMap(headings) {
   const descendantsMap = new Map()
   const parentSet = new Set()
+  const parentMap = new Map()
 
   for (let i = 0; i < headings.length; i++) {
     const descendants = []
@@ -50,9 +52,17 @@ function buildDescendantsMap(headings) {
       descendantsMap.set(headings[i].id, descendants)
       parentSet.add(headings[i].id)
     }
+
+    // Find nearest ancestor (closest preceding heading with a lower level)
+    for (let j = i - 1; j >= 0; j--) {
+      if (headings[j].level < headings[i].level) {
+        parentMap.set(headings[i].id, headings[j].id)
+        break
+      }
+    }
   }
 
-  return { descendantsMap, parentSet }
+  return { descendantsMap, parentSet, parentMap }
 }
 
 export function TableOfContents({ blocks, annotations = [], collapsed, width }) {
@@ -84,7 +94,7 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
     return map
   }, [blocks, hasIntro])
 
-  const { descendantsMap, parentSet } = useMemo(
+  const { descendantsMap, parentSet, parentMap } = useMemo(
     () => buildDescendantsMap(headings),
     [headings]
   )
@@ -102,6 +112,18 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
     }
     return hidden
   }, [collapsedIds, descendantsMap])
+
+  // When activeId is inside a collapsed branch, walk up to the nearest visible ancestor
+  const visibleActiveId = useMemo(() => {
+    if (!activeId || !hiddenIds.has(activeId)) {
+      return activeId
+    }
+    let current = activeId
+    while (current && hiddenIds.has(current)) {
+      current = parentMap.get(current) ?? null
+    }
+    return current
+  }, [activeId, hiddenIds, parentMap])
 
   const annotationCountPerHeading = useMemo(() => {
     if (annotations.length === 0) {
@@ -204,14 +226,14 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
   }, [collapsed, headings])
 
   useEffect(() => {
-    if (!activeId || !tocRef.current) {
+    if (!visibleActiveId || !tocRef.current) {
       return
     }
-    const activeEl = tocRef.current.querySelector(`[data-toc-id="${activeId}"]`)
+    const activeEl = tocRef.current.querySelector(`[data-toc-id="${visibleActiveId}"]`)
     if (activeEl) {
       activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     }
-  }, [activeId])
+  }, [visibleActiveId])
 
   const handleClick = useCallback((blockId) => {
     const viewerEl = document.querySelector('.viewer-container')
@@ -247,7 +269,7 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
             <li key={h.id} className={`toc-li${isHidden ? ' toc-li--hidden' : ''}`} inert={isHidden ? true : undefined}>
               <div className="toc-li-inner">
                 <div
-                  className={`toc-row toc-row--level-${h.level}${activeId === h.id ? ' toc-row--active' : ''}`}
+                  className={`toc-row toc-row--level-${h.level}${visibleActiveId === h.id ? ' toc-row--active' : ''}`}
                   data-toc-id={h.id}
                 >
                   {isParent ? (
