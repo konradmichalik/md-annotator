@@ -51,7 +51,12 @@ export function CodeBlock({ block, onHover, onLeave, isHovered, hasNote, onNoteC
       )}
       <div className="code-toolbar">
         {block.language && <span className="code-language-label">{block.language}</span>}
-        <button onClick={handleCopy} className="code-copy-btn" title={copied ? 'Copied!' : 'Copy code'}>
+        <button
+          onClick={handleCopy}
+          className="code-copy-btn"
+          title={copied ? 'Copied!' : 'Copy code'}
+          aria-label={copied ? 'Copied!' : 'Copy code'}
+        >
           {copied ? '\u2713' : '\u2398'}
         </button>
       </div>
