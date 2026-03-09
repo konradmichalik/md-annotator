@@ -43,12 +43,12 @@ export function useDiagramZoom({ containerRef, svg, showSource, onDiagramClick, 
     }
   }, [containerRef])
 
-  // Reset zoom/pan when content, theme, or view mode changes
+  // Reset zoom/pan when content, rendered SVG, or view mode changes
   useEffect(() => {
     zoomLevelRef.current = 1.0
     baseViewBoxRef.current = null
     panOffsetRef.current = { x: 0, y: 0 }
-  }, [block.content, showSource])
+  }, [block.content, svg, showSource])
 
   // Compute base viewBox and apply initial view
   useEffect(() => {
@@ -57,23 +57,14 @@ export function useDiagramZoom({ containerRef, svg, showSource, onDiagramClick, 
     const svgEl = containerRef.current.querySelector('svg')
     if (!svgEl) { return }
 
-    try {
-      const contentGroup = svgEl.querySelector('g')
-      if (!contentGroup) { return }
-
-      const bbox = contentGroup.getBBox()
-      const padding = 8
-      const base = {
-        x: bbox.x - padding,
-        y: bbox.y - padding,
-        width: bbox.width + padding * 2,
-        height: bbox.height + padding * 2,
+    const vb = svgEl.getAttribute('viewBox')
+    if (vb) {
+      const parts = vb.split(/[\s,]+/).map(Number)
+      if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
+        const base = { x: parts[0], y: parts[1], width: parts[2], height: parts[3] }
+        baseViewBoxRef.current = base
+        applyView(svgEl, base, 1.0, { x: 0, y: 0 })
       }
-
-      baseViewBoxRef.current = base
-      applyView(svgEl, base, 1.0, { x: 0, y: 0 })
-    } catch (_e) {
-      // Ignore errors from getBBox on hidden elements
     }
   }, [svg, showSource, containerRef])
 
