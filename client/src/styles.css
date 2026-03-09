@@ -804,8 +804,7 @@ body {
 .block-code-wrapper:hover .code-copy-btn { opacity: 1; }
 .code-copy-btn:hover { background: rgb(255 255 255 / 20%); color: var(--text); }
 
-/* === Mermaid Blocks === */
-/* Shared diagram styles (Mermaid, PlantUML, etc.) */
+/* === Diagram Blocks (Mermaid, PlantUML, etc.) === */
 .diagram-block {
   position: relative;
   margin: 1.25rem 0;

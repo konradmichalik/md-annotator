@@ -39,6 +39,11 @@ export function PlantUMLBlock({ block, serverUrl, onDiagramClick, annotationType
 
   // Fetch rendered SVG from PlantUML server
   useEffect(() => {
+    if (!serverUrl) {
+      setLoading(false)
+      return
+    }
+
     const isDark = resolvedTheme === 'dark'
     const source = buildSource(block.content, isDark)
     const cacheKey = `${source}::${serverUrl}`
