@@ -23,16 +23,21 @@ export function useAnnotationDraft({ annotations, contentHash, submitted }) {
   const draftDataRef = useRef(null)
   const timerRef = useRef(null)
   const hasMountedRef = useRef(false)
+  const annotationsRef = useRef(annotations)
+  annotationsRef.current = annotations
 
   const key = getDraftKey(contentHash)
 
-  // Load draft on mount
+  // Load draft on mount / tab switch
   useEffect(() => {
     if (!key) {return}
 
+    // If annotations are already in memory (tab switch), the draft is redundant
+    const hasAnnotationsInState = annotationsRef.current.filter(a => a.type !== 'NOTES').length > 0
+
     try {
       const raw = localStorage.getItem(key)
-      if (raw) {
+      if (raw && !hasAnnotationsInState) {
         const data = JSON.parse(raw)
         if (Array.isArray(data.annotations) && data.annotations.length > 0) {
           draftDataRef.current = data
