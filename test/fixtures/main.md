@@ -98,6 +98,38 @@ Viewer --> AnnotationPanel
 @enduml
 ```
 
+## Kroki Diagrams
+
+```graphviz
+digraph G {
+    rankdir=LR
+    node [shape=box, style=filled, fillcolor="#4c566a", fontcolor="#eceff4"]
+    edge [color="#81a1c1"]
+
+    CLI -> Server -> Browser
+    Browser -> Server [label="feedback"]
+    Server -> Agent [label="stdout"]
+}
+```
+
+```d2
+direction: right
+CLI -> Server -> Browser
+Browser -> Server: feedback
+Server -> Agent: stdout
+```
+
+```ditaa
++--------+   +--------+   +---------+
+|  CLI   +-->+ Server +-->+ Browser |
++--------+   +---+----+   +---------+
+                 |
+                 v
+             +--------+
+             | Agent  |
+             +--------+
+```
+
 ## Code Example
 
 ```javascript
