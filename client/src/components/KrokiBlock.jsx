@@ -38,7 +38,11 @@ export const KROKI_LANGUAGES = new Map([
 function encodeKroki(source) {
   const data = new TextEncoder().encode(source)
   const compressed = pako.deflate(data, { level: 9 })
-  const binary = String.fromCharCode.apply(null, compressed)
+  let binary = ''
+  const chunkSize = 0x8000
+  for (let i = 0; i < compressed.length; i += chunkSize) {
+    binary += String.fromCharCode(...compressed.subarray(i, i + chunkSize))
+  }
   return btoa(binary)
     .replace(/\+/g, '-')
     .replace(/\//g, '_')

@@ -44,6 +44,8 @@ export function useServerDiagram(source, buildUrl, deps = []) {
   useEffect(() => {
     const url = buildUrl(source)
     if (!url) {
+      setSvg('')
+      setError(null)
       setLoading(false)
       return
     }
@@ -58,6 +60,8 @@ export function useServerDiagram(source, buildUrl, deps = []) {
 
     let cancelled = false
     const fetchDiagram = async () => {
+      setSvg('')
+      setError(null)
       setLoading(true)
       try {
         const res = await fetch(url)
