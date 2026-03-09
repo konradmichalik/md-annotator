@@ -1,8 +1,27 @@
-import { useRef, useState, useEffect } from 'react'
-import DOMPurify from 'dompurify'
+import { useCallback } from 'react'
 import plantumlEncoder from 'plantuml-encoder'
 import { useResolvedTheme } from '../hooks/useResolvedTheme.js'
+import { useServerDiagram } from '../hooks/useServerDiagram.js'
 import { DiagramShell } from './DiagramShell.jsx'
+
+// Light skinparams match PlantUML defaults visually but force the server to
+// compute proper text metrics.  Without explicit params the public PlantUML
+// server emits textLength="0" on class‑diagram text elements, producing a
+// tiny 188 px layout that breaks in the browser.
+const LIGHT_SKINPARAMS = [
+  'skinparam backgroundColor transparent',
+  'skinparam defaultFontColor #000000',
+  'skinparam arrowColor #181818',
+  'skinparam classBorderColor #181818',
+  'skinparam classBackgroundColor #F1F1F1',
+  'skinparam stereotypeCBackgroundColor #ADD1B2',
+  'skinparam participantBackgroundColor #FEFECE',
+  'skinparam participantBorderColor #A80036',
+  'skinparam actorBorderColor #A80036',
+  'skinparam sequenceLifeLineBorderColor #A80036',
+  'skinparam noteBorderColor #A80036',
+  'skinparam noteBackgroundColor #FBFB77',
+].join('\n')
 
 const DARK_SKINPARAMS = [
   'skinparam backgroundColor transparent',
@@ -20,77 +39,30 @@ const DARK_SKINPARAMS = [
 ].join('\n')
 
 function buildSource(content, isDark) {
-  if (!isDark) { return content }
+  const params = isDark ? DARK_SKINPARAMS : LIGHT_SKINPARAMS
   const lines = content.split('\n')
   const startIdx = lines.findIndex(l => /^@start/.test(l.trim()))
   if (startIdx !== -1) {
-    lines.splice(startIdx + 1, 0, DARK_SKINPARAMS)
+    lines.splice(startIdx + 1, 0, params)
     return lines.join('\n')
   }
-  return `${DARK_SKINPARAMS}\n${content}`
+  return `${params}\n${content}`
 }
 
 export function PlantUMLBlock({ block, serverUrl, onDiagramClick, annotationType, hasNote, onNoteClick }) {
-  const [svg, setSvg] = useState('')
-  const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(false)
   const resolvedTheme = useResolvedTheme()
-  const svgCacheRef = useRef(new Map())
+  const isDark = resolvedTheme === 'dark'
+  const source = buildSource(block.content, isDark)
 
-  // Fetch rendered SVG from PlantUML server
-  useEffect(() => {
-    if (!serverUrl) {
-      setLoading(false)
-      return
-    }
+  const buildUrl = useCallback(
+    (src) => {
+      if (!serverUrl) { return null }
+      return `${serverUrl}/svg/${plantumlEncoder.encode(src)}`
+    },
+    [serverUrl]
+  )
 
-    const isDark = resolvedTheme === 'dark'
-    const source = buildSource(block.content, isDark)
-    const cacheKey = `${source}::${serverUrl}`
-
-    const cached = svgCacheRef.current.get(cacheKey)
-    if (cached) {
-      setSvg(cached)
-      setError(null)
-      setLoading(false)
-      return
-    }
-
-    let cancelled = false
-    const fetchDiagram = async () => {
-      setLoading(true)
-      try {
-        const encoded = plantumlEncoder.encode(source)
-        const url = `${serverUrl}/svg/${encoded}`
-        const res = await fetch(url)
-        if (!res.ok) {
-          throw new Error(`PlantUML server returned ${res.status}`)
-        }
-        const text = await res.text()
-        if (cancelled) { return }
-
-        const sanitized = DOMPurify.sanitize(text, { USE_PROFILES: { svg: true } })
-        const cleaned = sanitized
-          .replace(/preserveAspectRatio="[^"]*"/, 'preserveAspectRatio="xMidYMid meet"')
-          .replace(/ width="[^"]*"/, ' width="100%"')
-          .replace(/ height="[^"]*"/, '')
-          .replace(/ style="[^"]*"/, '')
-
-        svgCacheRef.current.set(cacheKey, cleaned)
-        setSvg(cleaned)
-        setError(null)
-      } catch (err) {
-        if (cancelled) { return }
-        setError(err instanceof Error ? err.message : 'Failed to render diagram')
-        setSvg('')
-      } finally {
-        if (!cancelled) { setLoading(false) }
-      }
-    }
-
-    fetchDiagram()
-    return () => { cancelled = true }
-  }, [block.content, serverUrl, resolvedTheme])
+  const { svg, error, loading } = useServerDiagram(source, buildUrl, [serverUrl, resolvedTheme])
 
   return (
     <DiagramShell

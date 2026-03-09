@@ -844,6 +844,7 @@ export default function App() {
           onOpenFile={handleOpenFile}
           pinpointMode={pinpointMode}
           plantumlServerUrl={serverConfig.plantumlServerUrl}
+          krokiServerUrl={serverConfig.krokiServerUrl}
           selectedAnnotationId={selectedAnnotationId}
         />
         {!sidebarCollapsed && (

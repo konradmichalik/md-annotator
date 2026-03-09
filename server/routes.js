@@ -44,7 +44,7 @@ export function createApiRouter(filePaths, resolveDecision, origin = 'cli', stor
           }
         })
       )
-      res.json(success({ files, origin, config: { plantumlServerUrl: config.plantumlServerUrl } }))
+      res.json(success({ files, origin, config: { plantumlServerUrl: config.plantumlServerUrl, krokiServerUrl: config.krokiServerUrl } }))
     } catch (error) {
       res.status(500).json(failure(error.message))
     }

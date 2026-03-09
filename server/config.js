@@ -35,6 +35,14 @@ function getPlantumlServerUrl() {
   return 'https://www.plantuml.com/plantuml'
 }
 
+function getKrokiServerUrl() {
+  const envUrl = process.env.KROKI_SERVER_URL
+  if (envUrl) {
+    return envUrl.replace(/\/+$/, '')
+  }
+  return 'https://kroki.io'
+}
+
 export const config = {
   port: getServerPort(),
   browser: process.env.MD_ANNOTATOR_BROWSER || null,
@@ -42,4 +50,5 @@ export const config = {
   forceExitTimeoutMs: 5000,
   jsonLimit: '10mb',
   plantumlServerUrl: getPlantumlServerUrl(),
+  krokiServerUrl: getKrokiServerUrl(),
 }

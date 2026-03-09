@@ -22,6 +22,7 @@
 - **Linked Navigation** -- Click relative `.md` links to open them as new tabs (wiki-style browsing)
 - **Mermaid Diagrams** -- Renders `mermaid` code blocks as interactive diagrams with zoom, pan, and source toggle (adapts to light/dark theme)
 - **PlantUML Diagrams** -- Renders `plantuml` code blocks as SVG via a configurable PlantUML server with zoom, pan, and source toggle
+- **Kroki Diagrams** -- Renders 27+ diagram formats (`graphviz`, `d2`, `ditaa`, `erd`, `nomnoml`, `excalidraw`, and more) via a configurable [Kroki](https://kroki.io) server
 - **File References** -- Type `@` in comments to autocomplete and reference other project files
 - **Export & Import** -- Export annotations as Markdown or JSON; re-import JSON to continue a review later
 - **Annotation Persistence** -- Annotations auto-save to the server and survive page reloads (validated by content hash)
@@ -135,9 +136,10 @@ The server starts on an available port (default 3000) and opens your browser aut
 | `MD_ANNOTATOR_PORT`    | Override the server port (default: 3000)                     |
 | `MD_ANNOTATOR_BROWSER` | Custom browser application                                   |
 | `PLANTUML_SERVER_URL`  | PlantUML render server (default: `https://www.plantuml.com/plantuml`) |
+| `KROKI_SERVER_URL`     | Kroki render server (default: `https://kroki.io`)                    |
 
 > [!NOTE]
-> **PlantUML privacy**: When rendering PlantUML diagrams, the diagram source is encoded and sent to the configured PlantUML server. The default is the public server at `plantuml.com`. If your documents contain sensitive diagrams, self-host a PlantUML server (e.g. via [Docker](https://hub.docker.com/r/plantuml/plantuml-server)) and set `PLANTUML_SERVER_URL` accordingly.
+> **Privacy**: When rendering PlantUML or Kroki diagrams, the diagram source is encoded and sent to the configured server. The defaults are the public servers at `plantuml.com` and `kroki.io`. If your documents contain sensitive diagrams, self-host a [PlantUML server](https://hub.docker.com/r/plantuml/plantuml-server) or [Kroki server](https://docs.kroki.io/kroki/setup/install/) and set `PLANTUML_SERVER_URL` / `KROKI_SERVER_URL` accordingly.
 
 ## 📝 How It Works
 
@@ -148,7 +150,7 @@ Once a file is opened in the browser, you can:
 - **Comment** -- highlights text (yellow) and adds a comment
 - **Insert** -- place the cursor to add new text at that position
 - **Global Comment** -- add general feedback via the "+" button in the annotation panel
-- **Annotate images & diagrams** -- click on images, Mermaid diagrams, or PlantUML diagrams to comment or delete them
+- **Annotate images & diagrams** -- click on images, Mermaid, PlantUML, or Kroki diagrams to comment or delete them
 - **View annotations** in the sidebar panel on the right
 - **Export** annotations as Markdown or JSON
 - **Approve** or **Submit Feedback** when done
