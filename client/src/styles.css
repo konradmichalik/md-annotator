@@ -805,12 +805,13 @@ body {
 .code-copy-btn:hover { background: rgb(255 255 255 / 20%); color: var(--text); }
 
 /* === Mermaid Blocks === */
-.mermaid-block {
+/* Shared diagram styles (Mermaid, PlantUML, etc.) */
+.diagram-block {
   position: relative;
   margin: 1.25rem 0;
 }
 
-.mermaid-controls {
+.diagram-controls {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
@@ -823,11 +824,11 @@ body {
   z-index: 2;
 }
 
-.mermaid-block:hover .mermaid-controls {
+.diagram-block:hover .diagram-controls {
   opacity: 1;
 }
 
-.mermaid-ctrl-btn {
+.diagram-ctrl-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -840,12 +841,12 @@ body {
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.mermaid-ctrl-btn:hover {
+.diagram-ctrl-btn:hover {
   background: rgb(255 255 255 / 20%);
   color: var(--text);
 }
 
-.mermaid-zoom-controls {
+.diagram-zoom-controls {
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
@@ -854,7 +855,7 @@ body {
   padding: 0.125rem;
 }
 
-.mermaid-zoom-btn {
+.diagram-zoom-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -867,17 +868,17 @@ body {
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.mermaid-zoom-btn:hover {
+.diagram-zoom-btn:hover {
   background: rgb(255 255 255 / 15%);
   color: var(--text);
 }
 
-.mermaid-zoom-btn:disabled {
+.diagram-zoom-btn:disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }
 
-.mermaid-zoom-display {
+.diagram-zoom-display {
   font-size: 0.625rem;
   text-align: center;
   color: var(--text-muted);
@@ -885,7 +886,7 @@ body {
   line-height: 1.2;
 }
 
-.mermaid-source {
+.diagram-source {
   border-radius: 6px;
   overflow-x: auto;
   font-size: 0.8125rem;
@@ -893,11 +894,11 @@ body {
   border: 1px solid var(--border-light);
 }
 
-.mermaid-source--hidden {
+.diagram-source--hidden {
   visibility: hidden;
 }
 
-.mermaid-diagram {
+.diagram-overlay {
   position: absolute;
   inset: 0;
   border-radius: 6px;
@@ -912,20 +913,38 @@ body {
   transition: box-shadow var(--transition-fast);
 }
 
-.mermaid-diagram:hover {
+.diagram-overlay:hover {
   box-shadow: inset 0 0 0 2px var(--comment-border);
 }
 
-.mermaid-diagram.annotated-comment {
+.diagram-overlay.annotated-comment {
   box-shadow: inset 0 0 0 2px var(--comment-border);
 }
 
-.mermaid-diagram.annotated-deletion {
+.diagram-overlay.annotated-deletion {
   box-shadow: inset 0 0 0 2px var(--deletion-text);
   opacity: 0.5;
 }
 
-.mermaid-error {
+.diagram-loading {
+  align-items: center;
+  cursor: default;
+}
+
+.diagram-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: diagram-spin 0.8s linear infinite;
+}
+
+@keyframes diagram-spin {
+  to { transform: rotate(360deg); }
+}
+
+.diagram-error {
   margin: 1.25rem 0;
   border-radius: 6px;
   border: 1px solid rgb(191 97 106 / 30%);
@@ -933,7 +952,7 @@ body {
   overflow: hidden;
 }
 
-.mermaid-error-header {
+.diagram-error-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -945,14 +964,14 @@ body {
   font-weight: 500;
 }
 
-.mermaid-error-message {
+.diagram-error-message {
   padding: 0.75rem;
   font-size: 0.75rem;
   color: var(--danger);
   overflow-x: auto;
 }
 
-.mermaid-error-source {
+.diagram-error-source {
   padding: 0.75rem;
   font-size: 0.75rem;
   color: var(--text-muted);
@@ -960,6 +979,7 @@ body {
   border-top: 1px solid var(--border-light);
   overflow-x: auto;
 }
+
 
 /* === Annotation Highlights === */
 .annotation-highlight {
