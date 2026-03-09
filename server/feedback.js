@@ -36,9 +36,11 @@ function formatAnnotation(ann, block, heading) {
 
   if (ann.targetType === 'diagram') {
     const isDeletion = ann.type === 'DELETION'
-    const label = isDeletion ? 'Remove Mermaid diagram' : 'Comment on Mermaid diagram'
+    const diagramLang = block?.language === 'plantuml' ? 'PlantUML' : 'Mermaid'
+    const fence = block?.language === 'plantuml' ? 'plantuml' : 'mermaid'
+    const label = isDeletion ? `Remove ${diagramLang} diagram` : `Comment on ${diagramLang} diagram`
     let output = `${heading} ${label} (Line ${blockStartLine})\n`
-    output += `\`\`\`mermaid\n${block?.content || ann.originalText}\n\`\`\`\n`
+    output += `\`\`\`${fence}\n${block?.content || ann.originalText}\n\`\`\`\n`
     if (isDeletion) {
       output += `> User wants this diagram removed from the document.\n`
     } else {

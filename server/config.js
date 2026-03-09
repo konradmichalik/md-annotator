@@ -27,10 +27,19 @@ function getHeartbeatTimeoutMs() {
   return DEFAULT_HEARTBEAT_TIMEOUT_MS
 }
 
+function getPlantumlServerUrl() {
+  const envUrl = process.env.PLANTUML_SERVER_URL
+  if (envUrl) {
+    return envUrl.replace(/\/+$/, '')
+  }
+  return 'https://www.plantuml.com/plantuml'
+}
+
 export const config = {
   port: getServerPort(),
   browser: process.env.MD_ANNOTATOR_BROWSER || null,
   heartbeatTimeoutMs: getHeartbeatTimeoutMs(),
   forceExitTimeoutMs: 5000,
   jsonLimit: '10mb',
+  plantumlServerUrl: getPlantumlServerUrl(),
 }

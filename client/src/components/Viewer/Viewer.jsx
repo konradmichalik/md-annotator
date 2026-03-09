@@ -3,6 +3,7 @@ import Highlighter from 'web-highlighter'
 import 'highlight.js/styles/github-dark.css'
 import { Toolbar } from '../Toolbar.jsx'
 import { MermaidBlock } from '../MermaidBlock.jsx'
+import { PlantUMLBlock } from '../PlantUMLBlock.jsx'
 import { PinpointOverlay } from '../PinpointOverlay.jsx'
 import { BlockRenderer } from './BlockRenderer.jsx'
 import { CodeBlock } from './CodeBlock.jsx'
@@ -59,6 +60,7 @@ export const Viewer = forwardRef(function Viewer({
   onSelectAnnotation,
   onOpenFile,
   pinpointMode,
+  plantumlServerUrl,
   selectedAnnotationId: _selectedAnnotationId
 }, ref) {
   const containerRef = useRef(null)
@@ -212,7 +214,7 @@ export const Viewer = forwardRef(function Viewer({
         )
       } else if (ann.targetType === 'diagram') {
         targetEl = containerRef.current?.querySelector(
-          `[data-block-id="${ann.blockId}"] .mermaid-diagram`
+          `[data-block-id="${ann.blockId}"] .diagram-overlay`
         ) || containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
       } else if (ann.targetType === 'pinpoint') {
         targetEl = containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
@@ -231,7 +233,7 @@ export const Viewer = forwardRef(function Viewer({
 
     const highlighter = new Highlighter({
       $root: containerRef.current,
-      exceptSelectors: ['.annotation-toolbar', 'button', '.code-copy-btn', '.annotatable-image-wrapper', '.mermaid-diagram', '.mermaid-controls'],
+      exceptSelectors: ['.annotation-toolbar', 'button', '.code-copy-btn', '.annotatable-image-wrapper', '.diagram-overlay', '.diagram-controls'],
       wrapTag: 'mark',
       style: { className: 'annotation-highlight' }
     })
@@ -318,7 +320,7 @@ export const Viewer = forwardRef(function Viewer({
 
       // Ignore clicks on interactive/UI targets and links
       if (e.defaultPrevented) {return}
-      if (e.target.closest('.annotation-toolbar, button, a[href], .code-copy-btn, .annotatable-image-wrapper, .mermaid-diagram, .mermaid-controls, .block-note-border, .insertion-marker')) {return}
+      if (e.target.closest('.annotation-toolbar, button, a[href], .code-copy-btn, .annotatable-image-wrapper, .diagram-overlay, .diagram-controls, .block-note-border, .insertion-marker')) {return}
 
       requestAnimationFrame(() => {
         // If web-highlighter created a pending source in the meantime, don't interfere
@@ -706,7 +708,7 @@ export const Viewer = forwardRef(function Viewer({
       return
     }
 
-    if (e.target.closest('.annotation-toolbar, .comment-popover, button, .code-copy-btn, .mermaid-controls')) {return}
+    if (e.target.closest('.annotation-toolbar, .comment-popover, button, .code-copy-btn, .diagram-controls')) {return}
 
     e.preventDefault()
     e.stopPropagation()
@@ -768,6 +770,16 @@ export const Viewer = forwardRef(function Viewer({
             <MermaidBlock
               key={block.id}
               block={block}
+              onDiagramClick={handleDiagramClick}
+              annotationType={annotatedDiagramBlocks.get(block.id) || null}
+              hasNote={noteBlockIds.has(block.id)}
+              onNoteClick={handleNoteClick}
+            />
+          ) : block.type === 'code' && block.language === 'plantuml' ? (
+            <PlantUMLBlock
+              key={block.id}
+              block={block}
+              serverUrl={plantumlServerUrl}
               onDiagramClick={handleDiagramClick}
               annotationType={annotatedDiagramBlocks.get(block.id) || null}
               hasNote={noteBlockIds.has(block.id)}

@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto'
 import { readMarkdownFile, isMarkdownFile } from './file.js'
 import { exportFeedback, exportMultiFileFeedback } from './feedback.js'
 import { listWorkspaceFiles } from './workspace.js'
+import { config } from './config.js'
 
 function success(data) {
   return { success: true, data }
@@ -43,7 +44,7 @@ export function createApiRouter(filePaths, resolveDecision, origin = 'cli', stor
           }
         })
       )
-      res.json(success({ files, origin }))
+      res.json(success({ files, origin, config: { plantumlServerUrl: config.plantumlServerUrl } }))
     } catch (error) {
       res.status(500).json(failure(error.message))
     }

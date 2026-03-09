@@ -74,6 +74,7 @@ export default function App() {
   const [notesModalOpen, setNotesModalOpen] = useState(false)
   const [toast, setToast] = useState(null)
   const [origin, setOrigin] = useState('cli')
+  const [serverConfig, setServerConfig] = useState({})
   const [pinpointMode, setPinpointMode] = useState(false)
   const viewerRef = useRef(null)
   const prevLastActionRef = useRef(null)
@@ -223,6 +224,7 @@ export default function App() {
         }))
         filesDispatch({ type: 'INIT_FILES', files: loadedFiles })
         setOrigin(json.data.origin || 'cli')
+        if (json.data.config) { setServerConfig(json.data.config) }
         setStatus('Select text to annotate, then Approve or Submit Feedback.')
         return loadedFiles
       } else {
@@ -841,6 +843,7 @@ export default function App() {
           onSelectAnnotation={handleSelectAnnotation}
           onOpenFile={handleOpenFile}
           pinpointMode={pinpointMode}
+          plantumlServerUrl={serverConfig.plantumlServerUrl}
           selectedAnnotationId={selectedAnnotationId}
         />
         {!sidebarCollapsed && (
