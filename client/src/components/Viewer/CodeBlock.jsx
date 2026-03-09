@@ -49,9 +49,17 @@ export function CodeBlock({ block, onHover, onLeave, isHovered, hasNote, onNoteC
           aria-label="View AI note"
         />
       )}
-      <button onClick={handleCopy} className="code-copy-btn" title={copied ? 'Copied!' : 'Copy code'}>
-        {copied ? '\u2713' : '\u2398'}
-      </button>
+      <div className="code-toolbar">
+        {block.language && <span className="code-language-label">{block.language}</span>}
+        <button
+          onClick={handleCopy}
+          className="code-copy-btn"
+          title={copied ? 'Copied!' : 'Copy code'}
+          aria-label={copied ? 'Copied!' : 'Copy code'}
+        >
+          {copied ? '\u2713' : '\u2398'}
+        </button>
+      </div>
       <pre className="block-code">
         <code ref={codeRef} className={`hljs${block.language ? ` language-${block.language}` : ''}`}>
           {block.content}
