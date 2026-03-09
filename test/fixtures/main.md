@@ -43,6 +43,61 @@ graph TD
     B -->|stdout| I[AI Agent]
 ```
 
+## Sequence Diagram
+
+```plantuml
+@startuml
+actor User
+participant "Browser" as B
+participant "Express Server" as S
+participant "AI Agent" as AI
+
+User -> B: Open markdown file
+B -> S: GET /api/files
+S --> B: File content + config
+User -> B: Select text & annotate
+B -> S: POST /api/annotations
+User -> B: Click "Submit Feedback"
+B -> S: POST /api/feedback
+S --> AI: Structured feedback (stdout)
+@enduml
+```
+
+## Class Diagram
+
+```plantuml
+@startuml
+class Viewer {
+  +blocks: Block[]
+  +annotations: Annotation[]
+  +render()
+  +restoreHighlights()
+}
+
+class AnnotationPanel {
+  +annotations: Annotation[]
+  +onSelect(id)
+  +onDelete(id)
+}
+
+class MermaidBlock {
+  +block: Block
+  +svg: string
+  +render()
+}
+
+class PlantUMLBlock {
+  +block: Block
+  +serverUrl: string
+  +fetchSvg()
+}
+
+Viewer --> MermaidBlock
+Viewer --> PlantUMLBlock
+Viewer --> AnnotationPanel
+@enduml
+```
+
 ## Code Example
 
 ```javascript
