@@ -156,6 +156,17 @@ export function AnnotationPanel({
     setEditingGlobalText('')
   }
 
+  // Bidirectional scroll: when selection changes from outside (e.g. highlight click in Viewer),
+  // auto-scroll the panel to the matching annotation card
+  const panelRef = useRef(null)
+  useEffect(() => {
+    if (!selectedAnnotationId || notesCollapsed) {return}
+    const el = panelRef.current?.querySelector(`[data-annotation-id="${selectedAnnotationId}"]`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [selectedAnnotationId, notesCollapsed])
+
   if (collapsed) {
     return null
   }
@@ -183,7 +194,7 @@ export function AnnotationPanel({
   )
 
   return (
-    <aside className="annotation-panel" style={width ? { width: `${width}px` } : undefined}>
+    <aside ref={panelRef} className="annotation-panel" style={width ? { width: `${width}px` } : undefined}>
       <input ref={fileInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileSelect} />
       <div className="panel-header">
         <h2>Annotations</h2>
@@ -202,6 +213,7 @@ export function AnnotationPanel({
           {globalComments.map(ann => (
             <div
               key={ann.id}
+              data-annotation-id={ann.id}
               className={`panel-global-comment${ann.id === selectedAnnotationId ? ' selected' : ''}`}
               role="button"
               tabIndex={0}
@@ -340,6 +352,7 @@ export function AnnotationPanel({
           return (
           <li
             key={ann.id}
+            data-annotation-id={ann.id}
             className={`panel-item${ann.id === selectedAnnotationId ? ' selected' : ''} panel-item-${ann.type.toLowerCase()}`}
             role="button"
             tabIndex={0}
@@ -446,6 +459,7 @@ export function AnnotationPanel({
                 return (
                 <div
                   key={ann.id}
+                  data-annotation-id={ann.id}
                   className={`panel-note-item${ann.id === selectedAnnotationId ? ' selected' : ''}`}
                   role="button"
                   tabIndex={0}
