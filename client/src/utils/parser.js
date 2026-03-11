@@ -254,7 +254,7 @@ export function parseMarkdownToBlocks(markdown) {
           })
           // Recursively parse inner content as markdown
           for (const inner of parseMarkdownToBlocks(innerLines.join('\n'))) {
-            blocks.push({ ...inner, id: `block-${currentId++}`, order: currentId })
+            blocks.push({ ...inner, id: `block-${currentId++}`, order: currentId, startLine: htmlStartLine + inner.startLine })
           }
           // Emit closing tag
           if (closingLine) {
