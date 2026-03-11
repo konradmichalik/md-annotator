@@ -926,13 +926,7 @@ body {
   border: 1px solid var(--border-light);
 }
 
-.diagram-source--hidden {
-  visibility: hidden;
-}
-
-.diagram-overlay {
-  position: absolute;
-  inset: 0;
+.diagram-render-area {
   border-radius: 6px;
   background: var(--mermaid-bg);
   border: 1px solid var(--border-light);
@@ -946,20 +940,20 @@ body {
   transition: box-shadow var(--transition-fast);
 }
 
-.diagram-overlay svg {
+.diagram-render-area svg {
   width: 100%;
   height: 100%;
 }
 
-.diagram-overlay:hover {
+.diagram-render-area:hover {
   box-shadow: inset 0 0 0 2px var(--comment-border);
 }
 
-.diagram-overlay.annotated-comment {
+.diagram-render-area.annotated-comment {
   box-shadow: inset 0 0 0 2px var(--comment-border);
 }
 
-.diagram-overlay.annotated-deletion {
+.diagram-render-area.annotated-deletion {
   box-shadow: inset 0 0 0 2px var(--deletion-text);
   opacity: 0.5;
 }

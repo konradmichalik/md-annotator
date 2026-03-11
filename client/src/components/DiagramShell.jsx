@@ -1,9 +1,21 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useMemo } from 'react'
 import { useDiagramZoom } from '../hooks/useDiagramZoom.js'
+
+function parseSvgViewBox(svgString) {
+  if (!svgString) { return null }
+  const match = svgString.match(/viewBox=["']([^"']+)["']/)
+  if (!match) { return null }
+  const parts = match[1].split(/[\s,]+/).map(Number)
+  if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
+    return { width: parts[2], height: parts[3] }
+  }
+  return null
+}
 
 export function DiagramShell({ block, onDiagramClick, annotationType, hasNote, onNoteClick, svg, error, loading, errorLabel, language }) {
   const containerRef = useRef(null)
   const [showSource, setShowSource] = useState(false)
+  const viewBox = useMemo(() => parseSvgViewBox(svg), [svg])
 
   const zoom = useDiagramZoom({
     containerRef,
@@ -95,23 +107,26 @@ export function DiagramShell({ block, onDiagramClick, annotationType, hasNote, o
         )}
       </div>
 
-      {/* Source code (always in DOM for sizing) */}
-      <pre className={`block-code diagram-source${!showSource ? ' diagram-source--hidden' : ''}`}>
-        <code className={`hljs language-${language}`}>{block.content}</code>
-      </pre>
+      {/* Source code */}
+      {showSource && (
+        <pre className="block-code diagram-source">
+          <code className={`hljs language-${language}`}>{block.content}</code>
+        </pre>
+      )}
 
       {/* Loading indicator */}
       {loading && !showSource && (
-        <div className="diagram-overlay diagram-loading">
+        <div className="diagram-render-area diagram-loading">
           <div className="diagram-spinner" />
         </div>
       )}
 
-      {/* Diagram overlay */}
+      {/* Diagram */}
       {!showSource && !loading && svg && (
         <div
           ref={containerRef}
-          className={`diagram-overlay${annotationType === 'DELETION' ? ' annotated-deletion' : annotationType ? ' annotated-comment' : ''}`}
+          className={`diagram-render-area${annotationType === 'DELETION' ? ' annotated-deletion' : annotationType ? ' annotated-comment' : ''}`}
+          style={viewBox ? { aspectRatio: `${viewBox.width} / ${viewBox.height}` } : undefined}
           role="button"
           tabIndex={0}
           aria-label="Annotate diagram"

@@ -216,7 +216,7 @@ export const Viewer = forwardRef(function Viewer({
         )
       } else if (ann.targetType === 'diagram') {
         targetEl = containerRef.current?.querySelector(
-          `[data-block-id="${ann.blockId}"] .diagram-overlay`
+          `[data-block-id="${ann.blockId}"] .diagram-render-area`
         ) || containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
       } else if (ann.targetType === 'pinpoint') {
         targetEl = containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
@@ -235,7 +235,7 @@ export const Viewer = forwardRef(function Viewer({
 
     const highlighter = new Highlighter({
       $root: containerRef.current,
-      exceptSelectors: ['.annotation-toolbar', 'button', '.code-copy-btn', '.annotatable-image-wrapper', '.diagram-overlay', '.diagram-controls'],
+      exceptSelectors: ['.annotation-toolbar', 'button', '.code-copy-btn', '.annotatable-image-wrapper', '.diagram-render-area', '.diagram-source', '.diagram-controls'],
       wrapTag: 'mark',
       style: { className: 'annotation-highlight' }
     })
@@ -322,7 +322,7 @@ export const Viewer = forwardRef(function Viewer({
 
       // Ignore clicks on interactive/UI targets and links
       if (e.defaultPrevented) {return}
-      if (e.target.closest('.annotation-toolbar, button, a[href], .code-copy-btn, .annotatable-image-wrapper, .diagram-overlay, .diagram-controls, .block-note-border, .insertion-marker')) {return}
+      if (e.target.closest('.annotation-toolbar, button, a[href], .code-copy-btn, .annotatable-image-wrapper, .diagram-render-area, .diagram-source, .diagram-controls, .block-note-border, .insertion-marker')) {return}
 
       requestAnimationFrame(() => {
         // If web-highlighter created a pending source in the meantime, don't interfere
