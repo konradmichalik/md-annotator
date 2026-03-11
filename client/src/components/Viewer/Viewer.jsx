@@ -154,7 +154,7 @@ export const Viewer = forwardRef(function Viewer({
         }
         return true
       }
-      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'pinpoint' || ann.targetType === 'global' || ann.type === 'NOTES') {return true}
+      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'pinpoint' || ann.targetType === 'global' || ann.targetType === 'link' || ann.type === 'NOTES') {return true}
       const highlighter = highlighterRef.current
       if (!highlighter) {return false}
       const wasRestoring = isRestoringRef.current
@@ -227,6 +227,12 @@ export const Viewer = forwardRef(function Viewer({
         ) || containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
       } else if (ann.targetType === 'pinpoint') {
         targetEl = containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
+      } else if (ann.targetType === 'link') {
+        const blockEl = containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
+        if (blockEl) {
+          const anchors = blockEl.querySelectorAll('a[href]')
+          targetEl = Array.from(anchors).find(a => a.textContent === ann.originalText) || anchors[0]
+        }
       }
       if (targetEl) {
         targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
