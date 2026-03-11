@@ -1138,6 +1138,8 @@ body {
 .toolbar-btn-edit-remove:hover { color: var(--danger); background: var(--deletion-bg); }
 .toolbar-btn-edit-action { color: var(--text-muted); }
 .toolbar-btn-edit-action:hover { color: var(--primary); background: var(--bg-secondary); }
+.toolbar-btn-link { color: var(--text-muted); }
+.toolbar-btn-link:hover { color: var(--primary); background: var(--bg-secondary); }
 .toolbar-btn-cancel { color: var(--text-muted); }
 .toolbar-btn-cancel:hover { background: var(--bg-secondary); }
 
