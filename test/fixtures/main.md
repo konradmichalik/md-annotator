@@ -1,4 +1,15 @@
+<div align="center">
+  <img src="./assets/placeholder-icon.svg" alt="Logo" width="80" height="80">
+
 # Main Document
+
+**A test document for the annotation interface.**
+
+[![Badge One](https://img.shields.io/badge/status-active-brightgreen)](https://example.com)
+[![Badge Two](https://img.shields.io/badge/version-1.0-blue)](https://example.com)
+[![Badge Three](https://img.shields.io/badge/license-MIT-green)](https://example.com)
+
+</div>
 
 This is the main test document for multi-file support. It exercises all major features of the annotation interface: text selection, deletions, comments, linked navigation between files, image and diagram annotations, code blocks, and tables.
 

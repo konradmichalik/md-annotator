@@ -1,3 +1,5 @@
+import DOMPurify from 'dompurify'
+
 function handleAnchorClick(e, href) {
   if (!href.startsWith('#') || href.length === 1) { return }
   const viewerEl = e.target.closest('.viewer-container')
@@ -70,13 +72,17 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
       continue
     }
 
-    // Links: [text](url)
-    match = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/)
+    // Links: [text](url) — supports nested brackets for badge patterns like [![alt](img)](url)
+    match = remaining.match(/^\[((?:[^[\]]|!?\[[^\]]*\]\([^)]*\))+)\]\(([^)]+)\)/)
     if (match) {
       const href = match[2]
       const isAnchor = href.startsWith('#')
       const isExternal = href.startsWith('http://') || href.startsWith('https://')
-      const linkContent = <InlineMarkdown text={match[1]} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={blockId} />
+      // Badge pattern: [![alt](img)](url) — render as plain <a><img/></a> without annotation wrapper
+      const badgeMatch = match[1].match(/^!\[([^\]]*)\]\(([^)]+)\)$/)
+      const linkContent = badgeMatch
+        ? <img src={badgeMatch[2]} alt={badgeMatch[1]} className="inline-image" />
+        : <InlineMarkdown text={match[1]} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={blockId} />
       if (isAnchor) {
         parts.push(<a key={key++} href={href} onClick={(e) => handleAnchorClick(e, href)}>{linkContent}</a>)
       } else if (isExternal) {
@@ -97,7 +103,28 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
       continue
     }
 
-    const nextSpecial = remaining.slice(1).search(/[*`![]/)
+    // Inline HTML tags: <img>, <sup>, <sub>, <br>, <em>, <strong>, etc.
+    match = remaining.match(/^<([a-zA-Z][a-zA-Z0-9]*)((?:\s+[a-zA-Z-]+(?:="[^"]*")?)*)\s*\/?>/)
+    if (match) {
+      const htmlTag = match[0]
+      const tagName = match[1].toLowerCase()
+      // Self-closing or void tags — render directly
+      if (htmlTag.endsWith('/>') || ['img', 'br', 'hr', 'input', 'wbr'].includes(tagName)) {
+        parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlTag) }} />)
+        remaining = remaining.slice(htmlTag.length)
+        continue
+      }
+      // Paired inline tags like <sup>...</sup>
+      const closeIdx = remaining.indexOf(`</${tagName}>`, htmlTag.length)
+      if (closeIdx !== -1) {
+        const fullTag = remaining.slice(0, closeIdx + tagName.length + 3)
+        parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(fullTag) }} />)
+        remaining = remaining.slice(fullTag.length)
+        continue
+      }
+    }
+
+    const nextSpecial = remaining.slice(1).search(/[*`![<]/)
     if (nextSpecial === -1) {
       parts.push(remaining)
       break

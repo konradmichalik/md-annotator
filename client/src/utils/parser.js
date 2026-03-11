@@ -12,6 +12,12 @@ const HTML_VOID_TAGS = new Set([
   'link', 'meta', 'param', 'source', 'track', 'wbr'
 ])
 
+// HTML tags that can contain markdown content (e.g. <div align="center">)
+const HTML_MIXED_CONTENT_TAGS = new Set([
+  'div', 'section', 'details', 'aside', 'article', 'figure', 'figcaption',
+  'header', 'footer', 'main', 'nav', 'center'
+])
+
 /**
  * Simplified markdown parser that splits content into linear blocks.
  * Designed for predictable text-anchoring (not AST-based).
@@ -215,12 +221,56 @@ export function parseMarkdownToBlocks(markdown) {
         flush()
         const tagName = tagMatch[1].toLowerCase()
         const htmlStartLine = currentLineNum
-        const htmlLines = [line]
 
         const isSelfClosing = trimmed.endsWith('/>')
         const isVoid = HTML_VOID_TAGS.has(tagName)
         const hasSameLineClose = new RegExp(`</${tagName}\\s*>`, 'i').test(trimmed)
 
+        if (!isSelfClosing && !isVoid && !hasSameLineClose && HTML_MIXED_CONTENT_TAGS.has(tagName)) {
+          // Mixed content wrapper: split into open tag + inner markdown + close tag
+          const closePattern = new RegExp(`</${tagName}\\s*>`, 'i')
+          const openPattern = new RegExp(`<${tagName}[\\s>/]`, 'i')
+          const innerLines = []
+          let closingLine = null
+          let depth = 1
+          i++
+          while (i < lines.length) {
+            if (openPattern.test(lines[i].trim())) { depth++ }
+            if (closePattern.test(lines[i].trim())) {
+              depth--
+              if (depth === 0) { closingLine = lines[i]; break }
+            }
+            innerLines.push(lines[i])
+            i++
+          }
+
+          // Emit opening tag
+          blocks.push({
+            id: `block-${currentId++}`,
+            type: 'html',
+            content: line,
+            order: currentId,
+            startLine: htmlStartLine
+          })
+          // Recursively parse inner content as markdown
+          for (const inner of parseMarkdownToBlocks(innerLines.join('\n'))) {
+            blocks.push({ ...inner, id: `block-${currentId++}`, order: currentId, startLine: htmlStartLine + inner.startLine })
+          }
+          // Emit closing tag
+          if (closingLine) {
+            blocks.push({
+              id: `block-${currentId++}`,
+              type: 'html',
+              content: closingLine,
+              order: currentId,
+              startLine: htmlStartLine + innerLines.length + 1
+            })
+          }
+          continue
+        }
+
+        // Non-mixed HTML: collect everything as one opaque block
+        const htmlLines = [line]
         if (!isSelfClosing && !isVoid && !hasSameLineClose) {
           const closePattern = new RegExp(`</${tagName}\\s*>`, 'i')
           const openPattern = new RegExp(`<${tagName}[\\s>/]`, 'i')

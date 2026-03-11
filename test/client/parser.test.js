@@ -259,19 +259,23 @@ describe('parseMarkdownToBlocks', () => {
       expect(blocks[0].type).toBe('html')
     })
 
-    it('parses a multi-line div block', () => {
+    it('parses a multi-line div block as mixed content', () => {
       const md = '<div align="center">\n  <p>Hello</p>\n</div>'
       const blocks = parseMarkdownToBlocks(md)
-      expect(blocks).toHaveLength(1)
-      expect(blocks[0]).toMatchObject({ type: 'html', content: md, startLine: 1 })
+      expect(blocks).toHaveLength(3)
+      expect(blocks[0]).toMatchObject({ type: 'html', content: '<div align="center">', startLine: 1 })
+      expect(blocks[1]).toMatchObject({ type: 'html', content: '  <p>Hello</p>' })
+      expect(blocks[2]).toMatchObject({ type: 'html', content: '</div>' })
     })
 
-    it('parses a details/summary block', () => {
+    it('parses a details/summary block as mixed content', () => {
       const md = '<details>\n<summary>Click me</summary>\nHidden content\n</details>'
       const blocks = parseMarkdownToBlocks(md)
-      expect(blocks).toHaveLength(1)
-      expect(blocks[0].type).toBe('html')
-      expect(blocks[0].content).toContain('</details>')
+      expect(blocks).toHaveLength(4)
+      expect(blocks[0]).toMatchObject({ type: 'html', content: '<details>' })
+      expect(blocks[1]).toMatchObject({ type: 'html', content: '<summary>Click me</summary>' })
+      expect(blocks[2]).toMatchObject({ type: 'paragraph', content: 'Hidden content' })
+      expect(blocks[3]).toMatchObject({ type: 'html', content: '</details>' })
     })
 
     it('parses a picture element', () => {
@@ -322,16 +326,20 @@ describe('parseMarkdownToBlocks', () => {
     it('tracks line numbers correctly through HTML blocks', () => {
       const md = '# Title\n\n<div>\n  Content\n</div>\n\nAfter'
       const blocks = parseMarkdownToBlocks(md)
-      expect(blocks[0].startLine).toBe(1)
-      expect(blocks[1].startLine).toBe(3)
-      expect(blocks[2].startLine).toBe(7)
+      expect(blocks[0].startLine).toBe(1)  // # Title
+      expect(blocks[1].startLine).toBe(3)  // <div>
+      expect(blocks[2].startLine).toBe(4)  // Content (rebased: 3 + 1)
+      expect(blocks[3].startLine).toBe(5)  // </div>
+      expect(blocks[4].startLine).toBe(7)  // After
     })
 
-    it('parses nested same-name HTML tags as a single block', () => {
+    it('parses nested same-name HTML tags as mixed content', () => {
       const md = '<div>\n  <div>inner</div>\n</div>'
       const blocks = parseMarkdownToBlocks(md)
-      expect(blocks).toHaveLength(1)
-      expect(blocks[0]).toMatchObject({ type: 'html', content: md })
+      expect(blocks).toHaveLength(3)
+      expect(blocks[0]).toMatchObject({ type: 'html', content: '<div>' })
+      expect(blocks[1]).toMatchObject({ type: 'html', content: '  <div>inner</div>' })
+      expect(blocks[2]).toMatchObject({ type: 'html', content: '</div>' })
     })
   })
 
