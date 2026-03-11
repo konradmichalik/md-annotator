@@ -160,12 +160,12 @@ export function AnnotationPanel({
   // auto-scroll the panel to the matching annotation card
   const panelRef = useRef(null)
   useEffect(() => {
-    if (!selectedAnnotationId) {return}
+    if (!selectedAnnotationId || notesCollapsed) {return}
     const el = panelRef.current?.querySelector(`[data-annotation-id="${selectedAnnotationId}"]`)
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }
-  }, [selectedAnnotationId])
+  }, [selectedAnnotationId, notesCollapsed])
 
   if (collapsed) {
     return null
