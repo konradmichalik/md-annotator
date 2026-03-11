@@ -1411,6 +1411,11 @@ body {
   box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
 }
 
+.mode-toggle--temp {
+  outline: 1.5px dashed var(--primary);
+  outline-offset: 1px;
+}
+
 /* === Resize Handle === */
 .resize-handle {
   width: 4px;

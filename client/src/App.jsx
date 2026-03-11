@@ -76,6 +76,7 @@ export default function App() {
   const [origin, setOrigin] = useState('cli')
   const [serverConfig, setServerConfig] = useState({})
   const [pinpointMode, setPinpointMode] = useState(false)
+  const [shiftHeld, setShiftHeld] = useState(false)
   const viewerRef = useRef(null)
   const prevLastActionRef = useRef(null)
   const toastTimerRef = useRef(null)
@@ -188,6 +189,33 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('md-annotator-toc-collapsed', tocCollapsed)
   }, [tocCollapsed])
+
+  // Hold Shift to temporarily toggle pinpoint mode
+  // (Alt is reserved for insertion mode)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key !== 'Shift' || e.repeat) {return}
+      const tag = document.activeElement?.tagName?.toLowerCase()
+      if (tag === 'textarea' || tag === 'input') {return}
+      if (document.querySelector('.annotation-toolbar, .comment-popover')) {return}
+      setShiftHeld(true)
+    }
+    const handleKeyUp = (e) => {
+      if (e.key !== 'Shift') {return}
+      setShiftHeld(false)
+    }
+    const handleBlur = () => setShiftHeld(false)
+    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('keyup', handleKeyUp)
+    window.addEventListener('blur', handleBlur)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('keyup', handleKeyUp)
+      window.removeEventListener('blur', handleBlur)
+    }
+  }, [])
+
+  const effectivePinpointMode = shiftHeld ? !pinpointMode : pinpointMode
 
   const toggleToc = useCallback(() => {
     setTocCollapsed(prev => !prev)
@@ -732,11 +760,11 @@ export default function App() {
           <span className="app-filepath">{filePath}</span>
         </div>
         <div className="header-right">
-          <div className="mode-toggle">
+          <div className={`mode-toggle${shiftHeld ? ' mode-toggle--temp' : ''}`}>
             <button
-              className={`mode-toggle-btn${!pinpointMode ? ' active' : ''}`}
+              className={`mode-toggle-btn${!effectivePinpointMode ? ' active' : ''}`}
               onClick={() => setPinpointMode(false)}
-              title="Selection mode: select text to annotate"
+              title="Selection mode: select text to annotate (hold Shift to toggle)"
             >
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M3 10h8M3 15h10" />
@@ -744,9 +772,9 @@ export default function App() {
               Select
             </button>
             <button
-              className={`mode-toggle-btn${pinpointMode ? ' active' : ''}`}
+              className={`mode-toggle-btn${effectivePinpointMode ? ' active' : ''}`}
               onClick={() => setPinpointMode(true)}
-              title="Pinpoint mode: click a block to annotate"
+              title="Pinpoint mode: click a block to annotate (hold Shift to toggle)"
             >
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <circle cx="12" cy="12" r="3" />
@@ -842,7 +870,7 @@ export default function App() {
           onDeleteAnnotation={handleDeleteAnnotation}
           onSelectAnnotation={handleSelectAnnotation}
           onOpenFile={handleOpenFile}
-          pinpointMode={pinpointMode}
+          pinpointMode={effectivePinpointMode}
           plantumlServerUrl={serverConfig.plantumlServerUrl}
           krokiServerUrl={serverConfig.krokiServerUrl}
           selectedAnnotationId={selectedAnnotationId}
