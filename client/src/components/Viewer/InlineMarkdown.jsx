@@ -87,7 +87,7 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
         parts.push(<a key={key++} href={href} onClick={(e) => handleAnchorClick(e, href)}>{linkContent}</a>)
       } else if (isExternal) {
         parts.push(
-          <a key={key++} href={href} target="_blank" rel="noopener noreferrer" className="external-link">
+          <a key={key++} href={href} data-href={href} onClick={(e) => e.preventDefault()} className="external-link">
             {linkContent}
             <svg className="external-link-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
@@ -97,7 +97,7 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
           </a>
         )
       } else {
-        parts.push(<a key={key++} href={href} target="_blank" rel="noopener noreferrer">{linkContent}</a>)
+        parts.push(<a key={key++} href={href} data-href={href} onClick={(e) => e.preventDefault()}>{linkContent}</a>)
       }
       remaining = remaining.slice(match[0].length)
       continue

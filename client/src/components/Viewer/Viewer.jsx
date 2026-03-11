@@ -11,6 +11,13 @@ import { CodeBlock } from './CodeBlock.jsx'
 
 const MD_LINK_PATTERN = /\.(?:md|markdown|mdown|mkd)(?:[#?]|$)/i
 
+function getLinkInfo(el) {
+  const linkEl = el.closest('a[data-href]') || el.querySelector('a[data-href]')
+  const linkUrl = linkEl?.dataset?.href || null
+  const linkIsMd = linkUrl && !linkUrl.startsWith('http://') && !linkUrl.startsWith('https://') && MD_LINK_PATTERN.test(linkUrl)
+  return { linkUrl, linkIsMd }
+}
+
 function removeInsertionMarker(el) {
   const parent = el?.parentNode
   if (parent) {
@@ -147,7 +154,7 @@ export const Viewer = forwardRef(function Viewer({
         }
         return true
       }
-      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'pinpoint' || ann.targetType === 'global' || ann.type === 'NOTES') {return true}
+      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'pinpoint' || ann.targetType === 'global' || ann.targetType === 'link' || ann.type === 'NOTES') {return true}
       const highlighter = highlighterRef.current
       if (!highlighter) {return false}
       const wasRestoring = isRestoringRef.current
@@ -220,6 +227,12 @@ export const Viewer = forwardRef(function Viewer({
         ) || containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
       } else if (ann.targetType === 'pinpoint') {
         targetEl = containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
+      } else if (ann.targetType === 'link') {
+        const blockEl = containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
+        if (blockEl) {
+          const anchors = blockEl.querySelectorAll('a[href]')
+          targetEl = Array.from(anchors).find(a => a.textContent === ann.originalText) || anchors[0]
+        }
       }
       if (targetEl) {
         targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -257,7 +270,7 @@ export const Viewer = forwardRef(function Viewer({
             pendingSourceRef.current = null
           }
           pendingSourceRef.current = source
-          setToolbarState({ element: doms[0], source })
+          setToolbarState({ element: doms[0], source, ...getLinkInfo(doms[0]) })
         }
       }
     })
@@ -304,7 +317,7 @@ export const Viewer = forwardRef(function Viewer({
       if (targetAnn.type === 'NOTES') {return}
       const targetDoms = highlighter.getDoms(targetAnn.id)
       if (targetDoms?.length > 0) {
-        setToolbarState({ element: targetDoms[0], annotation: targetAnn, mode: 'edit' })
+        setToolbarState({ element: targetDoms[0], annotation: targetAnn, mode: 'edit', ...getLinkInfo(targetDoms[0]) })
         setRequestedToolbarStep(null)
       }
     })
@@ -652,15 +665,38 @@ export const Viewer = forwardRef(function Viewer({
   }, [onSelectAnnotation])
 
   const handleLinkClick = useCallback((e) => {
-    // Anchor links take priority over pinpoint editing
     const anchor = e.target.closest('a[href]')
     if (anchor) {
       const href = anchor.getAttribute('href')
-      if (href && !href.startsWith('#') && !href.startsWith('http://') && !href.startsWith('https://') && MD_LINK_PATTERN.test(href)) {
+      // Anchor links scroll normally
+      if (href?.startsWith('#')) {return}
+      // All other links: show toolbar on single click
+      const selection = window.getSelection()
+      if (!selection || selection.isCollapsed) {
         e.preventDefault()
-        onOpenFile?.(href)
+        const { linkUrl, linkIsMd } = getLinkInfo(anchor)
+        // Clean up any pending source
+        if (pendingSourceRef.current && highlighterRef.current) {
+          highlighterRef.current.remove(pendingSourceRef.current.id)
+          pendingSourceRef.current = null
+        }
+        const blockEl = anchor.closest('[data-block-id]')
+        const blockId = blockEl?.dataset?.blockId
+        const linkText = anchor.textContent || ''
+        setToolbarState({
+          element: anchor,
+          linkUrl,
+          linkIsMd,
+          elementMode: true,
+          elementData: {
+            targetType: 'link',
+            blockId,
+            originalText: linkText
+          }
+        })
+        setRequestedToolbarStep(null)
+        return
       }
-      return
     }
 
     // Click on pinpoint-annotated block → open edit toolbar
@@ -682,7 +718,7 @@ export const Viewer = forwardRef(function Viewer({
         return
       }
     }
-  }, [onOpenFile, onSelectAnnotation])
+  }, [onSelectAnnotation])
 
   const getBlockLabel = useCallback((blockEl) => {
     const blockId = blockEl.dataset.blockId
@@ -819,6 +855,8 @@ export const Viewer = forwardRef(function Viewer({
           editAnnotation={toolbarState?.mode === 'edit' ? toolbarState.annotation : null}
           elementMode={toolbarState?.elementMode || false}
           insertionMode={toolbarState?.insertionMode || false}
+          linkUrl={toolbarState?.linkUrl || null}
+          onOpenLink={toolbarState?.linkIsMd ? onOpenFile : null}
         />
         {pinpointMode && <PinpointOverlay target={pinpointTarget} />}
       </article>
