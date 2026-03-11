@@ -1,8 +1,23 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { CommentPopover } from './CommentPopover.jsx'
+import { TrashIcon, CloseIcon, PencilIcon, CommentIcon, PlusIcon, ExternalLinkIcon, FileIcon } from './Icons.jsx'
 
-export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, requestedStep: requestedStepProp, editAnnotation, elementMode, insertionMode }) {
+const OpenLinkButton = ({ linkUrl, onOpenLink }) => {
+  const isInternal = !!onOpenLink
+  return (
+    <button
+      onClick={() => isInternal ? onOpenLink(linkUrl) : window.open(linkUrl, '_blank', 'noopener,noreferrer')}
+      className="toolbar-btn toolbar-btn-link"
+      title={isInternal ? 'Open file' : 'Open link'}
+    >
+      {isInternal ? <FileIcon /> : <ExternalLinkIcon />}
+      <span className="toolbar-label">Open</span>
+    </button>
+  )
+}
+
+export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, requestedStep: requestedStepProp, editAnnotation, elementMode, insertionMode, linkUrl, onOpenLink }) {
   const [step, setStep] = useState('menu')
   const [initialText, setInitialText] = useState('')
   const [position, setPosition] = useState(null)
@@ -106,6 +121,13 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
     }
   }
 
+  const linkButton = linkUrl && (
+    <>
+      <span className="toolbar-divider" />
+      <OpenLinkButton linkUrl={linkUrl} onOpenLink={onOpenLink} />
+    </>
+  )
+
   return (
     <>
       {step === 'menu' && createPortal(
@@ -117,94 +139,45 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
           <div className="toolbar-menu">
             {editAnnotation ? (
                 <>
-                  <button
-                    onClick={handleDelete}
-                    className="toolbar-btn toolbar-btn-edit-remove"
-                    title="Remove annotation"
-                  >
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                  <button onClick={handleDelete} className="toolbar-btn toolbar-btn-edit-remove" title="Remove annotation">
+                    <TrashIcon />
                     <span className="toolbar-label">Remove</span>
                   </button>
-                  <button
-                    onClick={() => setStep('input')}
-                    className="toolbar-btn toolbar-btn-edit-action"
-                    title="Edit comment (Cmd+K)"
-                  >
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                    </svg>
+                  <button onClick={() => setStep('input')} className="toolbar-btn toolbar-btn-edit-action" title="Edit comment (Cmd+K)">
+                    <PencilIcon />
                     <span className="toolbar-label">{editAnnotation.type === 'COMMENT' || editAnnotation.type === 'INSERTION' ? 'Edit' : 'Comment'}</span>
                   </button>
+                  {linkButton}
                   <span className="toolbar-divider" />
-                  <button
-                    onClick={onClose}
-                    className="toolbar-btn toolbar-btn-cancel"
-                    title="Close"
-                    aria-label="Close"
-                  >
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                  <button onClick={onClose} className="toolbar-btn toolbar-btn-cancel" title="Close" aria-label="Close">
+                    <CloseIcon />
                   </button>
                 </>
               ) : insertionMode ? (
                 <>
-                  <button
-                    onClick={() => setStep('input')}
-                    className="toolbar-btn toolbar-btn-insert"
-                    title="Insert text here"
-                  >
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m-8-8h16" />
-                    </svg>
+                  <button onClick={() => setStep('input')} className="toolbar-btn toolbar-btn-insert" title="Insert text here">
+                    <PlusIcon />
                     <span className="toolbar-label">Insert</span>
                   </button>
                   <span className="toolbar-divider" />
-                  <button
-                    onClick={onClose}
-                    className="toolbar-btn toolbar-btn-cancel"
-                    title="Cancel"
-                    aria-label="Cancel"
-                  >
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                  <button onClick={onClose} className="toolbar-btn toolbar-btn-cancel" title="Cancel" aria-label="Cancel">
+                    <CloseIcon />
                   </button>
                 </>
               ) : (
                 <>
-                  <button
-                    onClick={() => handleTypeSelect('DELETION')}
-                    className="toolbar-btn toolbar-btn-delete"
-                    title="Delete (Cmd+D)"
-                  >
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                  <button onClick={() => handleTypeSelect('DELETION')} className="toolbar-btn toolbar-btn-delete" title="Delete (Cmd+D)">
+                    <TrashIcon />
                     <span className="toolbar-label">Delete</span>
                   </button>
-                  <button
-                    onClick={() => handleTypeSelect('COMMENT')}
-                    className="toolbar-btn toolbar-btn-comment"
-                    title="Comment (Cmd+K)"
-                  >
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                    </svg>
+                  <button onClick={() => handleTypeSelect('COMMENT')} className="toolbar-btn toolbar-btn-comment" title="Comment (Cmd+K)">
+                    <CommentIcon />
                     <span className="toolbar-label">Comment</span>
                   </button>
+                  {linkButton}
                   <span className="toolbar-divider" />
-                  <button
-                    onClick={onClose}
-                    className="toolbar-btn toolbar-btn-cancel"
-                    title="Cancel"
-                    aria-label="Cancel"
-                  >
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                  <button onClick={onClose} className="toolbar-btn toolbar-btn-cancel" title="Cancel" aria-label="Cancel">
+                    <CloseIcon />
                   </button>
                 </>
               )}
