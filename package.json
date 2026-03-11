@@ -1,6 +1,6 @@
 {
   "name": "md-annotator",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Browser-based Markdown annotator for AI-assisted review",
   "type": "module",
   "bin": {
