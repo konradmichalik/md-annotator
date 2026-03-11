@@ -1,3 +1,5 @@
+import DOMPurify from 'dompurify'
+
 function handleAnchorClick(e, href) {
   if (!href.startsWith('#') || href.length === 1) { return }
   const viewerEl = e.target.closest('.viewer-container')
@@ -76,7 +78,11 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
       const href = match[2]
       const isAnchor = href.startsWith('#')
       const isExternal = href.startsWith('http://') || href.startsWith('https://')
-      const linkContent = <InlineMarkdown text={match[1]} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={blockId} />
+      // Badge pattern: [![alt](img)](url) — render as plain <a><img/></a> without annotation wrapper
+      const badgeMatch = match[1].match(/^!\[([^\]]*)\]\(([^)]+)\)$/)
+      const linkContent = badgeMatch
+        ? <img src={badgeMatch[2]} alt={badgeMatch[1]} className="inline-image" />
+        : <InlineMarkdown text={match[1]} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={blockId} />
       if (isAnchor) {
         parts.push(<a key={key++} href={href} onClick={(e) => handleAnchorClick(e, href)}>{linkContent}</a>)
       } else if (isExternal) {
@@ -104,7 +110,7 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
       const tagName = match[1].toLowerCase()
       // Self-closing or void tags — render directly
       if (htmlTag.endsWith('/>') || ['img', 'br', 'hr', 'input', 'wbr'].includes(tagName)) {
-        parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: htmlTag }} />)
+        parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlTag) }} />)
         remaining = remaining.slice(htmlTag.length)
         continue
       }
@@ -112,7 +118,7 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
       const closeIdx = remaining.indexOf(`</${tagName}>`, htmlTag.length)
       if (closeIdx !== -1) {
         const fullTag = remaining.slice(0, closeIdx + tagName.length + 3)
-        parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: fullTag }} />)
+        parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(fullTag) }} />)
         remaining = remaining.slice(fullTag.length)
         continue
       }
