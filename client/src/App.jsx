@@ -763,7 +763,7 @@ export default function App() {
           <div className={`mode-toggle${shiftHeld ? ' mode-toggle--temp' : ''}`}>
             <button
               className={`mode-toggle-btn${!effectivePinpointMode ? ' active' : ''}`}
-              onClick={() => setPinpointMode(false)}
+              onClick={() => setPinpointMode(shiftHeld)}
               title="Selection mode: select text to annotate (hold Shift to toggle)"
             >
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -773,7 +773,7 @@ export default function App() {
             </button>
             <button
               className={`mode-toggle-btn${effectivePinpointMode ? ' active' : ''}`}
-              onClick={() => setPinpointMode(true)}
+              onClick={() => setPinpointMode(!shiftHeld)}
               title="Pinpoint mode: click a block to annotate (hold Shift to toggle)"
             >
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
