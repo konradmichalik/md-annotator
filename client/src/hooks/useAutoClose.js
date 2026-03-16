@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getAutoCloseDelay, setAutoCloseDelay } from '../utils/storage.js'
 
 /**
  * Phases of the auto-close lifecycle after form submission:
@@ -20,13 +19,12 @@ function tryClose(onFail) {
   }, 300)
 }
 
-export function useAutoClose(active) {
+export function useAutoClose(active, delay = 'off') {
   const [state, setState] = useState({ phase: 'idle' })
 
   useEffect(() => {
     if (!active) {return}
 
-    const delay = getAutoCloseDelay()
     if (delay === '0') {
       tryClose(() => setState({ phase: 'closeFailed' }))
       setState({ phase: 'closed' })
@@ -35,7 +33,7 @@ export function useAutoClose(active) {
     } else {
       setState({ phase: 'prompt' })
     }
-  }, [active])
+  }, [active, delay])
 
   useEffect(() => {
     if (state.phase !== 'counting') {return}
@@ -51,7 +49,6 @@ export function useAutoClose(active) {
   }, [state])
 
   const enableAndStart = useCallback(() => {
-    setAutoCloseDelay('3')
     setState({ phase: 'counting', remaining: 3 })
   }, [])
 

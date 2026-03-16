@@ -18,7 +18,7 @@ function getDraftKey(contentHash) {
   return contentHash ? `${STORAGE_PREFIX}${contentHash}` : null
 }
 
-export function useAnnotationDraft({ annotations, contentHash, submitted }) {
+export function useAnnotationDraft({ annotations, contentHash, submitted, enabled = true }) {
   const [draftBanner, setDraftBanner] = useState(null)
   const draftDataRef = useRef(null)
   const timerRef = useRef(null)
@@ -55,7 +55,7 @@ export function useAnnotationDraft({ annotations, contentHash, submitted }) {
 
   // Debounced auto-save on annotation changes (exclude AI Notes)
   useEffect(() => {
-    if (!key || submitted || !hasMountedRef.current) {return}
+    if (!key || submitted || !hasMountedRef.current || !enabled) {return}
     const userAnnotations = annotations.filter(a => a.type !== 'NOTES')
     if (userAnnotations.length === 0) {
       // Clear draft when all user annotations removed
@@ -79,7 +79,7 @@ export function useAnnotationDraft({ annotations, contentHash, submitted }) {
     return () => {
       if (timerRef.current) {clearTimeout(timerRef.current)}
     }
-  }, [annotations, key, submitted])
+  }, [annotations, key, submitted, enabled])
 
   // Clear draft on submit
   useEffect(() => {
