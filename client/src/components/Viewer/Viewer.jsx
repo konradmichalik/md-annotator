@@ -241,7 +241,7 @@ export const Viewer = forwardRef(function Viewer({
       anns.forEach(ann => { this.restoreHighlight(ann) })
     },
     openEditToolbar(ann) {
-      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'pinpoint') {
+      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'pinpoint' || ann.targetType === 'link') {
         this.openElementEditToolbar(ann)
         return
       }
