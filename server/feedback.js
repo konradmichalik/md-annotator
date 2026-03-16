@@ -100,10 +100,17 @@ function formatAnnotation(ann, block, heading) {
   return output + '\n'
 }
 
+function getBlockOrder(blockId, blocks) {
+  const sourceMatch = blockId?.match(/^source-line-(\d+)$/)
+  if (sourceMatch) { return parseInt(sourceMatch[1], 10) }
+  const idx = blocks.findIndex(blk => blk.id === blockId)
+  return idx >= 0 ? idx : Infinity
+}
+
 function sortAnnotations(annotations, blocks) {
   return [...annotations].sort((a, b) => {
-    const blockA = blocks.findIndex(blk => blk.id === a.blockId)
-    const blockB = blocks.findIndex(blk => blk.id === b.blockId)
+    const blockA = getBlockOrder(a.blockId, blocks)
+    const blockB = getBlockOrder(b.blockId, blocks)
     if (blockA !== blockB) {return blockA - blockB}
     return a.startOffset - b.startOffset
   })
