@@ -286,20 +286,26 @@ export default function App() {
     }
   }, [files])
 
-  // Restore highlights when switching files (Viewer remounts via key)
+  // Restore highlights when switching files or view mode (Viewer/SourceView remounts via key)
   const prevFileIndexRef = useRef(0)
+  const prevViewModeRef = useRef(viewMode)
   useEffect(() => {
-    if (prevFileIndexRef.current === activeFileIndex) {return}
+    const fileChanged = prevFileIndexRef.current !== activeFileIndex
+    const viewChanged = prevViewModeRef.current !== viewMode
+    if (!fileChanged && !viewChanged) {return}
     prevFileIndexRef.current = activeFileIndex
-    prevLastActionRef.current = null
-    setSelectedAnnotationId(null)
+    prevViewModeRef.current = viewMode
+    if (fileChanged) {
+      prevLastActionRef.current = null
+      setSelectedAnnotationId(null)
+    }
 
     if (annotations.length > 0) {
       setTimeout(() => {
         viewerRef.current?.restoreHighlights(annotations)
       }, 100)
     }
-  }, [activeFileIndex, annotations])
+  }, [activeFileIndex, annotations, viewMode])
 
   // Auto-save annotations to server (debounced, scoped to active file)
   useEffect(() => {
@@ -365,10 +371,20 @@ export default function App() {
       setSidebarCollapsed(false)
       return
     }
-    viewerRef.current?.openEditToolbar(ann)
+    // Switch to the matching view mode before opening the toolbar
+    const needsSource = ann.targetType === 'source'
+    const targetMode = needsSource ? 'source' : 'preview'
+    if (viewMode !== targetMode) {
+      setViewMode(targetMode)
+      setTimeout(() => {
+        viewerRef.current?.openEditToolbar(ann)
+      }, 200)
+    } else {
+      viewerRef.current?.openEditToolbar(ann)
+    }
     setSelectedAnnotationId(id)
     setSidebarCollapsed(false)
-  }, [annotations])
+  }, [annotations, viewMode])
 
   const handleImportAnnotations = useCallback((jsonData) => {
     const result = validateAnnotationImport(jsonData)
