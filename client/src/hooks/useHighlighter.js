@@ -219,13 +219,19 @@ export function useHighlighter({
   }, [onDeleteAnnotation])
 
   // --- Imperative highlight methods ---
+  const unwrapOrRemove = (el) => {
+    if (el.classList?.contains('insertion-marker') || el.classList?.contains('insertion-marker-temp')) {
+      el.remove()
+      return
+    }
+    const parent = el.parentNode
+    while (el.firstChild) { parent?.insertBefore(el.firstChild, el) }
+    el.remove()
+  }
+
   const removeHighlight = (id) => {
     highlighterRef.current?.remove(id)
-    containerRef.current?.querySelectorAll(`[data-highlight-id="${id}"]`).forEach(el => {
-      const parent = el.parentNode
-      while (el.firstChild) { parent?.insertBefore(el.firstChild, el) }
-      el.remove()
-    })
+    containerRef.current?.querySelectorAll(`[data-highlight-id="${id}"]`).forEach(unwrapOrRemove)
   }
 
   const restoreHighlight = (ann) => {
@@ -249,16 +255,12 @@ export function useHighlighter({
   }
 
   const restoreHighlights = (anns) => {
-    anns.forEach(ann => restoreHighlight(ann))
+    anns.forEach((ann) => { restoreHighlight(ann) })
   }
 
   const clearAllHighlights = () => {
     highlighterRef.current?.removeAll()
-    containerRef.current?.querySelectorAll('.annotation-highlight, [data-highlight-id]').forEach(el => {
-      const parent = el.parentNode
-      while (el.firstChild) { parent?.insertBefore(el.firstChild, el) }
-      el.remove()
-    })
+    containerRef.current?.querySelectorAll('.annotation-highlight, [data-highlight-id]').forEach(unwrapOrRemove)
   }
 
   const updateHighlightType = (id, type) => {
