@@ -310,6 +310,16 @@ body {
   cursor: default;
 }
 
+.btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
 .btn-danger {
   color: var(--danger);
   border-color: var(--danger);
