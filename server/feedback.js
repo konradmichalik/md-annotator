@@ -49,6 +49,27 @@ function formatAnnotation(ann, block, heading) {
     return output + '\n'
   }
 
+  // Source view annotations — blockId is "source-line-N" (0-indexed)
+  if (ann.targetType === 'source') {
+    const lineMatch = ann.blockId?.match(/^source-line-(\d+)$/)
+    const startLine = lineMatch ? parseInt(lineMatch[1], 10) + 1 : 1
+    const newlinesInSelection = (ann.originalText.match(/\n/g) || []).length
+    const endLine = startLine + newlinesInSelection
+    const lineRef = startLine === endLine ? `Line ${startLine}` : `Lines ${startLine}-${endLine}`
+
+    let output = `${heading} `
+    if (ann.type === 'DELETION') {
+      output += `Remove this (${lineRef}, source)\n`
+      output += `\`\`\`\n${ann.originalText}\n\`\`\`\n`
+      output += `> User wants this removed from the document.\n`
+    } else if (ann.type === 'COMMENT') {
+      output += `Comment on (${lineRef}, source)\n`
+      output += `\`\`\`\n${ann.originalText}\n\`\`\`\n`
+      output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n`
+    }
+    return output + '\n'
+  }
+
   const blockContent = block?.content || ''
   const textBeforeSelection = blockContent.slice(0, ann.startOffset)
   const linesBeforeSelection = (textBeforeSelection.match(/\n/g) || []).length
