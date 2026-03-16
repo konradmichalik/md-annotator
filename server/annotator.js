@@ -3,13 +3,12 @@
  * Provides startAnnotatorServer() for both CLI and plugin usage.
  */
 
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import express from 'express'
 import cors from 'cors'
-import portfinder from 'portfinder'
 import { config } from './config.js'
 import { createApiRouter } from './routes.js'
 import { readMarkdownFile } from './file.js'
@@ -18,6 +17,15 @@ import { convertNotesToAnnotations } from './notes.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST_PATH = join(__dirname, '..', 'client', 'dist')
 const DEV_PATH = join(__dirname, '..', 'client')
+
+// Pre-load index.html into memory at module load time (avoids per-request disk I/O)
+const DIST_INDEX = join(DIST_PATH, 'index.html')
+const DEV_INDEX = join(DEV_PATH, 'index.html')
+const preloadedHtml = existsSync(DIST_INDEX)
+  ? readFileSync(DIST_INDEX, 'utf-8')
+  : existsSync(DEV_INDEX)
+    ? readFileSync(DEV_INDEX, 'utf-8')
+    : null
 
 /**
  * Resolve notes for a specific file from the feedbackNotes array.
@@ -59,14 +67,14 @@ export async function startAnnotatorServer(options) {
   app.use(cors())
   app.use(express.json({ limit: config.jsonLimit }))
 
-  // Serve static files or embedded HTML
-  if (htmlContent) {
-    // Plugin mode: serve embedded HTML
+  // Serve HTML from memory (pre-loaded or embedded)
+  const html = htmlContent || preloadedHtml
+  if (html) {
     app.get('/', (_req, res) => {
-      res.type('html').send(htmlContent)
+      res.type('html').send(html)
     })
   } else {
-    // CLI mode: serve from disk
+    // Fallback: serve from disk (dev mode without built index.html)
     const clientPath = existsSync(DIST_PATH) ? DIST_PATH : DEV_PATH
     app.use(express.static(clientPath))
   }
@@ -131,15 +139,14 @@ export async function startAnnotatorServer(options) {
   // API routes with multi-file support
   app.use(createApiRouter(filePaths, safeResolve, origin, stores))
 
-  // Find available port
-  portfinder.basePort = config.port
-  const port = await portfinder.getPortPromise()
-
-  // Start server
+  // Start server — use port 0 to let the OS assign a free port instantly,
+  // falling back to configured port if explicitly set via MD_ANNOTATOR_PORT
+  const requestedPort = config.portExplicit ? config.port : 0
   const server = await new Promise((resolve) => {
-    const s = app.listen(port, () => resolve(s))
+    const s = app.listen(requestedPort, () => resolve(s))
   })
 
+  const port = server.address().port
   const url = `http://localhost:${port}`
 
   // Call onReady callback if provided

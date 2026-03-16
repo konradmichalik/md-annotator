@@ -43,7 +43,6 @@
     "open": "^10.1.0",
     "pako": "^2.1.0",
     "plantuml-encoder": "^1.4.0",
-    "portfinder": "^1.0.32",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "web-highlighter": "^0.7.4"

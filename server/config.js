@@ -45,6 +45,7 @@ function getKrokiServerUrl() {
 
 export const config = {
   port: getServerPort(),
+  portExplicit: !!process.env.MD_ANNOTATOR_PORT,
   browser: process.env.MD_ANNOTATOR_BROWSER || null,
   heartbeatTimeoutMs: getHeartbeatTimeoutMs(),
   forceExitTimeoutMs: 5000,
