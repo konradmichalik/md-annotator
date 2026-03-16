@@ -301,9 +301,10 @@ export default function App() {
     }
 
     if (annotations.length > 0) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         viewerRef.current?.restoreHighlights(annotations)
       }, 100)
+      return () => clearTimeout(timer)
     }
   }, [activeFileIndex, annotations, viewMode])
 
