@@ -249,7 +249,6 @@ export function useHighlighter({
   }
 
   const restoreHighlights = (anns) => {
-    if (!highlighterRef.current) { return }
     anns.forEach(ann => restoreHighlight(ann))
   }
 

@@ -237,7 +237,6 @@ export const Viewer = forwardRef(function Viewer({
       return highlightMethods.restoreHighlight(ann)
     },
     restoreHighlights(anns) {
-      if (!highlighterRef.current) { return }
       anns.forEach(ann => { this.restoreHighlight(ann) })
     },
     openEditToolbar(ann) {
