@@ -102,9 +102,10 @@ function formatAnnotation(ann, block, heading) {
 
 function getBlockOrder(blockId, blocks) {
   const sourceMatch = blockId?.match(/^source-line-(\d+)$/)
-  if (sourceMatch) { return parseInt(sourceMatch[1], 10) }
-  const idx = blocks.findIndex(blk => blk.id === blockId)
-  return idx >= 0 ? idx : Infinity
+  if (sourceMatch) { return parseInt(sourceMatch[1], 10) + 1 }
+  const block = blocks.find(blk => blk.id === blockId)
+  if (block?.startLine) { return block.startLine }
+  return Infinity
 }
 
 function sortAnnotations(annotations, blocks) {
