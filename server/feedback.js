@@ -49,6 +49,27 @@ function formatAnnotation(ann, block, heading) {
     return output + '\n'
   }
 
+  // Source view annotations — blockId is "source-line-N" (0-indexed)
+  if (ann.targetType === 'source') {
+    const lineMatch = ann.blockId?.match(/^source-line-(\d+)$/)
+    const startLine = lineMatch ? parseInt(lineMatch[1], 10) + 1 : 1
+    const newlinesInSelection = (ann.originalText.match(/\n/g) || []).length
+    const endLine = startLine + newlinesInSelection
+    const lineRef = startLine === endLine ? `Line ${startLine}` : `Lines ${startLine}-${endLine}`
+
+    let output = `${heading} `
+    if (ann.type === 'DELETION') {
+      output += `Remove this (${lineRef}, source)\n`
+      output += `\`\`\`\n${ann.originalText}\n\`\`\`\n`
+      output += `> User wants this removed from the document.\n`
+    } else if (ann.type === 'COMMENT') {
+      output += `Comment on (${lineRef}, source)\n`
+      output += `\`\`\`\n${ann.originalText}\n\`\`\`\n`
+      output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n`
+    }
+    return output + '\n'
+  }
+
   const blockContent = block?.content || ''
   const textBeforeSelection = blockContent.slice(0, ann.startOffset)
   const linesBeforeSelection = (textBeforeSelection.match(/\n/g) || []).length
@@ -79,10 +100,18 @@ function formatAnnotation(ann, block, heading) {
   return output + '\n'
 }
 
+function getBlockOrder(blockId, blocks) {
+  const sourceMatch = blockId?.match(/^source-line-(\d+)$/)
+  if (sourceMatch) { return parseInt(sourceMatch[1], 10) + 1 }
+  const block = blocks.find(blk => blk.id === blockId)
+  if (block?.startLine) { return block.startLine }
+  return Infinity
+}
+
 function sortAnnotations(annotations, blocks) {
   return [...annotations].sort((a, b) => {
-    const blockA = blocks.findIndex(blk => blk.id === a.blockId)
-    const blockB = blocks.findIndex(blk => blk.id === b.blockId)
+    const blockA = getBlockOrder(a.blockId, blocks)
+    const blockB = getBlockOrder(b.blockId, blocks)
     if (blockA !== blockB) {return blockA - blockB}
     return a.startOffset - b.startOffset
   })

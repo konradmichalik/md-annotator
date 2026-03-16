@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useReducer } from 'react'
 import { parseMarkdownToBlocks } from './utils/parser.js'
 import { Viewer } from './components/Viewer/Viewer.jsx'
+import { SourceView } from './components/Viewer/SourceView.jsx'
 import { AnnotationPanel } from './components/AnnotationPanel.jsx'
 import { TableOfContents } from './components/TableOfContents.jsx'
 import { ExportModal } from './components/ExportModal.jsx'
@@ -59,6 +60,7 @@ export default function App() {
   const [origin, setOrigin] = useState('cli')
   const [serverConfig, setServerConfig] = useState({})
   const [pinpointMode, setPinpointMode] = useState(() => settings.defaultMode === 'pinpoint')
+  const [viewMode, setViewMode] = useState('preview') // 'preview' | 'source'
   const [shiftHeld, setShiftHeld] = useState(false)
   const viewerRef = useRef(null)
   const prevLastActionRef = useRef(null)
@@ -284,20 +286,27 @@ export default function App() {
     }
   }, [files])
 
-  // Restore highlights when switching files (Viewer remounts via key)
+  // Restore highlights when switching files or view mode (Viewer/SourceView remounts via key)
   const prevFileIndexRef = useRef(0)
+  const prevViewModeRef = useRef(viewMode)
   useEffect(() => {
-    if (prevFileIndexRef.current === activeFileIndex) {return}
+    const fileChanged = prevFileIndexRef.current !== activeFileIndex
+    const viewChanged = prevViewModeRef.current !== viewMode
+    if (!fileChanged && !viewChanged) {return}
     prevFileIndexRef.current = activeFileIndex
-    prevLastActionRef.current = null
-    setSelectedAnnotationId(null)
+    prevViewModeRef.current = viewMode
+    if (fileChanged) {
+      prevLastActionRef.current = null
+      setSelectedAnnotationId(null)
+    }
 
     if (annotations.length > 0) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         viewerRef.current?.restoreHighlights(annotations)
       }, 100)
+      return () => clearTimeout(timer)
     }
-  }, [activeFileIndex, annotations])
+  }, [activeFileIndex, annotations, viewMode])
 
   // Auto-save annotations to server (debounced, scoped to active file)
   useEffect(() => {
@@ -363,10 +372,20 @@ export default function App() {
       setSidebarCollapsed(false)
       return
     }
-    viewerRef.current?.openEditToolbar(ann)
+    // Switch to the matching view mode before opening the toolbar
+    const needsSource = ann.targetType === 'source'
+    const targetMode = needsSource ? 'source' : 'preview'
+    if (viewMode !== targetMode) {
+      setViewMode(targetMode)
+      setTimeout(() => {
+        viewerRef.current?.openEditToolbar(ann)
+      }, 200)
+    } else {
+      viewerRef.current?.openEditToolbar(ann)
+    }
     setSelectedAnnotationId(id)
     setSidebarCollapsed(false)
-  }, [annotations])
+  }, [annotations, viewMode])
 
   const handleImportAnnotations = useCallback((jsonData) => {
     const result = validateAnnotationImport(jsonData)
@@ -814,21 +833,60 @@ export default function App() {
             onMouseDown={handleTocResize}
           />
         )}
-        <Viewer
-          key={activeFile?.path || 'empty'}
-          ref={viewerRef}
-          blocks={blocks}
-          annotations={annotations}
-          onAddAnnotation={handleAddAnnotation}
-          onEditAnnotation={handleEditAnnotation}
-          onDeleteAnnotation={handleDeleteAnnotation}
-          onSelectAnnotation={handleSelectAnnotation}
-          onOpenFile={handleOpenFile}
-          pinpointMode={effectivePinpointMode}
-          plantumlServerUrl={serverConfig.plantumlServerUrl}
-          krokiServerUrl={serverConfig.krokiServerUrl}
-          selectedAnnotationId={selectedAnnotationId}
-        />
+        <div className="viewer-wrapper">
+          <div className="view-toggle">
+            <button
+              className={`view-toggle-btn${viewMode === 'preview' ? ' active' : ''}`}
+              onClick={() => setViewMode('preview')}
+              title="Rendered preview"
+              aria-label="Rendered preview"
+            >
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+            <button
+              className={`view-toggle-btn${viewMode === 'source' ? ' active' : ''}`}
+              onClick={() => setViewMode('source')}
+              title="Markdown source"
+              aria-label="Markdown source"
+            >
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <polyline strokeLinecap="round" strokeLinejoin="round" points="16 18 22 12 16 6" />
+                <polyline strokeLinecap="round" strokeLinejoin="round" points="8 6 2 12 8 18" />
+              </svg>
+            </button>
+          </div>
+          {viewMode === 'preview' ? (
+            <Viewer
+              key={activeFile?.path || 'empty'}
+              ref={viewerRef}
+              blocks={blocks}
+              annotations={annotations}
+              onAddAnnotation={handleAddAnnotation}
+              onEditAnnotation={handleEditAnnotation}
+              onDeleteAnnotation={handleDeleteAnnotation}
+              onSelectAnnotation={handleSelectAnnotation}
+              onOpenFile={handleOpenFile}
+              pinpointMode={effectivePinpointMode}
+              plantumlServerUrl={serverConfig.plantumlServerUrl}
+              krokiServerUrl={serverConfig.krokiServerUrl}
+              selectedAnnotationId={selectedAnnotationId}
+            />
+          ) : (
+            <SourceView
+              key={`source-${activeFile?.path || 'empty'}`}
+              ref={viewerRef}
+              content={activeFile?.content || ''}
+              annotations={annotations}
+              onAddAnnotation={handleAddAnnotation}
+              onEditAnnotation={handleEditAnnotation}
+              onDeleteAnnotation={handleDeleteAnnotation}
+              onSelectAnnotation={handleSelectAnnotation}
+            />
+          )}
+        </div>
         {!sidebarCollapsed && (
           <div
             className="resize-handle"

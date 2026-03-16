@@ -1432,6 +1432,110 @@ body {
   outline-offset: 1px;
 }
 
+/* === Viewer Wrapper (positions view toggle) === */
+.viewer-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.viewer-wrapper > .viewer-container {
+  flex: 1;
+}
+
+/* === View Mode Toggle (floating, icon-only) === */
+.view-toggle {
+  position: absolute;
+  top: 0.75rem;
+  right: 1.5rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 6%);
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.view-toggle:hover { opacity: 1; }
+
+.view-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 3px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.view-toggle-btn:hover { background: var(--bg-secondary); }
+
+.view-toggle-btn.active {
+  background: var(--bg-secondary);
+  color: var(--text);
+}
+
+/* === Source View === */
+.source-view {
+  position: relative;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow-x: auto;
+}
+
+.source-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', Consolas, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  tab-size: 4;
+}
+
+.source-row:first-child .source-line-number,
+.source-row:first-child .source-line-content {
+  padding-top: 1rem;
+}
+
+.source-row:last-child .source-line-number,
+.source-row:last-child .source-line-content {
+  padding-bottom: 1rem;
+}
+
+.source-line-number {
+  width: 1px;
+  min-width: 3.5rem;
+  padding: 0 1rem 0 1.25rem;
+  text-align: right;
+  color: var(--text-muted);
+  opacity: 0.45;
+  user-select: none;
+  vertical-align: top;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.source-line-content {
+  padding: 0 1.5rem 0 0.75rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
 /* === Resize Handle === */
 .resize-handle {
   width: 4px;
