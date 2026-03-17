@@ -1,3 +1,11 @@
+---
+title: Main Document
+status: draft
+created: 2026-01-15
+updated: 2026-03-17
+complexity: medium
+---
+
 <div align="center">
   <img src="./assets/placeholder-icon.svg" alt="Logo" width="80" height="80">
 
