@@ -158,6 +158,21 @@ export function BlockRenderer({ block, onImageClick, annotatedImages, hasNote, o
         <HtmlBlock block={block} noteClass={noteClass} />
       )
 
+    case 'frontmatter':
+      return (
+        <div className={`block-frontmatter${noteClass}`} data-block-id={block.id}>
+          {hasNote && <NoteBorder blockId={block.id} onClick={onNoteClick} />}
+          <dl>
+            {block.entries.map((entry, i) => (
+              <div key={i} className="frontmatter-entry">
+                <dt>{entry.key}</dt>
+                <dd>{entry.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )
+
     case 'hr':
       return <hr className={`block-hr${noteClass}`} data-block-id={block.id} />
 

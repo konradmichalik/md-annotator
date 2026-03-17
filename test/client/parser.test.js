@@ -2,6 +2,53 @@ import { describe, it, expect } from 'vitest'
 import { parseMarkdownToBlocks } from '../../client/src/utils/parser.js'
 
 describe('parseMarkdownToBlocks', () => {
+  describe('frontmatter', () => {
+    it('parses YAML frontmatter at start of document', () => {
+      const md = '---\ntitle: Test\nstatus: draft\n---\n\n# Heading'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks[0]).toMatchObject({
+        type: 'frontmatter',
+        content: 'title: Test\nstatus: draft',
+        startLine: 1
+      })
+      expect(blocks[0].entries).toEqual([
+        { key: 'title', value: 'Test' },
+        { key: 'status', value: 'draft' }
+      ])
+      expect(blocks[1]).toMatchObject({ type: 'heading', content: 'Heading' })
+    })
+
+    it('does not parse --- as frontmatter if not at start', () => {
+      const md = '# Title\n\n---\nkey: value\n---'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks.find(b => b.type === 'frontmatter')).toBeUndefined()
+    })
+
+    it('handles frontmatter with date values', () => {
+      const md = '---\ncreated: 2026-03-17\nupdated: 2026-03-17\n---'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks[0].entries).toEqual([
+        { key: 'created', value: '2026-03-17' },
+        { key: 'updated', value: '2026-03-17' }
+      ])
+    })
+
+    it('skips lines without colon in frontmatter', () => {
+      const md = '---\ntitle: Test\ninvalid line\nstatus: ok\n---'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks[0].entries).toEqual([
+        { key: 'title', value: 'Test' },
+        { key: 'status', value: 'ok' }
+      ])
+    })
+
+    it('does not treat empty frontmatter as valid', () => {
+      const md = '---\n---\n\n# Heading'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks[0].type).not.toBe('frontmatter')
+    })
+  })
+
   describe('headings', () => {
     it('parses h1', () => {
       const blocks = parseMarkdownToBlocks('# Hello')
