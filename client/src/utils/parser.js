@@ -22,7 +22,7 @@ const HTML_MIXED_CONTENT_TAGS = new Set([
  * Simplified markdown parser that splits content into linear blocks.
  * Designed for predictable text-anchoring (not AST-based).
  */
-export function parseMarkdownToBlocks(markdown) {
+export function parseMarkdownToBlocks(markdown, { allowFrontmatter = true } = {}) {
   const lines = markdown.split('\n')
   const blocks = []
   let currentId = 0
@@ -33,7 +33,7 @@ export function parseMarkdownToBlocks(markdown) {
   let startIndex = 0
 
   // YAML frontmatter: must start at line 0 with exactly '---'
-  if (lines[0]?.trim() === '---') {
+  if (allowFrontmatter && lines[0]?.trim() === '---') {
     let closeIndex = -1
     for (let j = 1; j < lines.length; j++) {
       if (lines[j].trim() === '---') {
@@ -289,7 +289,7 @@ export function parseMarkdownToBlocks(markdown) {
             startLine: htmlStartLine
           })
           // Recursively parse inner content as markdown
-          for (const inner of parseMarkdownToBlocks(innerLines.join('\n'))) {
+          for (const inner of parseMarkdownToBlocks(innerLines.join('\n'), { allowFrontmatter: false })) {
             blocks.push({ ...inner, id: `block-${currentId++}`, order: currentId, startLine: htmlStartLine + inner.startLine })
           }
           // Emit closing tag
