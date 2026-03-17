@@ -30,6 +30,42 @@ export function parseMarkdownToBlocks(markdown) {
   let currentType = 'paragraph'
   const currentLevel = 0
   let bufferStartLine = 1
+  let startIndex = 0
+
+  // YAML frontmatter: must start at line 0 with exactly '---'
+  if (lines[0]?.trim() === '---') {
+    let closeIndex = -1
+    for (let j = 1; j < lines.length; j++) {
+      if (lines[j].trim() === '---') {
+        closeIndex = j
+        break
+      }
+    }
+    if (closeIndex > 1) {
+      const fmLines = lines.slice(1, closeIndex)
+      const entries = []
+      for (const fmLine of fmLines) {
+        const colonIdx = fmLine.indexOf(':')
+        if (colonIdx > 0) {
+          entries.push({
+            key: fmLine.slice(0, colonIdx).trim(),
+            value: fmLine.slice(colonIdx + 1).trim()
+          })
+        }
+      }
+      if (entries.length > 0) {
+        blocks.push({
+          id: `block-${currentId++}`,
+          type: 'frontmatter',
+          content: fmLines.join('\n'),
+          entries,
+          order: currentId,
+          startLine: 1
+        })
+        startIndex = closeIndex + 1
+      }
+    }
+  }
 
   const flush = () => {
     if (buffer.length > 0) {
@@ -46,7 +82,7 @@ export function parseMarkdownToBlocks(markdown) {
     }
   }
 
-  for (let i = 0; i < lines.length; i++) {
+  for (let i = startIndex; i < lines.length; i++) {
     const line = lines[i]
     const trimmed = line.trim()
     const currentLineNum = i + 1

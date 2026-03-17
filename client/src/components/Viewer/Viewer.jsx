@@ -497,6 +497,7 @@ export const Viewer = forwardRef(function Viewer({
     if (block.type === 'code') { return `Code${block.language ? ` (${block.language})` : ''}` }
     if (block.type === 'list-item') { return 'List item' }
     if (block.type === 'blockquote') { return 'Blockquote' }
+    if (block.type === 'frontmatter') { return 'Frontmatter' }
     if (block.type === 'hr') { return 'Divider' }
     return 'Paragraph'
   }, [blocks])
