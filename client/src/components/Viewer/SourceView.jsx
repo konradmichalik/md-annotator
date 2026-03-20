@@ -83,15 +83,23 @@ export const SourceView = forwardRef(function SourceView({
         e.preventDefault()
         handleToolbarClose()
       }
-      // F3 / Shift+F3: navigate search matches
-      if (e.key === 'F3' && search.isOpen) {
-        e.preventDefault()
-        search.stepMatch(e.shiftKey ? -1 : +1)
+      // Search shortcuts (work even without search input focus)
+      if (search.isOpen) {
+        if (e.key === 'F3') {
+          e.preventDefault()
+          search.stepMatch(e.shiftKey ? -1 : +1)
+          return
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          search.closeSearch()
+          return
+        }
       }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [toolbarState, handleTextAnnotate, handleToolbarClose, setRequestedToolbarStep, search.isOpen, search.stepMatch])
+  }, [toolbarState, handleTextAnnotate, handleToolbarClose, setRequestedToolbarStep, search.isOpen, search.stepMatch, search.closeSearch])
 
   return (
     <div className="viewer-container">

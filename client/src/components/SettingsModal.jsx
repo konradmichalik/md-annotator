@@ -188,7 +188,7 @@ const SHORTCUT_GROUPS = [
     items: [
       { keys: `${MOD} + F`, desc: 'Open document search' },
       { keys: 'Enter / F3', desc: 'Next match' },
-      { keys: 'Shift + Enter', desc: 'Previous match' },
+      { keys: 'Shift + Enter / Shift + F3', desc: 'Previous match' },
       { keys: 'Escape', desc: 'Clear query or close search' },
     ],
   },

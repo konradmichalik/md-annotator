@@ -7,8 +7,17 @@ const MATCH_CLASS = 'search-match'
 const ACTIVE_CLASS = 'search-match-active'
 
 // Selectors for containers whose text content should not be searched
-// (rendered diagrams, hidden source blocks, copy buttons, etc.)
-const SKIP_SELECTOR = 'svg, .diagram-render-area, .diagram-source, .diagram-controls, .code-copy-btn'
+// (rendered diagrams, hidden source blocks, UI chrome, line numbers, etc.)
+const SKIP_SELECTOR = [
+  'svg',
+  '.source-line-number',
+  '.annotation-toolbar',
+  '.comment-popover',
+  '.diagram-render-area',
+  '.diagram-source',
+  '.diagram-controls',
+  '.code-copy-btn',
+].join(', ')
 
 /**
  * Walk all text nodes in container, find case-insensitive matches for query,

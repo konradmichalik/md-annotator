@@ -94,6 +94,16 @@ describe('highlightMatches', () => {
     expect(marks).toHaveLength(1)
   })
 
+  it('skips text nodes inside .source-line-number', () => {
+    const container = createContainer(
+      '<table><tr><td class="source-line-number">1</td><td>line 1 content</td></tr></table>'
+    )
+    const marks = highlightMatches(container, '1')
+
+    expect(marks).toHaveLength(1)
+    expect(marks[0].closest('.source-line-number')).toBeNull()
+  })
+
   it('skips text nodes inside .diagram-source', () => {
     const container = createContainer(
       '<p>api call</p><pre class="diagram-source">api definition</pre>'

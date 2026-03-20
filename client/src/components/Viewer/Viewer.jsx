@@ -230,11 +230,18 @@ export const Viewer = forwardRef(function Viewer({
         e.preventDefault()
         kbCloseRef.current()
       }
-      // F3 / Shift+F3: navigate search matches (works even without search input focus)
-      if (e.key === 'F3' && search.isOpen) {
-        e.preventDefault()
-        search.stepMatch(e.shiftKey ? -1 : +1)
-        return
+      // Search shortcuts (work even without search input focus)
+      if (search.isOpen) {
+        if (e.key === 'F3') {
+          e.preventDefault()
+          search.stepMatch(e.shiftKey ? -1 : +1)
+          return
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          search.closeSearch()
+          return
+        }
       }
       // Alt+1-0 quick label shortcuts
       if (e.altKey && !isMod && toolbarState && toolbarState.mode !== 'edit') {
@@ -251,7 +258,7 @@ export const Viewer = forwardRef(function Viewer({
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [toolbarState, setRequestedToolbarStep, search.isOpen, search.stepMatch])
+  }, [toolbarState, setRequestedToolbarStep, search.isOpen, search.stepMatch, search.closeSearch])
 
   // --- Imperative handle ---
   useImperativeHandle(ref, () => ({
