@@ -102,6 +102,33 @@ describe('annotationReducer', () => {
       expect(next.annotations[0].originalText).toBe('Hello')
     })
 
+    it('adds label when provided', () => {
+      const ann = makeAnnotation()
+      const label = { id: 'unclear', emoji: '\u2753', text: 'Unclear', color: 'yellow' }
+      const state = annotationReducer(initialAnnotationState, { type: 'ADD', annotation: ann })
+      const next = annotationReducer(state, {
+        type: 'EDIT',
+        id: 'ann-1',
+        annotationType: 'COMMENT',
+        text: '\u2753 Unclear',
+        label
+      })
+      expect(next.annotations[0].label).toEqual(label)
+    })
+
+    it('does not overwrite label when not provided in edit', () => {
+      const label = { id: 'unclear', emoji: '\u2753', text: 'Unclear', color: 'yellow' }
+      const ann = makeAnnotation({ label })
+      const state = annotationReducer(initialAnnotationState, { type: 'ADD', annotation: ann })
+      const next = annotationReducer(state, {
+        type: 'EDIT',
+        id: 'ann-1',
+        annotationType: 'COMMENT',
+        text: 'Updated text'
+      })
+      expect(next.annotations[0].label).toEqual(label)
+    })
+
     it('returns same state when id not found', () => {
       const state = annotationReducer(initialAnnotationState, { type: 'ADD', annotation: makeAnnotation() })
       const next = annotationReducer(state, {

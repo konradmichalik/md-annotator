@@ -90,6 +90,23 @@ describe('exportFeedback', () => {
     expect(firstIdx).toBeLessThan(secondIdx)
   })
 
+  it('includes label tag in comment heading when label is present', () => {
+    const blocks = [makeBlock()]
+    const annotations = [makeAnnotation({
+      label: { id: 'unclear', emoji: '\u2753', text: 'Unclear', color: 'yellow' }
+    })]
+    const output = exportFeedback(annotations, blocks)
+    expect(output).toContain('Comment on (Line 1) [\u2753 Unclear]')
+  })
+
+  it('omits label tag when label is absent', () => {
+    const blocks = [makeBlock()]
+    const annotations = [makeAnnotation()]
+    const output = exportFeedback(annotations, blocks)
+    expect(output).toContain('Comment on (Line 1)\n')
+    expect(output).not.toContain('[')
+  })
+
   it('ends with ---', () => {
     const output = exportFeedback([makeAnnotation()], [makeBlock()])
     expect(output).toMatch(/---\n$/)
