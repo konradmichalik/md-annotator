@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { CommentPopover } from './CommentPopover.jsx'
-import { TrashIcon, CloseIcon, PencilIcon, CommentIcon, PlusIcon, ExternalLinkIcon, FileIcon } from './Icons.jsx'
+import { QuickLabelPicker } from './QuickLabelPicker.jsx'
+import { TrashIcon, CloseIcon, PencilIcon, CommentIcon, PlusIcon, ExternalLinkIcon, FileIcon, TagIcon } from './Icons.jsx'
 
 const OpenLinkButton = ({ linkUrl, onOpenLink }) => {
   const isInternal = !!onOpenLink
@@ -17,10 +18,11 @@ const OpenLinkButton = ({ linkUrl, onOpenLink }) => {
   )
 }
 
-export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, requestedStep: requestedStepProp, editAnnotation, elementMode, insertionMode, linkUrl, onOpenLink }) {
+export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, onQuickLabel, requestedStep: requestedStepProp, editAnnotation, elementMode, insertionMode, linkUrl, onOpenLink }) {
   const [step, setStep] = useState('menu')
   const [initialText, setInitialText] = useState('')
   const [position, setPosition] = useState(null)
+  const [labelPickerOpen, setLabelPickerOpen] = useState(false)
 
   // NOTES annotations are read-only — close toolbar immediately
   useEffect(() => {
@@ -174,6 +176,10 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
                     <CommentIcon />
                     <span className="toolbar-label">Comment</span>
                   </button>
+                  <button onClick={() => setLabelPickerOpen(true)} className="toolbar-btn toolbar-btn-label" title="Quick label (Alt+1-0)">
+                    <TagIcon />
+                    <span className="toolbar-label">Label</span>
+                  </button>
                   {linkButton}
                   <span className="toolbar-divider" />
                   <button onClick={onClose} className="toolbar-btn toolbar-btn-cancel" title="Cancel" aria-label="Cancel">
@@ -193,6 +199,17 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, reque
           placeholder={insertionMode ? 'Text to insert...' : 'Add a comment...'}
           onSubmit={handlePopoverSubmit}
           onClose={handlePopoverClose}
+        />
+      )}
+
+      {labelPickerOpen && step === 'menu' && (
+        <QuickLabelPicker
+          anchorEl={highlightElement}
+          onSelect={(label) => {
+            setLabelPickerOpen(false)
+            onQuickLabel?.(label)
+          }}
+          onClose={() => setLabelPickerOpen(false)}
         />
       )}
     </>

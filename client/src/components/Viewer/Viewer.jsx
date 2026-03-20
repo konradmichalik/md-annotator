@@ -8,6 +8,7 @@ import { PinpointOverlay } from '../PinpointOverlay.jsx'
 import { BlockRenderer } from './BlockRenderer.jsx'
 import { CodeBlock } from './CodeBlock.jsx'
 import { useHighlighter } from '../../hooks/useHighlighter.js'
+import { getQuickLabels, formatLabelText } from '../../utils/quickLabels.js'
 
 const MD_LINK_PATTERN = /\.(?:md|markdown|mdown|mkd)(?:[#?]|$)/i
 
@@ -115,7 +116,7 @@ export const Viewer = forwardRef(function Viewer({
   onEditAnnotationRef.current = onEditAnnotation
 
   // --- Viewer-specific annotate (insertion + element + text) ---
-  const handleAnnotate = useCallback((type, text) => {
+  const handleAnnotate = useCallback((type, text, label) => {
     if (!toolbarState) { return }
 
     // Insertion annotations bypass web-highlighter
@@ -173,7 +174,8 @@ export const Viewer = forwardRef(function Viewer({
           startMeta: null,
           endMeta: null,
           imageAlt: elementData.imageAlt,
-          imageSrc: elementData.imageSrc
+          imageSrc: elementData.imageSrc,
+          label: label || null
         }
         onAddAnnotationRef.current(newAnnotation)
       }
@@ -183,7 +185,7 @@ export const Viewer = forwardRef(function Viewer({
     }
 
     // Text annotation — delegate to hook
-    handleTextAnnotate(type, text)
+    handleTextAnnotate(type, text, label)
   }, [toolbarState, handleTextAnnotate, setToolbarState, setRequestedToolbarStep, containerRef])
 
   // --- Viewer-specific close (insertion cleanup + base) ---
@@ -194,11 +196,19 @@ export const Viewer = forwardRef(function Viewer({
     baseToolbarClose()
   }, [toolbarState, baseToolbarClose])
 
+  // --- Quick label handler ---
+  const handleQuickLabel = useCallback((label) => {
+    if (!toolbarState) { return }
+    handleAnnotate('COMMENT', formatLabelText(label), label)
+  }, [toolbarState, handleAnnotate])
+
   // --- Keyboard shortcuts (Viewer-specific: delegates to handleAnnotate/handleToolbarClose) ---
   const kbAnnotateRef = useRef(null)
   const kbCloseRef = useRef(null)
+  const kbQuickLabelRef = useRef(null)
   kbAnnotateRef.current = handleAnnotate
   kbCloseRef.current = handleToolbarClose
+  kbQuickLabelRef.current = handleQuickLabel
   useEffect(() => {
     const handleKeyDown = (e) => {
       const tag = document.activeElement?.tagName?.toLowerCase()
@@ -215,6 +225,18 @@ export const Viewer = forwardRef(function Viewer({
       if (e.key === 'Escape' && toolbarState) {
         e.preventDefault()
         kbCloseRef.current()
+      }
+      // Alt+1-0 quick label shortcuts
+      if (e.altKey && !isMod && toolbarState && toolbarState.mode !== 'edit') {
+        const isDigit = e.code >= 'Digit1' && e.code <= 'Digit9' || e.code === 'Digit0'
+        if (isDigit) {
+          e.preventDefault()
+          const labels = getQuickLabels()
+          const index = e.code === 'Digit0' ? 9 : parseInt(e.code.replace('Digit', ''), 10) - 1
+          if (index < labels.length) {
+            kbQuickLabelRef.current(labels[index])
+          }
+        }
       }
     }
     document.addEventListener('keydown', handleKeyDown)
@@ -613,6 +635,7 @@ export const Viewer = forwardRef(function Viewer({
           onAnnotate={handleAnnotate}
           onClose={handleToolbarClose}
           onDelete={handleToolbarDelete}
+          onQuickLabel={handleQuickLabel}
           requestedStep={requestedToolbarStep}
           editAnnotation={toolbarState?.mode === 'edit' ? toolbarState.annotation : null}
           elementMode={toolbarState?.elementMode || false}

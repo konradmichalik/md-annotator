@@ -136,7 +136,7 @@ export function useHighlighter({
   }, [annotations])
 
   // --- Create annotation from text selection ---
-  const createAnnotationFromSource = useCallback((type, text) => {
+  const createAnnotationFromSource = useCallback((type, text, label) => {
     const highlighter = highlighterRef.current
     const source = r.current.toolbarState?.source
     if (!highlighter || !source) { return }
@@ -169,6 +169,7 @@ export function useHighlighter({
       createdAt: Date.now(),
       startMeta: source.startMeta,
       endMeta: source.endMeta,
+      label: label || null,
       ...r.current.extraAnnotationFields,
     }
 
@@ -179,7 +180,7 @@ export function useHighlighter({
   }, [])
 
   // --- Handle text annotation (edit or new) ---
-  const handleTextAnnotate = useCallback((type, text) => {
+  const handleTextAnnotate = useCallback((type, text, label) => {
     if (!toolbarState) { return }
     const highlighter = highlighterRef.current
     if (!highlighter) { return }
@@ -189,9 +190,9 @@ export function useHighlighter({
       highlighter.removeClass('deletion', annotation.id)
       highlighter.removeClass('comment', annotation.id)
       highlighter.addClass(type.toLowerCase(), annotation.id)
-      r.current.onEditAnnotation(annotation.id, type, text)
+      r.current.onEditAnnotation(annotation.id, type, text, label)
     } else {
-      createAnnotationFromSource(type, text)
+      createAnnotationFromSource(type, text, label)
       pendingSourceRef.current = null
     }
 

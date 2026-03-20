@@ -29,6 +29,7 @@ export function annotationReducer(state, action) {
       const original = state.annotations.find(a => a.id === action.id)
       if (!original) {return state}
       const updated = { ...original, type: action.annotationType, text: action.text }
+      if (action.label !== undefined) { updated.label = action.label }
       return {
         annotations: state.annotations.map(a => a.id === action.id ? updated : a),
         history: [...state.history, { action: 'edit', annotation: original, updated }],

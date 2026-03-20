@@ -85,7 +85,8 @@ function formatAnnotation(ann, block, heading) {
     output += `\`\`\`\n${ann.originalText}\n\`\`\`\n`
     output += `> User wants this removed from the document.\n`
   } else if (ann.type === 'COMMENT') {
-    output += `Comment on (${lineRef})\n`
+    const labelTag = ann.label ? ` [${ann.label.emoji} ${ann.label.text}]` : ''
+    output += `Comment on (${lineRef})${labelTag}\n`
     output += `\`\`\`\n${ann.originalText}\n\`\`\`\n`
     output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n`
   } else if (ann.type === 'INSERTION') {

@@ -3,6 +3,8 @@ import { useFileAutocomplete } from '../hooks/useFileAutocomplete.js'
 import { FileAutocomplete } from './FileAutocomplete.jsx'
 import { FileReferenceText } from './FileReferenceText.jsx'
 import { TextareaBackdrop } from './TextareaBackdrop.jsx'
+import { getLabelColors } from '../utils/quickLabels.js'
+import { LabelIcon } from './LabelIcon.jsx'
 
 const MoreIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -363,6 +365,15 @@ export function AnnotationPanel({
               <span className={`panel-type-badge ${badgeClass}`}>
                 {badgeLabel}
               </span>
+              {ann.label && (
+                <span
+                  className="panel-label-pill"
+                  style={{ background: getLabelColors(ann.label.color).bg, color: getLabelColors(ann.label.color).text }}
+                >
+                  <LabelIcon labelId={ann.label.id} />
+                  {ann.label.text}
+                </span>
+              )}
               <div className="panel-item-actions">
                 <button
                   className="panel-edit-btn"
@@ -424,7 +435,7 @@ export function AnnotationPanel({
                 ? ann.originalText.slice(0, 80) + '...'
                 : ann.originalText}"</p>
             )}
-            {ann.text && <p className="panel-comment-text"><FileReferenceText text={ann.text} /></p>}
+            {ann.text && !ann.label && <p className="panel-comment-text"><FileReferenceText text={ann.text} /></p>}
           </li>
           )
         })}

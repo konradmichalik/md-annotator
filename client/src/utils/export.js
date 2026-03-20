@@ -80,7 +80,8 @@ export function formatAnnotationsForExport(annotations, blocks, filePath) {
       output += `Remove (${lineRef})\n\n`
       output += `\`\`\`\n${ann.originalText}\n\`\`\`\n\n`
     } else if (ann.type === 'COMMENT') {
-      output += `Comment (${lineRef})\n\n`
+      const labelTag = ann.label ? ` [${ann.label.emoji} ${ann.label.text}]` : ''
+      output += `Comment (${lineRef})${labelTag}\n\n`
       output += `\`\`\`\n${ann.originalText}\n\`\`\`\n\n`
       output += `> ${ann.text}\n\n`
     } else if (ann.type === 'INSERTION') {
@@ -159,6 +160,7 @@ export function formatAnnotationsForJsonExport(annotations, filePath, contentHas
         endMeta: ann.endMeta
       }
       if (ann.targetType) { base.targetType = ann.targetType }
+      if (ann.label) { base.label = ann.label }
       if (ann.imageAlt !== undefined) { base.imageAlt = ann.imageAlt }
       if (ann.imageSrc !== undefined) { base.imageSrc = ann.imageSrc }
       if (ann.afterContext !== undefined) { base.afterContext = ann.afterContext }
