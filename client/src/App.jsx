@@ -509,6 +509,11 @@ export default function App() {
 
       const isMod = e.metaKey || e.ctrlKey
 
+      if (isMod && e.key === 'f') {
+        e.preventDefault()
+        viewerRef.current?.openSearch()
+        return
+      }
       if (isMod && !e.shiftKey && e.key === 'z') {
         e.preventDefault()
         handleUndo()

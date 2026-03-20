@@ -1,6 +1,8 @@
 import { useEffect, useMemo, forwardRef, useImperativeHandle } from 'react'
 import { Toolbar } from '../Toolbar.jsx'
+import { SearchBar } from '../SearchBar.jsx'
 import { useHighlighter } from '../../hooks/useHighlighter.js'
+import { useDocumentSearch } from '../../hooks/useDocumentSearch.js'
 
 const RESTORE_FILTER = (ann) => ann.targetType === 'source'
 
@@ -38,8 +40,12 @@ export const SourceView = forwardRef(function SourceView({
     restoreFilter: RESTORE_FILTER,
   })
 
+  const search = useDocumentSearch(containerRef)
+
   useImperativeHandle(ref, () => ({
     ...highlightMethods,
+    openSearch: search.openSearch,
+    closeSearch: search.closeSearch,
     openEditToolbar(ann) {
       if (ann.targetType !== 'source') { return }
       const highlighter = highlighterRef.current
@@ -77,10 +83,15 @@ export const SourceView = forwardRef(function SourceView({
         e.preventDefault()
         handleToolbarClose()
       }
+      // F3 / Shift+F3: navigate search matches
+      if (e.key === 'F3' && search.isOpen) {
+        e.preventDefault()
+        search.stepMatch(e.shiftKey ? -1 : +1)
+      }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [toolbarState, handleTextAnnotate, handleToolbarClose, setRequestedToolbarStep])
+  }, [toolbarState, handleTextAnnotate, handleToolbarClose, setRequestedToolbarStep, search.isOpen, search.stepMatch])
 
   return (
     <div className="viewer-container">
@@ -110,6 +121,16 @@ export const SourceView = forwardRef(function SourceView({
           onOpenLink={null}
         />
       </div>
+      {search.isOpen && (
+        <SearchBar
+          query={search.query}
+          setQuery={search.setQuery}
+          matchCount={search.matchCount}
+          activeIndex={search.activeIndex}
+          stepMatch={search.stepMatch}
+          closeSearch={search.closeSearch}
+        />
+      )}
     </div>
   )
 })

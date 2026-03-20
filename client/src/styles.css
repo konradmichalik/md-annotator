@@ -3047,3 +3047,110 @@ a:hover { opacity: 0.8; }
   height: 10px;
   flex-shrink: 0;
 }
+
+/* === Search Bar === */
+.search-bar {
+  position: absolute;
+  top: 0.75rem;
+  right: 5rem;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  padding: 4px 6px;
+  min-width: 260px;
+}
+
+.search-bar-icon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+.search-bar-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  min-width: 0;
+  padding: 2px 0;
+}
+
+.search-bar-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.search-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.search-bar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.search-bar-btn:hover:not(:disabled) {
+  background: var(--bg-secondary);
+  color: var(--text);
+}
+
+.search-bar-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* Search match highlights */
+mark.search-match {
+  background: #fef08a;
+  color: inherit;
+  border-radius: 2px;
+  padding: 0;
+}
+
+mark.search-match-active {
+  background: #f59e0b;
+  outline: 2px solid #f59e0b;
+  outline-offset: 1px;
+}
+
+:root[data-theme="dark"] mark.search-match {
+  background: rgb(254 240 138 / 30%);
+}
+
+:root[data-theme="dark"] mark.search-match-active {
+  background: rgb(245 158 11 / 50%);
+  outline-color: rgb(245 158 11 / 50%);
+}
+
+/* Screen-reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border-width: 0;
+}
