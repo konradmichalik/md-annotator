@@ -27,6 +27,7 @@
 - **Export & Import** -- Export annotations as Markdown or JSON; re-import JSON to continue a review later
 - **Annotation Persistence** -- Annotations auto-save to the server and survive page reloads (validated by content hash)
 - **Undo / Redo** -- Full undo/redo history for annotations (`Cmd+Z` / `Cmd+Shift+Z`)
+- **Quick Labels** -- Categorize annotations instantly with 10 predefined labels (`Alt+1`--`0`) shown as colored pills with SVG icons
 - **Inline Editing** -- Click highlighted text to edit annotation type or comment in-place
 - **Table of Contents** -- Collapsible sidebar with scroll tracking and per-section annotation count badges
 - **Syntax Highlighting** -- Code blocks rendered with highlight.js
@@ -148,6 +149,7 @@ Once a file is opened in the browser, you can:
 - **Select text** to see the annotation toolbar
 - **Delete** -- marks text as struck-through (red)
 - **Comment** -- highlights text (yellow) and adds a comment
+- **Quick Label** -- click the tag icon or press `Alt+1`--`0` to instantly categorize a selection (Unclear, Rephrase, Factual Error, etc.)
 - **Insert** -- place the cursor to add new text at that position
 - **Global Comment** -- add general feedback via the "+" button in the annotation panel
 - **Annotate images & diagrams** -- click on images, Mermaid, PlantUML, or Kroki diagrams to comment or delete them
