@@ -1,6 +1,8 @@
 import { useEffect, useMemo, forwardRef, useImperativeHandle } from 'react'
 import { Toolbar } from '../Toolbar.jsx'
+import { SearchBar } from '../SearchBar.jsx'
 import { useHighlighter } from '../../hooks/useHighlighter.js'
+import { useDocumentSearch } from '../../hooks/useDocumentSearch.js'
 
 const RESTORE_FILTER = (ann) => ann.targetType === 'source'
 
@@ -38,8 +40,12 @@ export const SourceView = forwardRef(function SourceView({
     restoreFilter: RESTORE_FILTER,
   })
 
+  const search = useDocumentSearch(containerRef)
+
   useImperativeHandle(ref, () => ({
     ...highlightMethods,
+    openSearch: search.openSearch,
+    closeSearch: search.closeSearch,
     openEditToolbar(ann) {
       if (ann.targetType !== 'source') { return }
       const highlighter = highlighterRef.current
@@ -77,10 +83,23 @@ export const SourceView = forwardRef(function SourceView({
         e.preventDefault()
         handleToolbarClose()
       }
+      // Search shortcuts (work even without search input focus)
+      if (search.isOpen) {
+        if (e.key === 'F3') {
+          e.preventDefault()
+          search.stepMatch(e.shiftKey ? -1 : +1)
+          return
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          search.closeSearch()
+          return
+        }
+      }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [toolbarState, handleTextAnnotate, handleToolbarClose, setRequestedToolbarStep])
+  }, [toolbarState, handleTextAnnotate, handleToolbarClose, setRequestedToolbarStep, search.isOpen, search.stepMatch, search.closeSearch])
 
   return (
     <div className="viewer-container">
@@ -110,6 +129,16 @@ export const SourceView = forwardRef(function SourceView({
           onOpenLink={null}
         />
       </div>
+      {search.isOpen && (
+        <SearchBar
+          query={search.query}
+          setQuery={search.setQuery}
+          matchCount={search.matchCount}
+          activeIndex={search.activeIndex}
+          stepMatch={search.stepMatch}
+          closeSearch={search.closeSearch}
+        />
+      )}
     </div>
   )
 })

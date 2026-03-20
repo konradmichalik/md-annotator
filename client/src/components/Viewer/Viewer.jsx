@@ -8,6 +8,8 @@ import { PinpointOverlay } from '../PinpointOverlay.jsx'
 import { BlockRenderer } from './BlockRenderer.jsx'
 import { CodeBlock } from './CodeBlock.jsx'
 import { useHighlighter } from '../../hooks/useHighlighter.js'
+import { useDocumentSearch } from '../../hooks/useDocumentSearch.js'
+import { SearchBar } from '../SearchBar.jsx'
 import { getQuickLabels, formatLabelText } from '../../utils/quickLabels.js'
 
 const MD_LINK_PATTERN = /\.(?:md|markdown|mdown|mkd)(?:[#?]|$)/i
@@ -106,6 +108,8 @@ export const Viewer = forwardRef(function Viewer({
     onBeforeHighlight,
     enrichToolbarState,
   })
+
+  const search = useDocumentSearch(containerRef)
 
   // Keep a ref to annotations for non-hook callbacks
   const annotationsRef = useRef(annotations)
@@ -226,6 +230,19 @@ export const Viewer = forwardRef(function Viewer({
         e.preventDefault()
         kbCloseRef.current()
       }
+      // Search shortcuts (work even without search input focus)
+      if (search.isOpen) {
+        if (e.key === 'F3') {
+          e.preventDefault()
+          search.stepMatch(e.shiftKey ? -1 : +1)
+          return
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          search.closeSearch()
+          return
+        }
+      }
       // Alt+1-0 quick label shortcuts
       if (e.altKey && !isMod && toolbarState && toolbarState.mode !== 'edit') {
         const isDigit = e.code >= 'Digit1' && e.code <= 'Digit9' || e.code === 'Digit0'
@@ -241,11 +258,13 @@ export const Viewer = forwardRef(function Viewer({
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [toolbarState, setRequestedToolbarStep])
+  }, [toolbarState, setRequestedToolbarStep, search.isOpen, search.stepMatch, search.closeSearch])
 
   // --- Imperative handle ---
   useImperativeHandle(ref, () => ({
     ...highlightMethods,
+    openSearch: search.openSearch,
+    closeSearch: search.closeSearch,
     restoreHighlight(ann) {
       if (ann.type === 'INSERTION') {
         const blockEl = containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
@@ -645,6 +664,16 @@ export const Viewer = forwardRef(function Viewer({
         />
         {pinpointMode && <PinpointOverlay target={pinpointTarget} />}
       </article>
+      {search.isOpen && (
+        <SearchBar
+          query={search.query}
+          setQuery={search.setQuery}
+          matchCount={search.matchCount}
+          activeIndex={search.activeIndex}
+          stepMatch={search.stepMatch}
+          closeSearch={search.closeSearch}
+        />
+      )}
     </div>
   )
 })
