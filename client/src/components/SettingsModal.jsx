@@ -172,6 +172,7 @@ const SHORTCUT_GROUPS = [
       { keys: `${MOD} + Shift + Z`, desc: 'Redo' },
       { keys: `${MOD} + D`, desc: 'Delete selected text' },
       { keys: `${MOD} + K`, desc: 'Comment on selected text' },
+      { keys: 'Alt + 1\u20130', desc: 'Quick label on selected text' },
       { keys: `${MOD} + Enter`, desc: 'Submit comment' },
       { keys: 'Alt + Click', desc: 'Insert text at position' },
     ],

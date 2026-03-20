@@ -359,8 +359,8 @@ export default function App() {
     setSelectedAnnotationId(prev => prev === id ? null : prev)
   }, [annDispatch])
 
-  const handleEditAnnotation = useCallback((id, annotationType, text) => {
-    annDispatch({ type: 'EDIT', id, annotationType, text })
+  const handleEditAnnotation = useCallback((id, annotationType, text, label) => {
+    annDispatch({ type: 'EDIT', id, annotationType, text, label })
   }, [annDispatch])
 
   const handlePanelEdit = useCallback((id) => {
