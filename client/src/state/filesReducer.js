@@ -3,16 +3,22 @@ import { annotationReducer, initialAnnotationState } from './annotationReducer.j
 export function filesReducer(state, action) {
   switch (action.type) {
     case 'INIT_FILES':
-      return action.files.map(f => ({
+      return action.files.map((f, i) => ({
         ...f,
+        reviewed: i === 0,
         annState: { ...initialAnnotationState }
       }))
     case 'ADD_FILE':
-      return [...state, { ...action.file, annState: { ...initialAnnotationState } }]
+      return [...state, { ...action.file, reviewed: false, annState: { ...initialAnnotationState } }]
     case 'UPDATE_FILE': {
       const idx = action.fileIndex
       if (idx < 0 || idx >= state.length) {return state}
       return state.map((f, i) => i !== idx ? f : { ...f, ...action.updates })
+    }
+    case 'MARK_REVIEWED': {
+      const idx = action.fileIndex
+      if (idx < 0 || idx >= state.length || state[idx].reviewed) { return state }
+      return state.map((f, i) => i !== idx ? f : { ...f, reviewed: true })
     }
     case 'ANN': {
       const idx = action.fileIndex

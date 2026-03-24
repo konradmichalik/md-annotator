@@ -455,7 +455,8 @@ export default function App() {
   const handleSelectFile = useCallback((index) => {
     if (index === activeFileIndex) {return}
     setActiveFileIndex(index)
-  }, [activeFileIndex])
+    filesDispatch({ type: 'MARK_REVIEWED', fileIndex: index })
+  }, [activeFileIndex, filesDispatch])
 
   const handleOpenFile = useCallback(async (relativePath) => {
     const currentFiles = filesRef.current
@@ -878,6 +879,9 @@ export default function App() {
               plantumlServerUrl={serverConfig.plantumlServerUrl}
               krokiServerUrl={serverConfig.krokiServerUrl}
               selectedAnnotationId={selectedAnnotationId}
+              files={files}
+              activeFileIndex={activeFileIndex}
+              onSelectFile={handleSelectFile}
             />
           ) : (
             <SourceView
