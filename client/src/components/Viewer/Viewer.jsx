@@ -73,7 +73,10 @@ export const Viewer = forwardRef(function Viewer({
   pinpointMode,
   plantumlServerUrl,
   krokiServerUrl,
-  selectedAnnotationId: _selectedAnnotationId
+  selectedAnnotationId: _selectedAnnotationId,
+  files,
+  activeFileIndex,
+  onSelectFile
 }, ref) {
   const [pinpointTarget, setPinpointTarget] = useState(null)
 
@@ -109,7 +112,7 @@ export const Viewer = forwardRef(function Viewer({
     enrichToolbarState,
   })
 
-  const search = useDocumentSearch(containerRef)
+  const search = useDocumentSearch(containerRef, files)
 
   // Keep a ref to annotations for non-hook callbacks
   const annotationsRef = useRef(annotations)
@@ -672,6 +675,9 @@ export const Viewer = forwardRef(function Viewer({
           activeIndex={search.activeIndex}
           stepMatch={search.stepMatch}
           closeSearch={search.closeSearch}
+          fileMatches={search.fileMatches}
+          activeFileIndex={activeFileIndex}
+          onSelectFile={onSelectFile}
         />
       )}
     </div>
