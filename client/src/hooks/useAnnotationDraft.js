@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { getItem, setItem, removeItem } from '../utils/storage.js'
 
 const STORAGE_PREFIX = 'md-annotator-draft-'
 const DEBOUNCE_MS = 500
@@ -37,7 +36,7 @@ export function useAnnotationDraft({ annotations, contentHash, submitted, enable
     const hasAnnotationsInState = annotationsRef.current.filter(a => a.type !== 'NOTES').length > 0
 
     try {
-      const raw = getItem(key)
+      const raw = localStorage.getItem(key)
       if (raw && !hasAnnotationsInState) {
         const data = JSON.parse(raw)
         if (Array.isArray(data.annotations) && data.annotations.length > 0) {
@@ -60,7 +59,7 @@ export function useAnnotationDraft({ annotations, contentHash, submitted, enable
     const userAnnotations = annotations.filter(a => a.type !== 'NOTES')
     if (userAnnotations.length === 0) {
       // Clear draft when all user annotations removed
-      try { removeItem(key) } catch { /* noop */ }
+      try { localStorage.removeItem(key) } catch { /* noop */ }
       return
     }
 
@@ -68,7 +67,7 @@ export function useAnnotationDraft({ annotations, contentHash, submitted, enable
 
     timerRef.current = setTimeout(() => {
       try {
-        setItem(key, JSON.stringify({
+        localStorage.setItem(key, JSON.stringify({
           annotations: userAnnotations,
           ts: Date.now(),
         }))
@@ -85,7 +84,7 @@ export function useAnnotationDraft({ annotations, contentHash, submitted, enable
   // Clear draft on submit
   useEffect(() => {
     if (submitted && key) {
-      try { removeItem(key) } catch { /* noop */ }
+      try { localStorage.removeItem(key) } catch { /* noop */ }
     }
   }, [submitted, key])
 
@@ -100,7 +99,7 @@ export function useAnnotationDraft({ annotations, contentHash, submitted, enable
     setDraftBanner(null)
     draftDataRef.current = null
     if (key) {
-      try { removeItem(key) } catch { /* noop */ }
+      try { localStorage.removeItem(key) } catch { /* noop */ }
     }
   }, [key])
 
