@@ -143,6 +143,41 @@ describe('parseMarkdownToBlocks', () => {
       expect(blocks).toHaveLength(1)
       expect(blocks[0].content).toBe('')
     })
+
+    it('handles nested code fences with longer outer fence', () => {
+      const md = '`````markdown\nHere is code:\n\n```js\nconst x = 1\n```\n\nMore text\n`````'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0]).toMatchObject({
+        type: 'code',
+        language: 'markdown'
+      })
+      expect(blocks[0].content).toContain('```js')
+      expect(blocks[0].content).toContain('const x = 1')
+      expect(blocks[0].content).toContain('```')
+      expect(blocks[0].content).toContain('More text')
+    })
+
+    it('handles 4-backtick fences containing 3-backtick fences', () => {
+      const md = '````\n```\ninner\n```\n````'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0].content).toBe('```\ninner\n```')
+    })
+
+    it('closes fence with exact same length', () => {
+      const md = '```\ncode\n```'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0].content).toBe('code')
+    })
+
+    it('closes fence with longer closing fence', () => {
+      const md = '```\ncode\n`````'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0].content).toBe('code')
+    })
   })
 
   describe('list items', () => {
