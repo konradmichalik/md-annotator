@@ -7,22 +7,27 @@ import {
   formatLabelText,
 } from '../../client/src/utils/quickLabels.js'
 
-// Mock localStorage
-const store = {}
-const localStorageMock = {
-  getItem: vi.fn((key) => store[key] ?? null),
-  setItem: vi.fn((key, val) => { store[key] = val }),
-  removeItem: vi.fn((key) => { delete store[key] }),
-}
-vi.stubGlobal('localStorage', localStorageMock)
-
-// Mock document for getLabelColors
+// Mock document with cookie support for storage.js and getLabelColors
+let cookieJar = ''
 vi.stubGlobal('document', {
-  documentElement: { getAttribute: vi.fn(() => null) }
+  get cookie() { return cookieJar },
+  set cookie(val) {
+    const [pair] = val.split(';')
+    const [name, value] = pair.split('=')
+    // max-age=0 means delete
+    if (val.includes('max-age=0')) {
+      cookieJar = cookieJar.split('; ').filter(c => !c.startsWith(`${name}=`)).join('; ')
+      return
+    }
+    const existing = cookieJar.split('; ').filter(c => c && !c.startsWith(`${name}=`))
+    existing.push(`${name}=${value}`)
+    cookieJar = existing.join('; ')
+  },
+  documentElement: { getAttribute: vi.fn(() => null) },
 })
 
 beforeEach(() => {
-  Object.keys(store).forEach(k => delete store[k])
+  cookieJar = ''
   vi.clearAllMocks()
 })
 
@@ -54,17 +59,17 @@ describe('getQuickLabels', () => {
 
   it('returns stored labels', () => {
     const custom = [{ id: 'foo', emoji: 'X', text: 'Foo', color: 'blue' }]
-    store['md-annotator-quick-labels'] = JSON.stringify(custom)
+    document.cookie = `md-annotator-quick-labels=${encodeURIComponent(JSON.stringify(custom))}`
     expect(getQuickLabels()).toEqual(custom)
   })
 
   it('falls back to defaults on invalid JSON', () => {
-    store['md-annotator-quick-labels'] = 'not json'
+    document.cookie = `md-annotator-quick-labels=${encodeURIComponent('not json')}`
     expect(getQuickLabels()).toEqual(DEFAULT_LABELS)
   })
 
   it('falls back to defaults on empty array', () => {
-    store['md-annotator-quick-labels'] = '[]'
+    document.cookie = `md-annotator-quick-labels=${encodeURIComponent('[]')}`
     expect(getQuickLabels()).toEqual(DEFAULT_LABELS)
   })
 })

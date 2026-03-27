@@ -1,11 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { getItem, setItem } from '../utils/storage.js'
 
 const MIN_WIDTH = 160
 const MAX_WIDTH = 500
 
 export function useResizablePanel(storageKey, defaultWidth, direction) {
   const [width, setWidth] = useState(() => {
-    const stored = localStorage.getItem(storageKey)
+    const stored = getItem(storageKey)
     const parsed = stored ? parseInt(stored, 10) : NaN
     return Number.isFinite(parsed) ? Math.min(Math.max(parsed, MIN_WIDTH), MAX_WIDTH) : defaultWidth
   })
@@ -39,7 +40,7 @@ export function useResizablePanel(storageKey, defaultWidth, direction) {
       isDraggingRef.current = false
       document.body.style.cursor = ''
       document.body.style.userSelect = ''
-      localStorage.setItem(storageKey, String(Math.round(widthRef.current)))
+      setItem(storageKey, String(Math.round(widthRef.current)))
     }
 
     document.addEventListener('mousemove', onMove)

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
+import { getItem, setItem } from '../utils/storage.js'
 
-const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365
 const COOKIE_KEY = 'md-annotator-settings'
 
 const DEFAULTS = {
@@ -12,27 +12,8 @@ const DEFAULTS = {
   autoSaveDrafts: true,
 }
 
-function readCookie(key) {
-  try {
-    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const match = document.cookie.match(new RegExp(`(?:^|; )${escaped}=([^;]*)`))
-    return match ? decodeURIComponent(match[1]) : null
-  } catch {
-    return null
-  }
-}
-
-function writeCookie(key, value) {
-  try {
-    const encoded = encodeURIComponent(value)
-    document.cookie = `${key}=${encoded}; path=/; max-age=${ONE_YEAR_SECONDS}; SameSite=Lax`
-  } catch {
-    // Cookie not available
-  }
-}
-
 function loadSettings() {
-  const raw = readCookie(COOKIE_KEY)
+  const raw = getItem(COOKIE_KEY)
   if (!raw) {return { ...DEFAULTS }}
   try {
     const parsed = JSON.parse(raw)
@@ -43,7 +24,7 @@ function loadSettings() {
 }
 
 function persistSettings(settings) {
-  writeCookie(COOKIE_KEY, JSON.stringify(settings))
+  setItem(COOKIE_KEY, JSON.stringify(settings))
 }
 
 export function useSettings() {

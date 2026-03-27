@@ -19,14 +19,15 @@ import { useServerConnection } from './hooks/useServerConnection.js'
 import { useAnnotationDraft } from './hooks/useAnnotationDraft.js'
 import { useSettings } from './hooks/useSettings.js'
 import { SettingsModal } from './components/SettingsModal.jsx'
+import { getItem, setItem } from './utils/storage.js'
 import './styles.css'
 
 function getInitialSidebarCollapsed() {
-  return localStorage.getItem('md-annotator-sidebar-collapsed') === 'true'
+  return getItem('md-annotator-sidebar-collapsed') === 'true'
 }
 
 function getInitialTocCollapsed() {
-  return localStorage.getItem('md-annotator-toc-collapsed') === 'true'
+  return getItem('md-annotator-toc-collapsed') === 'true'
 }
 
 function FileStats({ content }) {
@@ -163,11 +164,11 @@ export default function App() {
   }, [activeAnnState])
 
   useEffect(() => {
-    localStorage.setItem('md-annotator-sidebar-collapsed', sidebarCollapsed)
+    setItem('md-annotator-sidebar-collapsed', sidebarCollapsed)
   }, [sidebarCollapsed])
 
   useEffect(() => {
-    localStorage.setItem('md-annotator-toc-collapsed', tocCollapsed)
+    setItem('md-annotator-toc-collapsed', tocCollapsed)
   }, [tocCollapsed])
 
   // Hold Shift to temporarily toggle pinpoint mode
