@@ -2,6 +2,7 @@
  * Quick annotation labels for fast categorization.
  * Alt+1–0 shortcuts apply a label directly to the current selection.
  */
+import { getItem } from './storage.js'
 
 const STORAGE_KEY = 'md-annotator-quick-labels'
 
@@ -33,7 +34,7 @@ export const DEFAULT_LABELS = [
 
 export function getQuickLabels() {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
+    const stored = getItem(STORAGE_KEY)
     if (stored) {
       const parsed = JSON.parse(stored)
       if (Array.isArray(parsed) && parsed.length > 0) {
