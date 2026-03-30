@@ -1,5 +1,5 @@
 /* global __APP_VERSION__ */
-import { useState, useEffect, useRef, useCallback, useReducer } from 'react'
+import { useState, useEffect, useRef, useCallback, useReducer, useMemo } from 'react'
 import { parseMarkdownToBlocks } from './utils/parser.js'
 import { Viewer } from './components/Viewer/Viewer.jsx'
 import { SourceView } from './components/Viewer/SourceView.jsx'
@@ -18,6 +18,7 @@ import { useResizablePanel } from './hooks/useResizablePanel.js'
 import { useServerConnection } from './hooks/useServerConnection.js'
 import { useAnnotationDraft } from './hooks/useAnnotationDraft.js'
 import { useSettings } from './hooks/useSettings.js'
+import { useCrossFileSearch } from './hooks/useCrossFileSearch.js'
 import { SettingsModal } from './components/SettingsModal.jsx'
 import { getItem, setItem } from './utils/storage.js'
 import './styles.css'
@@ -115,6 +116,21 @@ export default function App() {
     submitted,
     enabled: settings.autoSaveDrafts,
   })
+
+  // Cross-file search (only active for multi-file sessions)
+  const crossFileSearchState = useCrossFileSearch(files)
+  const isMultiFile = files.length > 1
+
+  const handleCrossFileSelectResult = useCallback((fileIndex) => {
+    if (fileIndex !== activeFileIndex) {
+      setActiveFileIndex(fileIndex)
+    }
+  }, [activeFileIndex])
+
+  const crossFileSearchProps = useMemo(() => isMultiFile ? {
+    ...crossFileSearchState,
+    onSelectResult: handleCrossFileSelectResult,
+  } : null, [isMultiFile, crossFileSearchState, handleCrossFileSelectResult])
 
   // Dispatch annotation actions to active file
   const annDispatch = useCallback((annAction) => {
@@ -512,7 +528,11 @@ export default function App() {
 
       if (isMod && e.key === 'f') {
         e.preventDefault()
-        viewerRef.current?.openSearch()
+        if (crossFileSearchProps) {
+          crossFileSearchState.openSearch()
+        } else {
+          viewerRef.current?.openSearch()
+        }
         return
       }
       if (isMod && !e.shiftKey && e.key === 'z') {
@@ -531,7 +551,7 @@ export default function App() {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [handleUndo, handleRedo])
+  }, [handleUndo, handleRedo, crossFileSearchProps, crossFileSearchState])
 
   const handleApprove = async () => {
     setSubmitted(true)
@@ -879,6 +899,7 @@ export default function App() {
               plantumlServerUrl={serverConfig.plantumlServerUrl}
               krokiServerUrl={serverConfig.krokiServerUrl}
               selectedAnnotationId={selectedAnnotationId}
+              crossFileSearch={crossFileSearchProps}
             />
           ) : (
             <SourceView
