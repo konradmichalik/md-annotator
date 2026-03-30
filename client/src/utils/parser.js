@@ -178,14 +178,17 @@ export function parseMarkdownToBlocks(markdown, { allowFrontmatter = true } = {}
       continue
     }
 
-    // Code blocks
-    if (trimmed.startsWith('```')) {
+    // Code blocks (supports nested fences per CommonMark: closing fence must have >= opening backtick count)
+    const fenceMatch = trimmed.match(/^(`{3,})/)
+    if (fenceMatch) {
       flush()
       const codeStartLine = currentLineNum
-      const language = trimmed.slice(3).trim() || undefined
+      const fenceLen = fenceMatch[1].length
+      const language = trimmed.slice(fenceLen).trim() || undefined
+      const closingPattern = new RegExp(`^\`{${fenceLen},}$`)
       const codeContent = []
       i++
-      while (i < lines.length && !lines[i].trim().startsWith('```')) {
+      while (i < lines.length && !closingPattern.test(lines[i].trim())) {
         codeContent.push(lines[i])
         i++
       }
