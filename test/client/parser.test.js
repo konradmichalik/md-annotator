@@ -144,39 +144,50 @@ describe('parseMarkdownToBlocks', () => {
       expect(blocks[0].content).toBe('')
     })
 
-    it('handles nested code fences with longer outer fence', () => {
-      const md = '`````markdown\nHere is code:\n\n```js\nconst x = 1\n```\n\nMore text\n`````'
+    it('handles nested code fences (4 backticks wrapping 3)', () => {
+      const md = '````markdown\n```js\nconst x = 1\n```\n````'
       const blocks = parseMarkdownToBlocks(md)
       expect(blocks).toHaveLength(1)
       expect(blocks[0]).toMatchObject({
         type: 'code',
-        language: 'markdown'
+        language: 'markdown',
+        content: '```js\nconst x = 1\n```',
       })
-      expect(blocks[0].content).toContain('```js')
-      expect(blocks[0].content).toContain('const x = 1')
-      expect(blocks[0].content).toContain('```')
-      expect(blocks[0].content).toContain('More text')
     })
 
-    it('handles 4-backtick fences containing 3-backtick fences', () => {
-      const md = '````\n```\ninner\n```\n````'
+    it('handles deeply nested code fences (5 wrapping 4 wrapping 3)', () => {
+      const md = '`````\n````\n```\ninner\n```\n````\n`````'
       const blocks = parseMarkdownToBlocks(md)
       expect(blocks).toHaveLength(1)
-      expect(blocks[0].content).toBe('```\ninner\n```')
+      expect(blocks[0].content).toBe('````\n```\ninner\n```\n````')
     })
 
-    it('closes fence with exact same length', () => {
-      const md = '```\ncode\n```'
+    it('does not close 4-backtick fence with 3 backticks', () => {
+      const md = '````\nsome code\n```\nstill code\n````'
       const blocks = parseMarkdownToBlocks(md)
       expect(blocks).toHaveLength(1)
-      expect(blocks[0].content).toBe('code')
+      expect(blocks[0].content).toBe('some code\n```\nstill code')
     })
 
-    it('closes fence with longer closing fence', () => {
+    it('closes fence when closing has more backticks than opening', () => {
       const md = '```\ncode\n`````'
       const blocks = parseMarkdownToBlocks(md)
       expect(blocks).toHaveLength(1)
       expect(blocks[0].content).toBe('code')
+    })
+
+    it('does not close fence on line with backticks and trailing text', () => {
+      const md = '```\n```not-a-close\nactual code\n```'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0].content).toBe('```not-a-close\nactual code')
+    })
+
+    it('unclosed fence consumes to end of file', () => {
+      const md = '````\ncode\n```\nmore code'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0].content).toBe('code\n```\nmore code')
     })
   })
 

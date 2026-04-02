@@ -178,21 +178,17 @@ export function parseMarkdownToBlocks(markdown, { allowFrontmatter = true } = {}
       continue
     }
 
-    // Code blocks (with nested fence support via backtick counting)
+    // Code blocks (supports nested fences per CommonMark: closing fence must have >= opening backtick count)
     const fenceMatch = trimmed.match(/^(`{3,})/)
     if (fenceMatch) {
       flush()
       const codeStartLine = currentLineNum
-      const fence = fenceMatch[1]
-      const language = trimmed.slice(fence.length).trim() || undefined
+      const fenceLen = fenceMatch[1].length
+      const language = trimmed.slice(fenceLen).trim() || undefined
+      const closingPattern = new RegExp(`^\`{${fenceLen},}$`)
       const codeContent = []
       i++
-      while (i < lines.length) {
-        const closeTrimmed = lines[i].trim()
-        // Close when line is only backticks and at least as long as the opening fence
-        if (/^`+$/.test(closeTrimmed) && closeTrimmed.length >= fence.length) {
-          break
-        }
+      while (i < lines.length && !closingPattern.test(lines[i].trim())) {
         codeContent.push(lines[i])
         i++
       }

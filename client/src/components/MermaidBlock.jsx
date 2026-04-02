@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import mermaid from 'mermaid'
+import DOMPurify from 'dompurify'
 import { useResolvedTheme, getResolvedTheme } from '../hooks/useResolvedTheme.js'
 import { DiagramShell } from './DiagramShell.jsx'
 
@@ -77,7 +78,11 @@ export function MermaidBlock({ block, onDiagramClick, annotationType, hasNote, o
         const id = `mermaid-${block.id}-${renderId}`
         const { svg: renderedSvg } = await mermaid.render(id, safeContent)
         if (cancelled) { return }
-        const cleaned = renderedSvg
+        const sanitized = DOMPurify.sanitize(renderedSvg, {
+          USE_PROFILES: { svg: true, svgFilters: true },
+          ADD_TAGS: ['foreignObject'],
+        })
+        const cleaned = sanitized
           .replace(/ width="[^"]*"/, ' width="100%"')
           .replace(/ height="[^"]*"/, ' height="100%"')
           .replace(/ style="[^"]*"/, '')

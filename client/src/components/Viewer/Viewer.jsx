@@ -74,9 +74,7 @@ export const Viewer = forwardRef(function Viewer({
   plantumlServerUrl,
   krokiServerUrl,
   selectedAnnotationId: _selectedAnnotationId,
-  files,
-  activeFileIndex,
-  onSelectFile
+  crossFileSearch,
 }, ref) {
   const [pinpointTarget, setPinpointTarget] = useState(null)
 
@@ -112,7 +110,7 @@ export const Viewer = forwardRef(function Viewer({
     enrichToolbarState,
   })
 
-  const search = useDocumentSearch(containerRef, files)
+  const search = useDocumentSearch(containerRef)
 
   // Keep a ref to annotations for non-hook callbacks
   const annotationsRef = useRef(annotations)
@@ -234,15 +232,16 @@ export const Viewer = forwardRef(function Viewer({
         kbCloseRef.current()
       }
       // Search shortcuts (work even without search input focus)
-      if (search.isOpen) {
+      const activeSearch = crossFileSearch || search
+      if (activeSearch.isOpen) {
         if (e.key === 'F3') {
           e.preventDefault()
-          search.stepMatch(e.shiftKey ? -1 : +1)
+          activeSearch.stepMatch(e.shiftKey ? -1 : +1)
           return
         }
         if (e.key === 'Escape') {
           e.preventDefault()
-          search.closeSearch()
+          activeSearch.closeSearch()
           return
         }
       }
@@ -261,13 +260,13 @@ export const Viewer = forwardRef(function Viewer({
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [toolbarState, setRequestedToolbarStep, search.isOpen, search.stepMatch, search.closeSearch])
+  }, [toolbarState, setRequestedToolbarStep, search.isOpen, search.stepMatch, search.closeSearch, crossFileSearch])
 
   // --- Imperative handle ---
   useImperativeHandle(ref, () => ({
     ...highlightMethods,
-    openSearch: search.openSearch,
-    closeSearch: search.closeSearch,
+    openSearch: crossFileSearch ? crossFileSearch.openSearch : search.openSearch,
+    closeSearch: crossFileSearch ? crossFileSearch.closeSearch : search.closeSearch,
     restoreHighlight(ann) {
       if (ann.type === 'INSERTION') {
         const blockEl = containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
@@ -667,17 +666,17 @@ export const Viewer = forwardRef(function Viewer({
         />
         {pinpointMode && <PinpointOverlay target={pinpointTarget} />}
       </article>
-      {search.isOpen && (
+      {(crossFileSearch ? crossFileSearch.isOpen : search.isOpen) && (
         <SearchBar
-          query={search.query}
-          setQuery={search.setQuery}
-          matchCount={search.matchCount}
-          activeIndex={search.activeIndex}
-          stepMatch={search.stepMatch}
-          closeSearch={search.closeSearch}
-          fileMatches={search.fileMatches}
-          activeFileIndex={activeFileIndex}
-          onSelectFile={onSelectFile}
+          query={crossFileSearch ? crossFileSearch.query : search.query}
+          setQuery={crossFileSearch ? crossFileSearch.setQuery : search.setQuery}
+          matchCount={crossFileSearch ? crossFileSearch.totalMatchCount : search.matchCount}
+          activeIndex={crossFileSearch ? crossFileSearch.activeResultIndex : search.activeIndex}
+          stepMatch={crossFileSearch ? crossFileSearch.stepMatch : search.stepMatch}
+          closeSearch={crossFileSearch ? crossFileSearch.closeSearch : search.closeSearch}
+          crossFileResults={crossFileSearch?.results}
+          activeResultIndex={crossFileSearch?.activeResultIndex}
+          onSelectResult={crossFileSearch?.onSelectResult}
         />
       )}
     </div>

@@ -1,12 +1,28 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 
-export function SearchBar({ query, setQuery, matchCount, activeIndex, stepMatch, closeSearch, fileMatches, activeFileIndex, onSelectFile }) {
+function basename(filePath) {
+  return filePath.split('/').pop() || filePath
+}
+
+export function SearchBar({
+  query, setQuery, matchCount, activeIndex, stepMatch, closeSearch,
+  crossFileResults, activeResultIndex, onSelectResult,
+}) {
   const inputRef = useRef(null)
-  const [showFiles, setShowFiles] = useState(false)
+  const resultsRef = useRef(null)
 
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
+
+  // Scroll the active cross-file result into view
+  useEffect(() => {
+    if (!resultsRef.current || activeResultIndex === undefined || activeResultIndex === null) { return }
+    const active = resultsRef.current.querySelector('.search-cross-match--active')
+    if (active) {
+      active.scrollIntoView({ block: 'nearest' })
+    }
+  }, [activeResultIndex])
 
   const handleKeyDown = (e) => {
     e.stopPropagation()
@@ -19,9 +35,7 @@ export function SearchBar({ query, setQuery, matchCount, activeIndex, stepMatch,
     }
 
     if (e.key === 'Escape') {
-      if (showFiles) {
-        setShowFiles(false)
-      } else if (query) {
+      if (query) {
         setQuery('')
       } else {
         closeSearch()
@@ -39,19 +53,26 @@ export function SearchBar({ query, setQuery, matchCount, activeIndex, stepMatch,
     }
   }
 
-  const countLabel = query
-    ? matchCount > 0
-      ? `${activeIndex + 1} of ${matchCount}`
-      : 'No results'
-    : ''
-
-  const hasMultiFileResults = fileMatches?.some(f => f.count > 0)
-  const totalCrossFileMatches = hasMultiFileResults
-    ? fileMatches.reduce((sum, f) => sum + f.count, 0)
+  const isCrossFile = crossFileResults && crossFileResults.length > 0
+  const totalCrossMatches = isCrossFile
+    ? crossFileResults.reduce((sum, g) => sum + g.matches.length, 0)
     : 0
 
+  const countLabel = query
+    ? isCrossFile
+      ? totalCrossMatches > 0
+        ? `${(activeResultIndex ?? 0) + 1} of ${totalCrossMatches}`
+        : 'No results'
+      : matchCount > 0
+        ? `${activeIndex + 1} of ${matchCount}`
+        : 'No results'
+    : ''
+
+  // Build flat index for cross-file results to track active state
+  let flatIdx = 0
+
   return (
-    <div className="search-bar" role="search">
+    <div className={`search-bar${isCrossFile && query ? ' search-bar--cross-file' : ''}`} role="search">
       <label htmlFor="search-input" className="sr-only">Search in document</label>
       <svg className="search-bar-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="11" cy="11" r="8" />
@@ -65,31 +86,15 @@ export function SearchBar({ query, setQuery, matchCount, activeIndex, stepMatch,
         value={query}
         onChange={e => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Find in document..."
+        placeholder={isCrossFile ? 'Find across all files...' : 'Find in document...'}
         autoComplete="off"
         spellCheck="false"
       />
       {countLabel && <span className="search-count">{countLabel}</span>}
-      {hasMultiFileResults && (
-        <button
-          className="search-bar-btn search-files-toggle"
-          onClick={() => setShowFiles(prev => !prev)}
-          title="Show matches across files"
-          aria-label="Show matches across files"
-          aria-expanded={showFiles}
-          type="button"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-          </svg>
-          <span className="search-files-total">{totalCrossFileMatches}</span>
-        </button>
-      )}
       <button
         className="search-bar-btn"
         onClick={() => stepMatch(-1)}
-        disabled={matchCount === 0}
+        disabled={isCrossFile ? totalCrossMatches === 0 : matchCount === 0}
         title="Previous match (Shift+Enter)"
         aria-label="Previous match"
         type="button"
@@ -101,7 +106,7 @@ export function SearchBar({ query, setQuery, matchCount, activeIndex, stepMatch,
       <button
         className="search-bar-btn"
         onClick={() => stepMatch(+1)}
-        disabled={matchCount === 0}
+        disabled={isCrossFile ? totalCrossMatches === 0 : matchCount === 0}
         title="Next match (Enter)"
         aria-label="Next match"
         type="button"
@@ -122,25 +127,32 @@ export function SearchBar({ query, setQuery, matchCount, activeIndex, stepMatch,
           <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       </button>
-      {showFiles && fileMatches && (
-        <div className="search-file-matches" role="listbox" aria-label="Matches per file">
-          {fileMatches.map((fm, i) => (
-            <button
-              key={fm.path}
-              role="option"
-              aria-selected={i === activeFileIndex}
-              className={`search-file-match${i === activeFileIndex ? ' search-file-match--active' : ''}`}
-              onClick={() => {
-                onSelectFile?.(i)
-                setShowFiles(false)
-              }}
-              disabled={fm.count === 0}
-            >
-              <span className="search-file-match-name">{fm.path.split(/[\\/]/).pop()}</span>
-              <span className={`search-file-match-count${fm.count === 0 ? ' search-file-match-count--zero' : ''}`}>
-                {fm.count}
-              </span>
-            </button>
+      {isCrossFile && query && totalCrossMatches > 0 && (
+        <div className="search-cross-results" ref={resultsRef} role="listbox" aria-label="Search results across files">
+          {crossFileResults.map((group) => (
+            <div key={group.fileIndex} className="search-cross-group">
+              <div className="search-cross-group-header">
+                <span className="search-cross-filename">{basename(group.filePath)}</span>
+                <span className="search-cross-group-count">{group.matches.length}</span>
+              </div>
+              {group.matches.map((match, mi) => {
+                const thisIdx = flatIdx++
+                const isActive = thisIdx === activeResultIndex
+                return (
+                  <button
+                    key={mi}
+                    className={`search-cross-match${isActive ? ' search-cross-match--active' : ''}`}
+                    onClick={() => onSelectResult?.(group.fileIndex, match)}
+                    role="option"
+                    aria-selected={isActive}
+                    type="button"
+                  >
+                    <span className="search-cross-line">L{match.line}</span>
+                    <span className="search-cross-context">{match.context}</span>
+                  </button>
+                )
+              })}
+            </div>
           ))}
         </div>
       )}
