@@ -175,6 +175,14 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
     })
   }, [])
 
+  const collapseAll = useCallback(() => {
+    setCollapsedIds(new Set(parentSet))
+  }, [parentSet])
+
+  const expandAll = useCallback(() => {
+    setCollapsedIds(new Set())
+  }, [])
+
   useEffect(() => {
     if (collapsed || headings.length === 0) {
       return
@@ -255,6 +263,32 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
     <nav className="toc-panel" ref={tocRef} style={width ? { width: `${width}px` } : undefined}>
       <div className="toc-header">
         <h2>Contents</h2>
+        {parentSet.size > 0 && (
+          <div className="toc-header-actions">
+            <button
+              className="toc-header-btn"
+              onClick={expandAll}
+              disabled={[...parentSet].every(id => !collapsedIds.has(id))}
+              title="Expand all"
+              aria-label="Expand all sections"
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 6l4 4 4-4" />
+              </svg>
+            </button>
+            <button
+              className="toc-header-btn"
+              onClick={collapseAll}
+              disabled={[...parentSet].every(id => collapsedIds.has(id))}
+              title="Collapse all"
+              aria-label="Collapse all sections"
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 4l4 4-4 4" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
       <ul className="toc-list">
         {headings.map(h => {
