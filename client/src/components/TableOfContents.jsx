@@ -268,7 +268,7 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
             <button
               className="toc-header-btn"
               onClick={expandAll}
-              disabled={collapsedIds.size === 0}
+              disabled={[...parentSet].every(id => !collapsedIds.has(id))}
               title="Expand all"
               aria-label="Expand all sections"
             >
@@ -279,7 +279,7 @@ export function TableOfContents({ blocks, annotations = [], collapsed, width }) 
             <button
               className="toc-header-btn"
               onClick={collapseAll}
-              disabled={collapsedIds.size === parentSet.size}
+              disabled={[...parentSet].every(id => collapsedIds.has(id))}
               title="Collapse all"
               aria-label="Collapse all sections"
             >
