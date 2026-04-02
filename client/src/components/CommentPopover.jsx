@@ -32,8 +32,10 @@ export function CommentPopover({
   const [text, setText] = useState(initialText)
   const [cursorPos, setCursorPos] = useState(initialText.length)
   const [position, setPosition] = useState(null)
+  const [dragOffset, setDragOffset] = useState(null)
   const textareaRef = useRef(null)
   const popoverRef = useRef(null)
+  const isDragging = useRef(false)
 
   const autocomplete = useFileAutocomplete(text, cursorPos)
 
@@ -83,6 +85,33 @@ export function CommentPopover({
     return () => document.removeEventListener('mousedown', handleMouseDown)
   }, [mode, onClose])
 
+  // Drag to reposition (popover mode only)
+  const handleDragStart = useCallback((e) => {
+    if (mode !== 'popover' || !popoverRef.current) {return}
+    e.preventDefault()
+    const rect = popoverRef.current.getBoundingClientRect()
+    isDragging.current = true
+    const startX = e.clientX
+    const startY = e.clientY
+    const startLeft = rect.left
+    const startTop = rect.top
+
+    const handleDragMove = (moveEvent) => {
+      const dx = moveEvent.clientX - startX
+      const dy = moveEvent.clientY - startY
+      setDragOffset({ left: startLeft + dx, top: startTop + dy })
+    }
+
+    const handleDragEnd = () => {
+      isDragging.current = false
+      document.removeEventListener('mousemove', handleDragMove)
+      document.removeEventListener('mouseup', handleDragEnd)
+    }
+
+    document.addEventListener('mousemove', handleDragMove)
+    document.addEventListener('mouseup', handleDragEnd)
+  }, [mode])
+
   const handleSubmit = useCallback(() => {
     if (text.trim()) {
       onSubmit(text)
@@ -111,6 +140,19 @@ export function CommentPopover({
       handleSubmit()
     }
   }
+
+  const dragHandle = mode === 'popover' ? (
+    <div
+      className="comment-popover-drag-handle"
+      onMouseDown={handleDragStart}
+      title="Drag to reposition"
+    >
+      <svg width="16" height="6" viewBox="0 0 16 6" fill="currentColor" aria-hidden="true">
+        <circle cx="4" cy="1" r="1" /><circle cx="8" cy="1" r="1" /><circle cx="12" cy="1" r="1" />
+        <circle cx="4" cy="5" r="1" /><circle cx="8" cy="5" r="1" /><circle cx="12" cy="5" r="1" />
+      </svg>
+    </div>
+  ) : null
 
   const textarea = (
     <div className="comment-popover-body">
@@ -197,18 +239,23 @@ export function CommentPopover({
 
   if (!position) {return null}
 
+  const popoverStyle = dragOffset
+    ? { top: dragOffset.top, left: dragOffset.left, width: POPOVER_WIDTH }
+    : {
+      top: position.flipAbove ? undefined : position.top,
+      bottom: position.flipAbove ? (window.innerHeight - position.top) : undefined,
+      left: position.left,
+      width: POPOVER_WIDTH,
+    }
+
   return createPortal(
     <div
       ref={popoverRef}
-      className="comment-popover"
-      style={{
-        top: position.flipAbove ? undefined : position.top,
-        bottom: position.flipAbove ? (window.innerHeight - position.top) : undefined,
-        left: position.left,
-        width: POPOVER_WIDTH,
-      }}
+      className={`comment-popover${dragOffset ? ' comment-popover--dragged' : ''}`}
+      style={popoverStyle}
       onMouseDown={(e) => e.stopPropagation()}
     >
+      {dragHandle}
       {textarea}
       {footer}
     </div>,
