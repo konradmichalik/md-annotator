@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from 'react'
+import { useRef, useState, useMemo, useCallback, useEffect } from 'react'
 import { useDiagramZoom } from '../hooks/useDiagramZoom.js'
 
 function parseSvgViewBox(svgString) {
@@ -14,8 +14,25 @@ function parseSvgViewBox(svgString) {
 
 export function DiagramShell({ block, onDiagramClick, annotationType, hasNote, onNoteClick, svg, error, loading, errorLabel, language }) {
   const containerRef = useRef(null)
+  const blockRef = useRef(null)
   const [showSource, setShowSource] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const viewBox = useMemo(() => parseSvgViewBox(svg), [svg])
+
+  const toggleFullscreen = useCallback(() => {
+    if (!blockRef.current) { return }
+    if (document.fullscreenElement) {
+      document.exitFullscreen()
+    } else {
+      blockRef.current.requestFullscreen()
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleChange = () => setIsFullscreen(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', handleChange)
+    return () => document.removeEventListener('fullscreenchange', handleChange)
+  }, [])
 
   const zoom = useDiagramZoom({
     containerRef,
@@ -41,7 +58,7 @@ export function DiagramShell({ block, onDiagramClick, annotationType, hasNote, o
   }
 
   return (
-    <div className={`diagram-block${hasNote ? ' block-has-note' : ''}`} data-block-id={block.id}>
+    <div ref={blockRef} className={`diagram-block${hasNote ? ' block-has-note' : ''}${isFullscreen ? ' diagram-fullscreen' : ''}`} data-block-id={block.id}>
       {hasNote && (
         <span
           className="block-note-border"
@@ -104,6 +121,25 @@ export function DiagramShell({ block, onDiagramClick, annotationType, hasNote, o
             </button>
             <span ref={zoom.zoomDisplayRef} hidden className="diagram-zoom-display" />
           </div>
+        )}
+
+        {svg && (
+          <button
+            onClick={toggleFullscreen}
+            className="diagram-ctrl-btn"
+            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+          >
+            {isFullscreen ? (
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 9L4 4m0 0v4m0-4h4m6 6l5 5m0 0v-4m0 4h-4M9 15l-5 5m0 0v-4m0 4h4m6-6l5-5m0 0v4m0-4h-4" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+              </svg>
+            )}
+          </button>
         )}
       </div>
 
