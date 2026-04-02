@@ -971,6 +971,30 @@ body {
   line-height: 1.2;
 }
 
+.diagram-fullscreen {
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.diagram-fullscreen .diagram-controls {
+  opacity: 1;
+  position: static;
+  flex-direction: row;
+  align-self: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.diagram-fullscreen .diagram-zoom-controls {
+  flex-direction: row;
+}
+
+.diagram-fullscreen .diagram-render-area {
+  flex: 1;
+  min-height: 0;
+}
+
 .diagram-source {
   border-radius: 6px;
   overflow-x: auto;
