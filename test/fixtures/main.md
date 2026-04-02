@@ -36,7 +36,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
 - **Multi-file review** — open multiple files in one session
 - **Linked navigation** — click `.md` links to open them as tabs
 - **Tab bar** — switch between files with annotation count badges
-- **Per-file undo/redo** — each file has its own history
+- **Per-file undo/redo** — ~~each file has its own history~~
 
 ## Screenshot
 
