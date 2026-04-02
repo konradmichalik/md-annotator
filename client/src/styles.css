@@ -1949,6 +1949,29 @@ body {
   font-weight: 600;
 }
 
+.toc-header-actions {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.toc-header-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.toc-header-btn:hover:not(:disabled) { background: var(--bg-secondary); color: var(--text); }
+.toc-header-btn:disabled { opacity: 0.3; cursor: default; }
+
 .toc-empty {
   padding: 1.5rem 1rem;
   font-size: 0.8125rem;
