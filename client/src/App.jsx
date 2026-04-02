@@ -127,10 +127,20 @@ export default function App() {
     }
   }, [activeFileIndex])
 
-  const crossFileSearchProps = useMemo(() => isMultiFile ? {
-    ...crossFileSearchState,
-    onSelectResult: handleCrossFileSelectResult,
-  } : null, [isMultiFile, crossFileSearchState, handleCrossFileSelectResult])
+  const crossFileSearchProps = useMemo(() => {
+    if (!isMultiFile) { return null }
+    // Reorder results so the active file's matches appear first
+    const reordered = [...crossFileSearchState.results].sort((a, b) => {
+      if (a.fileIndex === activeFileIndex) { return -1 }
+      if (b.fileIndex === activeFileIndex) { return 1 }
+      return a.fileIndex - b.fileIndex
+    })
+    return {
+      ...crossFileSearchState,
+      results: reordered,
+      onSelectResult: handleCrossFileSelectResult,
+    }
+  }, [isMultiFile, crossFileSearchState, handleCrossFileSelectResult, activeFileIndex])
 
   // Dispatch annotation actions to active file
   const annDispatch = useCallback((annAction) => {

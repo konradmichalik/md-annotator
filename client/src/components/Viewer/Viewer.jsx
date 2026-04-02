@@ -9,6 +9,7 @@ import { BlockRenderer } from './BlockRenderer.jsx'
 import { CodeBlock } from './CodeBlock.jsx'
 import { useHighlighter } from '../../hooks/useHighlighter.js'
 import { useDocumentSearch } from '../../hooks/useDocumentSearch.js'
+import { highlightMatches, setActiveMatch, clearSearchHighlights } from '../../utils/searchHighlight.js'
 import { SearchBar } from '../SearchBar.jsx'
 import { getQuickLabels, formatLabelText } from '../../utils/quickLabels.js'
 
@@ -111,6 +112,34 @@ export const Viewer = forwardRef(function Viewer({
   })
 
   const search = useDocumentSearch(containerRef)
+
+  // Sync DOM highlighting with cross-file search query on the current page
+  const crossFileMarksRef = useRef([])
+  useEffect(() => {
+    const container = containerRef.current
+    if (!crossFileSearch) { return }
+
+    // Clear previous cross-file highlights
+    clearSearchHighlights(container)
+    crossFileMarksRef.current = []
+
+    const query = crossFileSearch.query
+    if (!query || !container) { return }
+
+    const timer = setTimeout(() => {
+      const marks = highlightMatches(container, query)
+      crossFileMarksRef.current = marks
+      if (marks.length > 0) {
+        setActiveMatch(marks, 0)
+      }
+    }, 200)
+
+    return () => {
+      clearTimeout(timer)
+      clearSearchHighlights(container)
+      crossFileMarksRef.current = []
+    }
+  }, [crossFileSearch?.query, containerRef, crossFileSearch])
 
   // Keep a ref to annotations for non-hook callbacks
   const annotationsRef = useRef(annotations)
