@@ -31,6 +31,13 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
       continue
     }
 
+    match = remaining.match(/^~~(.+?)~~/)
+    if (match) {
+      parts.push(<del key={key++}><InlineMarkdown text={match[1]} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={blockId} /></del>)
+      remaining = remaining.slice(match[0].length)
+      continue
+    }
+
     match = remaining.match(/^`([^`]+)`/)
     if (match) {
       parts.push(<code key={key++} className="inline-code">{match[1]}</code>)
@@ -124,7 +131,7 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
       }
     }
 
-    const nextSpecial = remaining.slice(1).search(/[*`![<]/)
+    const nextSpecial = remaining.slice(1).search(/[*`![<~]/)
     if (nextSpecial === -1) {
       parts.push(remaining)
       break
