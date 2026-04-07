@@ -17,7 +17,18 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
   let key = 0
 
   while (remaining.length > 0) {
-    let match = remaining.match(/^\*\*(.+?)\*\*/)
+    // Hard line breaks: two+ trailing spaces or backslash before newline
+    let match = remaining.match(/^(.*?)(?:  +|\\)\n/)
+    if (match) {
+      if (match[1]) {
+        parts.push(<InlineMarkdown key={key++} text={match[1]} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={blockId} />)
+      }
+      parts.push(<br key={key++} />)
+      remaining = remaining.slice(match[0].length)
+      continue
+    }
+
+    match = remaining.match(/^\*\*(.+?)\*\*/)
     if (match) {
       parts.push(<strong key={key++}>{match[1]}</strong>)
       remaining = remaining.slice(match[0].length)
