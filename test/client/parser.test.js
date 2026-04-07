@@ -246,6 +246,43 @@ describe('parseMarkdownToBlocks', () => {
       const blocks = parseMarkdownToBlocks(md)
       expect(blocks[0].checked).toBeUndefined()
     })
+
+    it('collects indented continuation lines into the list item', () => {
+      const md = '- First item\n  with continuation\n- Second item'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(2)
+      expect(blocks[0]).toMatchObject({ type: 'list-item', content: 'First item\nwith continuation' })
+      expect(blocks[1]).toMatchObject({ type: 'list-item', content: 'Second item' })
+    })
+
+    it('collects multiple continuation lines', () => {
+      const md = '- Item\n  line two\n  line three\n- Next'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(2)
+      expect(blocks[0].content).toBe('Item\nline two\nline three')
+    })
+
+    it('does not treat non-indented lines as continuation', () => {
+      const md = '- Item\nNot continuation'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(2)
+      expect(blocks[0]).toMatchObject({ type: 'list-item', content: 'Item' })
+      expect(blocks[1]).toMatchObject({ type: 'paragraph', content: 'Not continuation' })
+    })
+
+    it('handles continuation lines in nested list items', () => {
+      const md = '- Top\n  - Nested\n    with continuation\n  - Another nested'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(3)
+      expect(blocks[1]).toMatchObject({ type: 'list-item', content: 'Nested\nwith continuation', level: 1 })
+    })
+
+    it('stops continuation at blank line', () => {
+      const md = '- Item\n  continued\n\n- Next item'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks).toHaveLength(2)
+      expect(blocks[0].content).toBe('Item\ncontinued')
+    })
   })
 
   describe('blockquotes', () => {

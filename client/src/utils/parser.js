@@ -131,6 +131,19 @@ export function parseMarkdownToBlocks(markdown, { allowFrontmatter = true } = {}
         content = content.replace(/^\[([ xX])\]\s*/, '')
       }
 
+      // Collect continuation lines (indented, no list marker, not blank)
+      while (i + 1 < lines.length) {
+        const nextLine = lines[i + 1]
+        const nextTrimmed = nextLine.trim()
+        if (nextTrimmed === '') { break }
+        if (nextTrimmed.match(/^(\*|-|\d+\.)\s/)) { break }
+        const nextLeading = nextLine.match(/^(\s*)/)?.[1] || ''
+        const nextSpaces = nextLeading.replace(/\t/g, '  ').length
+        if (nextSpaces < 2) { break }
+        i++
+        content += '\n' + nextTrimmed
+      }
+
       blocks.push({
         id: `block-${currentId++}`,
         type: 'list-item',
