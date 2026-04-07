@@ -11,7 +11,7 @@ function getTokenOffset(codeEl, tokenSpan) {
   return range.toString().length
 }
 
-export function CodeBlock({ block, onHover, onLeave, isHovered, hasNote, onNoteClick, onTokenSelect, selectedTokenId }) {
+export function CodeBlock({ block, onHover, onLeave, isHovered, hasNote, onNoteClick, onTokenSelect }) {
   const [copied, setCopied] = useState(false)
   const containerRef = useRef(null)
   const codeRef = useRef(null)
@@ -65,7 +65,7 @@ export function CodeBlock({ block, onHover, onLeave, isHovered, hasNote, onNoteC
   return (
     <div
       ref={containerRef}
-      className={`block-code-wrapper${isHovered ? ' hovered' : ''}${hasNote ? ' block-has-note' : ''}${selectedTokenId ? ' has-token-selection' : ''}`}
+      className={`block-code-wrapper${isHovered ? ' hovered' : ''}${hasNote ? ' block-has-note' : ''}`}
       data-block-id={block.id}
       onMouseEnter={() => onHover?.(containerRef.current)}
       onMouseLeave={() => onLeave?.()}

@@ -744,7 +744,6 @@ export const Viewer = forwardRef(function Viewer({
               hasNote={noteBlockIds.has(block.id)}
               onNoteClick={handleNoteClick}
               onTokenSelect={handleTokenSelect}
-              selectedTokenId={toolbarState?.tokenMode && toolbarState?.tokenData?.blockId === block.id ? toolbarState.tokenData.charStart : null}
             />
           ) : (
             <BlockRenderer
