@@ -838,6 +838,16 @@ body {
   font-family: 'SF Mono', 'Fira Code', monospace;
 }
 
+/* Token-level selection in code blocks */
+.block-code.token-selectable .hljs span:not(:empty):hover {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 6%);
+}
+
 .code-toolbar {
   position: absolute;
   top: 0.5rem;

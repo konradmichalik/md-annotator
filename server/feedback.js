@@ -34,6 +34,21 @@ function formatAnnotation(ann, block, heading) {
     return output + '\n'
   }
 
+  if (ann.targetType === 'token') {
+    const isDeletion = ann.type === 'DELETION'
+    const label = isDeletion ? 'Remove token' : 'Comment on token'
+    const lineOffset = (block?.content || '').slice(0, ann.startOffset).split('\n').length - 1
+    const tokenLine = blockStartLine + lineOffset
+    let output = `${heading} ${label} (Line ${tokenLine})\n`
+    output += `Token: \`${ann.originalText}\`\n`
+    if (isDeletion) {
+      output += `> User wants this token removed.\n`
+    } else {
+      output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n`
+    }
+    return output + '\n'
+  }
+
   if (ann.targetType === 'diagram') {
     const isDeletion = ann.type === 'DELETION'
     const diagramLang = block?.language === 'plantuml' ? 'PlantUML' : 'Mermaid'

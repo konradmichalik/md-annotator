@@ -189,6 +189,29 @@ export const Viewer = forwardRef(function Viewer({
       return
     }
 
+    // Token annotations in code blocks
+    if (toolbarState.tokenMode && !toolbarState.mode) {
+      const { tokenData } = toolbarState
+      const newAnnotation = {
+        id: crypto.randomUUID(),
+        blockId: tokenData.blockId,
+        startOffset: tokenData.charStart,
+        endOffset: tokenData.charEnd,
+        type,
+        targetType: 'token',
+        text: text || null,
+        originalText: tokenData.tokenText,
+        createdAt: Date.now(),
+        startMeta: null,
+        endMeta: null,
+        label: label || null
+      }
+      onAddAnnotationRef.current(newAnnotation)
+      setToolbarState(null)
+      setRequestedToolbarStep(null)
+      return
+    }
+
     // Element annotations (image/diagram) bypass web-highlighter
     if (toolbarState.elementMode) {
       if (toolbarState.mode === 'edit') {
@@ -312,7 +335,7 @@ export const Viewer = forwardRef(function Viewer({
       anns.forEach(ann => { this.restoreHighlight(ann) })
     },
     openEditToolbar(ann) {
-      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'pinpoint' || ann.targetType === 'link') {
+      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'pinpoint' || ann.targetType === 'link' || ann.targetType === 'token') {
         this.openElementEditToolbar(ann)
         return
       }
@@ -347,6 +370,20 @@ export const Viewer = forwardRef(function Viewer({
         if (blockEl) {
           const anchors = blockEl.querySelectorAll('a[href]')
           targetEl = Array.from(anchors).find(a => a.textContent === ann.originalText) || anchors[0]
+        }
+      } else if (ann.targetType === 'token') {
+        const blockEl = containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
+        if (blockEl) {
+          const codeEl = blockEl.querySelector('code.hljs')
+          if (codeEl) {
+            const spans = codeEl.querySelectorAll('span')
+            for (const span of spans) {
+              if (span.textContent === ann.originalText) {
+                targetEl = span
+                break
+              }
+            }
+          }
         }
       }
       if (targetEl) {
@@ -626,6 +663,39 @@ export const Viewer = forwardRef(function Viewer({
     setPinpointTarget({ element: blockEl, label: getBlockLabel(blockEl) })
   }, [pinpointMode, onSelectAnnotation, onOpenFile, getBlockLabel, pendingSourceRef, highlighterRef, containerRef, setToolbarState, setRequestedToolbarStep])
 
+  // --- Token-level selection in code blocks ---
+  const handleTokenSelect = useCallback(({ blockId, element, tokenText, charStart, charEnd }) => {
+    // If clicking the same already-selected token, deselect (toggle)
+    if (toolbarState?.tokenMode && toolbarState?.tokenData?.blockId === blockId &&
+        toolbarState?.tokenData?.charStart === charStart) {
+      setToolbarState(null)
+      setRequestedToolbarStep(null)
+      return
+    }
+
+    if (pendingSourceRef.current && highlighterRef.current) {
+      highlighterRef.current.remove(pendingSourceRef.current.id)
+      pendingSourceRef.current = null
+    }
+
+    const existing = annotationsRef.current.find(
+      a => a.targetType === 'token' && a.blockId === blockId && a.startOffset === charStart && a.endOffset === charEnd
+    )
+
+    if (existing) {
+      onSelectAnnotation(existing.id)
+      setToolbarState({ element, annotation: existing, mode: 'edit', elementMode: true, tokenMode: true })
+    } else {
+      setToolbarState({
+        element,
+        elementMode: true,
+        tokenMode: true,
+        tokenData: { blockId, tokenText, charStart, charEnd, targetType: 'token', originalText: tokenText }
+      })
+    }
+    setRequestedToolbarStep(null)
+  }, [toolbarState, onSelectAnnotation, pendingSourceRef, highlighterRef, setToolbarState, setRequestedToolbarStep])
+
   useEffect(() => {
     if (!toolbarState) { setPinpointTarget(null) }
   }, [toolbarState])
@@ -668,7 +738,14 @@ export const Viewer = forwardRef(function Viewer({
               onNoteClick={handleNoteClick}
             />
           ) : block.type === 'code' ? (
-            <CodeBlock key={block.id} block={block} hasNote={noteBlockIds.has(block.id)} onNoteClick={handleNoteClick} />
+            <CodeBlock
+              key={block.id}
+              block={block}
+              hasNote={noteBlockIds.has(block.id)}
+              onNoteClick={handleNoteClick}
+              onTokenSelect={handleTokenSelect}
+              selectedTokenId={toolbarState?.tokenMode && toolbarState?.tokenData?.blockId === block.id ? toolbarState.tokenData.charStart : null}
+            />
           ) : (
             <BlockRenderer
               key={block.id}

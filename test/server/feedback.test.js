@@ -193,6 +193,38 @@ describe('exportMultiFileFeedback', () => {
     expect(output).toContain('User wants this block removed')
   })
 
+  it('formats a token annotation as comment', () => {
+    const blocks = [makeBlock({ type: 'code', content: 'const processOrder = () => {}', language: 'javascript', startLine: 10 })]
+    const annotations = [makeAnnotation({
+      targetType: 'token',
+      type: 'COMMENT',
+      text: 'Rename this function',
+      originalText: 'processOrder',
+      startOffset: 6,
+      endOffset: 18
+    })]
+    const output = exportFeedback(annotations, blocks)
+    expect(output).toContain('Comment on token')
+    expect(output).toContain('Token: `processOrder`')
+    expect(output).toContain('> Rename this function')
+    expect(output).toContain('Line 10')
+  })
+
+  it('formats a token deletion annotation', () => {
+    const blocks = [makeBlock({ type: 'code', content: 'let x = 1\nlet y = 2', language: 'javascript', startLine: 5 })]
+    const annotations = [makeAnnotation({
+      targetType: 'token',
+      type: 'DELETION',
+      originalText: 'y',
+      startOffset: 14,
+      endOffset: 15
+    })]
+    const output = exportFeedback(annotations, blocks)
+    expect(output).toContain('Remove token')
+    expect(output).toContain('Line 6')
+    expect(output).toContain('Token: `y`')
+  })
+
   it('skips files without annotations and uses single-file format', () => {
     const files = [
       { path: '/a.md', annotations: [], blocks: [] },
