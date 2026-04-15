@@ -80,15 +80,23 @@ if command -v claude &> /dev/null; then
   if claude plugin marketplace update md-annotator 2>/dev/null; then
     echo "Updated md-annotator marketplace"
   else
-    claude plugin marketplace add konradmichalik/md-annotator && \
+    if claude plugin marketplace add konradmichalik/md-annotator; then
       echo "Added md-annotator marketplace"
+    else
+      echo "Failed to add md-annotator marketplace" >&2
+      exit 1
+    fi
   fi
 
   if claude plugin update annotate@md-annotator 2>/dev/null; then
     echo "Updated Claude Code plugin"
   else
-    claude plugin install annotate@md-annotator && \
+    if claude plugin install annotate@md-annotator; then
       echo "Installed Claude Code plugin"
+    else
+      echo "Failed to install Claude Code plugin" >&2
+      exit 1
+    fi
   fi
 else
   echo "Claude Code CLI not found. Install it first, then run:"
