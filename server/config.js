@@ -3,6 +3,7 @@
  */
 
 const DEFAULT_PORT = 3000
+const DEFAULT_HOST = '127.0.0.1'
 const DEFAULT_HEARTBEAT_TIMEOUT_MS = 30_000
 
 function getServerPort() {
@@ -14,6 +15,14 @@ function getServerPort() {
     }
   }
   return DEFAULT_PORT
+}
+
+function getServerHost() {
+  const envHost = process.env.MD_ANNOTATOR_HOST
+  if (envHost && envHost.trim()) {
+    return envHost.trim()
+  }
+  return DEFAULT_HOST
 }
 
 function getHeartbeatTimeoutMs() {
@@ -46,6 +55,7 @@ function getKrokiServerUrl() {
 export const config = {
   port: getServerPort(),
   portExplicit: !!process.env.MD_ANNOTATOR_PORT,
+  host: getServerHost(),
   browser: process.env.MD_ANNOTATOR_BROWSER || null,
   heartbeatTimeoutMs: getHeartbeatTimeoutMs(),
   forceExitTimeoutMs: 5000,

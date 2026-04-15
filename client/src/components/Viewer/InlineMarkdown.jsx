@@ -1,5 +1,31 @@
 import DOMPurify from 'dompurify'
 
+// Scheme allowlist for <a href>. The final `[^:]*$` alternative matches any string
+// that contains no colon at all (bare filenames, query-only, etc.), since those
+// can't encode a dangerous scheme. Anything else (javascript:, data:, vbscript:,
+// file:, …) is rejected.
+const SAFE_LINK_SCHEMES = /^(https?:|mailto:|tel:|#|\/|\.\.?\/|[^:]*$)/i
+
+// Image sources additionally allow data:image/* (common legitimate inline images).
+const SAFE_IMG_SCHEMES = /^(https?:|data:image\/|#|\/|\.\.?\/|[^:]*$)/i
+
+// Strip control chars (e.g. "java\tscript:") before scheme check; they would otherwise
+// let attackers slip past the allowlist in some parsers.
+// eslint-disable-next-line no-control-regex
+const CONTROL_CHARS = /[\u0000-\u001F\u007F]/g
+
+function isSafeLinkHref(href) {
+  if (typeof href !== 'string') { return false }
+  const stripped = href.replace(CONTROL_CHARS, '').trimStart()
+  return SAFE_LINK_SCHEMES.test(stripped)
+}
+
+function isSafeImageSrc(src) {
+  if (typeof src !== 'string') { return false }
+  const stripped = src.replace(CONTROL_CHARS, '').trimStart()
+  return SAFE_IMG_SCHEMES.test(stripped)
+}
+
 function handleAnchorClick(e, href) {
   if (!href.startsWith('#') || href.length === 1) { return }
   const viewerEl = e.target.closest('.viewer-container')
@@ -61,6 +87,12 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
     if (match) {
       const imgAlt = match[1]
       const imgSrc = match[2]
+      // Unsafe image src (javascript:, non-image data:, etc.) → render alt text as plain string.
+      if (!isSafeImageSrc(imgSrc)) {
+        parts.push(imgAlt || '')
+        remaining = remaining.slice(match[0].length)
+        continue
+      }
       const annotationType = annotatedImages?.get(`${blockId}::${imgSrc}`)
       const annClass = annotationType === 'DELETION' ? ' annotated-deletion' : annotationType ? ' annotated-comment' : ''
       parts.push(
@@ -94,13 +126,26 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
     match = remaining.match(/^\[((?:[^[\]]|!?\[[^\]]*\]\([^)]*\))+)\]\(([^)]+)\)/)
     if (match) {
       const href = match[2]
+      // Unsafe hrefs (javascript:, data:, vbscript:, …) → drop the <a> wrapper,
+      // keep the link text so the document stays readable.
+      if (!isSafeLinkHref(href)) {
+        parts.push(<InlineMarkdown key={key++} text={match[1]} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={blockId} />)
+        remaining = remaining.slice(match[0].length)
+        continue
+      }
       const isAnchor = href.startsWith('#')
       const isExternal = href.startsWith('http://') || href.startsWith('https://')
-      // Badge pattern: [![alt](img)](url) — render as plain <a><img/></a> without annotation wrapper
+      // Badge pattern: [![alt](img)](url) — render as plain <a><img/></a> without annotation wrapper.
+      // Unsafe badge image → fall back to alt text only.
       const badgeMatch = match[1].match(/^!\[([^\]]*)\]\(([^)]+)\)$/)
-      const linkContent = badgeMatch
-        ? <img src={badgeMatch[2]} alt={badgeMatch[1]} className="inline-image" />
-        : <InlineMarkdown text={match[1]} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={blockId} />
+      let linkContent
+      if (badgeMatch) {
+        linkContent = isSafeImageSrc(badgeMatch[2])
+          ? <img src={badgeMatch[2]} alt={badgeMatch[1]} className="inline-image" />
+          : <>{badgeMatch[1] || ''}</>
+      } else {
+        linkContent = <InlineMarkdown text={match[1]} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={blockId} />
+      }
       if (isAnchor) {
         parts.push(<a key={key++} href={href} onClick={(e) => handleAnchorClick(e, href)}>{linkContent}</a>)
       } else if (isExternal) {
