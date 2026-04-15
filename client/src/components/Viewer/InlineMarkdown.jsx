@@ -1,7 +1,9 @@
 import DOMPurify from 'dompurify'
 
-// Scheme allowlist. Anything else (javascript:, data:, vbscript:, file:, etc.) is rejected
-// for <a href>. Schemeless / relative / fragment URLs always pass.
+// Scheme allowlist for <a href>. The final `[^:]*$` alternative matches any string
+// that contains no colon at all (bare filenames, query-only, etc.), since those
+// can't encode a dangerous scheme. Anything else (javascript:, data:, vbscript:,
+// file:, …) is rejected.
 const SAFE_LINK_SCHEMES = /^(https?:|mailto:|tel:|#|\/|\.\.?\/|[^:]*$)/i
 
 // Image sources additionally allow data:image/* (common legitimate inline images).
@@ -133,14 +135,17 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
       }
       const isAnchor = href.startsWith('#')
       const isExternal = href.startsWith('http://') || href.startsWith('https://')
-      // Badge pattern: [![alt](img)](url) — render as plain <a><img/></a> without annotation wrapper
+      // Badge pattern: [![alt](img)](url) — render as plain <a><img/></a> without annotation wrapper.
+      // Unsafe badge image → fall back to alt text only.
       const badgeMatch = match[1].match(/^!\[([^\]]*)\]\(([^)]+)\)$/)
-      const badgeSrcSafe = badgeMatch && isSafeImageSrc(badgeMatch[2])
-      const linkContent = badgeMatch && badgeSrcSafe
-        ? <img src={badgeMatch[2]} alt={badgeMatch[1]} className="inline-image" />
-        : badgeMatch
-          ? <>{badgeMatch[1] || ''}</>
-          : <InlineMarkdown text={match[1]} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={blockId} />
+      let linkContent
+      if (badgeMatch) {
+        linkContent = isSafeImageSrc(badgeMatch[2])
+          ? <img src={badgeMatch[2]} alt={badgeMatch[1]} className="inline-image" />
+          : <>{badgeMatch[1] || ''}</>
+      } else {
+        linkContent = <InlineMarkdown text={match[1]} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={blockId} />
+      }
       if (isAnchor) {
         parts.push(<a key={key++} href={href} onClick={(e) => handleAnchorClick(e, href)}>{linkContent}</a>)
       } else if (isExternal) {
