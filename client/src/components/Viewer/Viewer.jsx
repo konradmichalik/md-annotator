@@ -377,8 +377,12 @@ export const Viewer = forwardRef(function Viewer({
           const codeEl = blockEl.querySelector('code.hljs')
           if (codeEl) {
             const spans = codeEl.querySelectorAll('span')
+            const range = document.createRange()
             for (const span of spans) {
-              if (span.textContent === ann.originalText) {
+              if (span.textContent !== ann.originalText) { continue }
+              range.selectNodeContents(codeEl)
+              range.setEnd(span, 0)
+              if (range.toString().length === ann.startOffset) {
                 targetEl = span
                 break
               }
