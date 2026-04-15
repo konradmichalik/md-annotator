@@ -77,11 +77,21 @@ npm install -g md-annotator@latest
 echo "Installed md-annotator CLI globally"
 
 if command -v claude &> /dev/null; then
-  claude plugin marketplace update md-annotator 2>/dev/null && \
-    claude plugin update annotate@md-annotator 2>/dev/null && \
-    echo "Updated Claude Code plugin" || \
-    echo "Claude Code plugin not yet installed. Run: claude plugin marketplace add konradmichalik/md-annotator"
+  if claude plugin marketplace update md-annotator 2>/dev/null; then
+    echo "Updated md-annotator marketplace"
+  else
+    claude plugin marketplace add konradmichalik/md-annotator && \
+      echo "Added md-annotator marketplace"
+  fi
+
+  if claude plugin update annotate@md-annotator 2>/dev/null; then
+    echo "Updated Claude Code plugin"
+  else
+    claude plugin install annotate@md-annotator && \
+      echo "Installed Claude Code plugin"
+  fi
 else
   echo "Claude Code CLI not found. Install it first, then run:"
   echo "  claude plugin marketplace add konradmichalik/md-annotator"
+  echo "  claude plugin install annotate@md-annotator"
 fi
