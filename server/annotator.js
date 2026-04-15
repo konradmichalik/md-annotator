@@ -143,11 +143,14 @@ export async function startAnnotatorServer(options) {
   // falling back to configured port if explicitly set via MD_ANNOTATOR_PORT
   const requestedPort = config.portExplicit ? config.port : 0
   const server = await new Promise((resolve) => {
-    const s = app.listen(requestedPort, () => resolve(s))
+    const s = app.listen(requestedPort, config.host, () => resolve(s))
   })
 
   const port = server.address().port
-  const url = `http://localhost:${port}`
+  // Match the URL host to the actual bind host to avoid IPv4/IPv6 resolution
+  // mismatches (e.g. 'localhost' resolving to ::1 when we only listen on 127.0.0.1).
+  const urlHost = config.host === '::1' ? '[::1]' : config.host
+  const url = `http://${urlHost}:${port}`
 
   // Call onReady callback if provided
   if (onReady) {
