@@ -516,11 +516,6 @@ body {
   opacity: 0.7;
 }
 
-.done-hint--disconnected {
-  opacity: 1;
-  color: var(--success);
-}
-
 .done-icon--disconnected {
   background: var(--deletion-bg);
   color: var(--danger);

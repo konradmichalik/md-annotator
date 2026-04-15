@@ -672,9 +672,9 @@ export default function App() {
                 ? 'No changes requested. The file was approved as-is.'
                 : `${totalAnnotationCount} annotation${totalAnnotationCount !== 1 ? 's' : ''} ${ORIGIN_LABELS[origin] ? `sent to ${ORIGIN_LABELS[origin]}` : 'submitted'}.`}
             </p>
-            {serverGone
-              ? <p className="done-hint done-hint--disconnected">Server disconnected. You can close this tab.</p>
-              : <p className="done-hint">Waiting for server...</p>}
+            {decision === 'feedback' && ORIGIN_LABELS[origin]
+              ? <p className="done-hint">{ORIGIN_LABELS[origin]} is processing your feedback. A new browser tab will open with the next iteration.</p>
+              : <p className="done-hint">You can close this tab.</p>}
             <div className="done-autoclose">
               {autoCloseState.phase === 'counting' && (
                 <p className="done-countdown">
