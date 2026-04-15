@@ -57,6 +57,15 @@
 
 ### 📦 Installation & Update
 
+Native Claude Code plugin commands:
+
+```bash
+claude plugin marketplace add konradmichalik/md-annotator
+claude plugin install annotate@md-annotator
+```
+
+Or via the installer script (also installs the standalone CLI):
+
 ```bash
 curl -fsSL https://konradmichalik.github.io/md-annotator/install.sh | bash
 ```
