@@ -686,7 +686,14 @@ export default function App() {
               )}
               {autoCloseState.phase === 'prompt' && (
                 <label className="done-autoclose-prompt">
-                  <input type="checkbox" checked={false} onChange={enableAndStart} />
+                  <input
+                    type="checkbox"
+                    checked={false}
+                    onChange={() => {
+                      updateSetting('autoCloseDelay', '3')
+                      enableAndStart()
+                    }}
+                  />
                   <span>Auto-close this tab after 3 seconds</span>
                 </label>
               )}
