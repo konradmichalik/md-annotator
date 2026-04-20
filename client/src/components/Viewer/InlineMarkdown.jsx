@@ -9,6 +9,8 @@ const SAFE_LINK_SCHEMES = /^(https?:|mailto:|tel:|#|\/|\.\.?\/|[^:]*$)/i
 // Image sources additionally allow data:image/* (common legitimate inline images).
 const SAFE_IMG_SCHEMES = /^(https?:|data:image\/|#|\/|\.\.?\/|[^:]*$)/i
 
+const HEX_COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
+
 // Strip control chars (e.g. "java\tscript:") before scheme check; they would otherwise
 // let attackers slip past the allowlist in some parsers.
 // eslint-disable-next-line no-control-regex
@@ -77,7 +79,14 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
 
     match = remaining.match(/^`([^`]+)`/)
     if (match) {
-      parts.push(<code key={key++} className="inline-code">{match[1]}</code>)
+      const codeText = match[1]
+      const isHexColor = HEX_COLOR_RE.test(codeText)
+      parts.push(
+        <code key={key++} className="inline-code">
+          {isHexColor && <span className="color-swatch" style={{ backgroundColor: codeText }} aria-hidden="true" />}
+          {codeText}
+        </code>
+      )
       remaining = remaining.slice(match[0].length)
       continue
     }
