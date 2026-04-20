@@ -25,6 +25,7 @@ export function QuickLabelPicker({ anchorEl, onSelect, onClose }) {
 
   useEffect(() => {
     const handleMouseDown = (e) => {
+      if (e.detail >= 2) { return }
       if (pickerRef.current && !pickerRef.current.contains(e.target)) {
         onClose()
       }
