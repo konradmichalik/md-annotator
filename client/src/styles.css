@@ -1528,50 +1528,6 @@ body {
   outline-offset: 1px;
 }
 
-/* === Layout Toggle (Wide/Focus) === */
-.layout-toggle {
-  display: flex;
-  align-items: center;
-  gap: 1px;
-  padding: 2px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg-secondary);
-}
-
-.layout-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 6px;
-  border: none;
-  border-radius: calc(var(--radius-sm) - 2px);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.layout-toggle-btn:hover {
-  color: var(--text-primary);
-  background: var(--bg-hover);
-}
-
-.layout-toggle-btn.active {
-  color: var(--primary);
-  background: var(--bg-card);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
-}
-
-.app-main.layout-wide .viewer-article {
-  max-width: none;
-}
-
-.app-main.layout-wide .resize-handle,
-.app-main.layout-focus .resize-handle {
-  display: none;
-}
-
 /* === Viewer Wrapper (positions view toggle) === */
 .viewer-wrapper {
   position: relative;

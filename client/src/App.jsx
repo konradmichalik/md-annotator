@@ -63,11 +63,9 @@ export default function App() {
   const [serverConfig, setServerConfig] = useState({})
   const [pinpointMode, setPinpointMode] = useState(() => settings.defaultMode === 'pinpoint')
   const [viewMode, setViewMode] = useState('preview') // 'preview' | 'source'
-  const [viewLayout, setViewLayout] = useState(() => getItem('md-annotator-view-layout') || 'normal')
   const [shiftHeld, setShiftHeld] = useState(false)
   const viewerRef = useRef(null)
   const prevLastActionRef = useRef(null)
-  const prevPanelStateRef = useRef(null)
   const toastTimerRef = useRef(null)
   const notesShownRef = useRef(false)
   const errorTimerRef = useRef(null)
@@ -199,10 +197,6 @@ export default function App() {
     setItem('md-annotator-toc-collapsed', tocCollapsed)
   }, [tocCollapsed])
 
-  useEffect(() => {
-    setItem('md-annotator-view-layout', viewLayout)
-  }, [viewLayout])
-
   // Hold Shift to temporarily toggle pinpoint mode
   // (Alt is reserved for insertion mode)
   useEffect(() => {
@@ -230,39 +224,13 @@ export default function App() {
 
   const effectivePinpointMode = shiftHeld ? !pinpointMode : pinpointMode
 
-  const handleSetViewLayout = useCallback((layout) => {
-    if (layout === 'normal') {
-      if (prevPanelStateRef.current) {
-        setTocCollapsed(prevPanelStateRef.current.tocCollapsed)
-        setSidebarCollapsed(prevPanelStateRef.current.sidebarCollapsed)
-        prevPanelStateRef.current = null
-      }
-      setViewLayout('normal')
-    } else {
-      if (viewLayout === 'normal') {
-        prevPanelStateRef.current = { tocCollapsed, sidebarCollapsed }
-      }
-      setTocCollapsed(true)
-      setSidebarCollapsed(true)
-      setViewLayout(layout)
-    }
-  }, [viewLayout, tocCollapsed, sidebarCollapsed])
-
   const toggleToc = useCallback(() => {
-    if (viewLayout !== 'normal') {
-      prevPanelStateRef.current = null
-      setViewLayout('normal')
-    }
     setTocCollapsed(prev => !prev)
-  }, [viewLayout])
+  }, [])
 
   const toggleSidebar = useCallback(() => {
-    if (viewLayout !== 'normal') {
-      prevPanelStateRef.current = null
-      setViewLayout('normal')
-    }
     setSidebarCollapsed(prev => !prev)
-  }, [viewLayout])
+  }, [])
 
   const loadFiles = useCallback(async () => {
     try {
@@ -388,12 +356,8 @@ export default function App() {
 
   const handleAddAnnotation = useCallback((ann) => {
     annDispatch({ type: 'ADD', annotation: ann })
-    if (viewLayout !== 'normal') {
-      prevPanelStateRef.current = null
-      setViewLayout('normal')
-    }
     setSidebarCollapsed(false)
-  }, [annDispatch, viewLayout])
+  }, [annDispatch])
 
   const handleAddGlobalComment = useCallback(() => {
     const ann = {
@@ -410,12 +374,8 @@ export default function App() {
       endMeta: null
     }
     annDispatch({ type: 'ADD', annotation: ann })
-    if (viewLayout !== 'normal') {
-      prevPanelStateRef.current = null
-      setViewLayout('normal')
-    }
     setSidebarCollapsed(false)
-  }, [annDispatch, viewLayout])
+  }, [annDispatch])
 
   const handleEditGlobalComment = useCallback((id, text) => {
     annDispatch({ type: 'EDIT', id, annotationType: 'COMMENT', text })
@@ -833,31 +793,6 @@ export default function App() {
           <span className="app-filepath">{filePath}</span>
         </div>
         <div className="header-right">
-          <div className="layout-toggle">
-            <button
-              type="button"
-              className={`layout-toggle-btn${viewLayout === 'wide' ? ' active' : ''}`}
-              onClick={() => handleSetViewLayout(viewLayout === 'wide' ? 'normal' : 'wide')}
-              title="Wide mode: hide panels, full width"
-              aria-label="Wide mode"
-            >
-              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M18 8h4m-4 8h4M2 8h4M2 16h4M8 4h8v16H8z" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              className={`layout-toggle-btn${viewLayout === 'focus' ? ' active' : ''}`}
-              onClick={() => handleSetViewLayout(viewLayout === 'focus' ? 'normal' : 'focus')}
-              title="Focus mode: hide panels, centered content"
-              aria-label="Focus mode"
-            >
-              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <circle cx="12" cy="12" r="8" />
-                <path strokeLinecap="round" d="M12 8v8M8 12h8" />
-              </svg>
-            </button>
-          </div>
           <div className={`mode-toggle${shiftHeld ? ' mode-toggle--temp' : ''}`}>
             <button
               className={`mode-toggle-btn${!effectivePinpointMode ? ' active' : ''}`}
@@ -929,7 +864,7 @@ export default function App() {
         onSelectFile={handleSelectFile}
       />
 
-      <main className={`app-main${viewLayout !== 'normal' ? ` layout-${viewLayout}` : ''}`}>
+      <main className="app-main">
         <TableOfContents
           blocks={blocks}
           annotations={annotations}
