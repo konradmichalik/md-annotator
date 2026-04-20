@@ -77,6 +77,7 @@ export function CommentPopover({
     if (mode !== 'popover') {return}
 
     const handleMouseDown = (e) => {
+      if (e.detail >= 2) { return }
       if (popoverRef.current && !popoverRef.current.contains(e.target)) {
         onClose()
       }
