@@ -318,6 +318,14 @@ const decision = await server.waitForDecision()
 | Linked nav      | Implemented |
 | Path security   | Implemented |
 
+## Color Palette
+
+The primary brand color is `#5e81ac` (Nord blue), with `#88c0d0` as a secondary accent. Error states use `#bf616a` and success indicators use `#a3be8c`.
+
+Short-hand hex codes like `#333`, `#fff`, and `#f06` are also supported. Colors with alpha channel work too: `#5e81ac80` renders at 50% opacity.
+
+These should NOT show swatches: `#header`, `#section-1`, `background-color: #5e81ac`.
+
 ## Notes
 
 This paragraph contains some text you can **annotate for testing**. Try selecting different portions and marking them as deletions or adding comments.
