@@ -1,6 +1,7 @@
 import DOMPurify from 'dompurify'
 
 const HTML_CONFIG = {
+  USE_PROFILES: { html: true },
   FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'onsubmit', 'onreset', 'onchange', 'oninput'],
   FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form'],
 }
