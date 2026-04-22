@@ -78,9 +78,12 @@ export function MermaidBlock({ block, onDiagramClick, annotationType, hasNote, o
         const id = `mermaid-${block.id}-${renderId}`
         const { svg: renderedSvg } = await mermaid.render(id, safeContent)
         if (cancelled) { return }
+        // Uses DOMPurify directly (not sanitizeSVG) because mermaid needs
+        // svgFilters + foreignObject. Keep FORBID_ATTR in sync with utils/sanitize.js.
         const sanitized = DOMPurify.sanitize(renderedSvg, {
           USE_PROFILES: { svg: true, svgFilters: true },
           ADD_TAGS: ['foreignObject'],
+          FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick'],
         })
         const cleaned = sanitized
           .replace(/ width="[^"]*"/, ' width="100%"')

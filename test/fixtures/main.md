@@ -366,6 +366,16 @@ Code spans preserve punctuation: `"not smart"` and `don't---convert`.
 | 4 | Table popout | In Progress | Charlie | Low | 4 | 1d | — | New feature |
 | 5 | Copy table | In Progress | Charlie | Low | 4 | 0.5d | — | MD + CSV export |
 
+## Security Test
+
+This section tests that dangerous HTML is sanitized:
+
+<div onclick="alert('xss')">Click me (onclick should be stripped)</div>
+
+<img src="x" onerror="alert('xss')" alt="XSS test">
+
+<p style="background: url('javascript:alert(1)')">Styled paragraph (style should be stripped)</p>
+
 ## Notes
 
 This paragraph contains some text you can **annotate for testing**. Try selecting different portions and marking them as deletions or adding comments.
