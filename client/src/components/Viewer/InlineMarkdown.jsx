@@ -256,7 +256,8 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
 
     // Plain text fallback: extract until next special char, then post-process
     // for autolinks (URLs, emails) and smart punctuation.
-    const nextSpecial = remaining.slice(1).search(/[*`![<~:]/)
+    // Break on markdown special chars or ':' only when NOT followed by '//' (URL scheme)
+    const nextSpecial = remaining.slice(1).search(/[*`![<~]|:(?!\/{2})/)
     const plainText = nextSpecial === -1 ? remaining : remaining.slice(0, nextSpecial + 1)
     for (const seg of splitAutolinks(plainText)) {
       if (seg.type === 'url') {
