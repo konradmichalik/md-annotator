@@ -1,8 +1,8 @@
 import { useRef, useState, useEffect } from 'react'
-import DOMPurify from 'dompurify'
+import { sanitizeSVG } from '../utils/sanitize.js'
 
 function normalizeSvg(raw) {
-  let svg = DOMPurify.sanitize(raw, { USE_PROFILES: { svg: true } })
+  let svg = sanitizeSVG(raw)
 
   // Synthesize viewBox from width/height if missing (e.g. ditaa SVGs)
   if (!(/viewBox\s*=/.test(svg))) {

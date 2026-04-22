@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react'
-import DOMPurify from 'dompurify'
+import { sanitizeHTML } from '../../utils/sanitize.js'
 import { InlineMarkdown } from './InlineMarkdown.jsx'
 import { TableToolbar } from './TableToolbar.jsx'
 
@@ -67,7 +67,7 @@ function HtmlBlock({ block, noteClass }) {
   const ref = useRef(null)
   useEffect(() => {
     if (ref.current) {
-      ref.current.innerHTML = DOMPurify.sanitize(block.content)
+      ref.current.innerHTML = sanitizeHTML(block.content)
     }
   }, [block.content])
   return <div ref={ref} className={`block-html${noteClass}`} data-block-id={block.id} />

@@ -1,4 +1,4 @@
-import DOMPurify from 'dompurify'
+import { sanitizeHTML } from '../../utils/sanitize.js'
 
 const EMOJI_MAP = {
   'wave': '👋', 'rocket': '🚀', 'warning': '⚠️', 'check': '✅',
@@ -232,7 +232,7 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
       const tagName = match[1].toLowerCase()
       // Self-closing or void tags — render directly
       if (htmlTag.endsWith('/>') || ['img', 'br', 'hr', 'input', 'wbr'].includes(tagName)) {
-        parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlTag) }} />)
+        parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: sanitizeHTML(htmlTag) }} />)
         remaining = remaining.slice(htmlTag.length)
         continue
       }
@@ -240,7 +240,7 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
       const closeIdx = remaining.indexOf(`</${tagName}>`, htmlTag.length)
       if (closeIdx !== -1) {
         const fullTag = remaining.slice(0, closeIdx + tagName.length + 3)
-        parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(fullTag) }} />)
+        parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: sanitizeHTML(fullTag) }} />)
         remaining = remaining.slice(fullTag.length)
         continue
       }
