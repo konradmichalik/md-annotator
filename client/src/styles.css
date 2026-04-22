@@ -788,6 +788,17 @@ body {
   opacity: 0.85;
 }
 
+/* Autolinks */
+.autolink {
+  color: var(--primary);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.autolink:hover {
+  text-decoration: underline;
+}
+
 .inline-image {
   max-width: 100%;
   height: auto;
