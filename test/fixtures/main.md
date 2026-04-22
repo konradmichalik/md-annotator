@@ -326,6 +326,36 @@ Short-hand hex codes like `#333`, `#fff`, and `#f06` are also supported. Colors 
 
 These should NOT show swatches: `#header`, `#section-1`, `background-color: #5e81ac`.
 
+## Inline Extras Test
+
+### Autolinks
+
+Visit https://example.com for more info. Multiple URLs: https://github.com/user/repo and https://docs.example.com/path?q=1&v=2.
+
+Contact support@example.com or admin@test.org for help.
+
+A URL at end of sentence: https://example.com.
+
+### Emoji Shortcodes
+
+:rocket: Launch day! :tada: :sparkles:
+
+:warning: Be careful with :fire: hot code paths.
+
+:thumbsup: Approved :check: — :thumbsdown: Rejected :x:
+
+Code span with colon: `:not-an-emoji:` should stay literal.
+
+### Smart Punctuation
+
+"Smart quotes" and 'single quotes' work automatically.
+
+Use an em dash---like this---for emphasis. Or an en dash for ranges: 10--20.
+
+Trailing off... with an ellipsis.
+
+Code spans preserve punctuation: `"not smart"` and `don't---convert`.
+
 ## Notes
 
 This paragraph contains some text you can **annotate for testing**. Try selecting different portions and marking them as deletions or adding comments.

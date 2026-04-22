@@ -1,5 +1,55 @@
 import DOMPurify from 'dompurify'
 
+const EMOJI_MAP = {
+  'wave': '👋', 'rocket': '🚀', 'warning': '⚠️', 'check': '✅',
+  'x': '❌', 'star': '⭐', 'fire': '🔥', 'bug': '🐛',
+  'sparkles': '✨', 'tada': '🎉', 'thumbsup': '👍', 'thumbsdown': '👎',
+  'heart': '❤️', 'eyes': '👀', 'thinking': '🤔', 'clap': '👏',
+  'pray': '🙏', 'muscle': '💪', 'bulb': '💡', 'memo': '📝',
+  'link': '🔗', 'lock': '🔒', 'unlock': '🔓', 'key': '🔑',
+  'hammer': '🔨', 'wrench': '🔧', 'gear': '⚙️', 'shield': '🛡️',
+  'zap': '⚡', 'package': '📦',
+  '+1': '👍', '-1': '👎',
+  'white_check_mark': '✅', 'heavy_check_mark': '✔️',
+  'arrow_right': '→', 'arrow_left': '←', 'arrow_up': '↑', 'arrow_down': '↓',
+  'point_right': '👉', 'point_left': '👈',
+  'construction': '🚧', 'rotating_light': '🚨',
+  'clipboard': '📋', 'pushpin': '📌', 'bookmark': '🔖',
+  'calendar': '📅', 'clock': '🕐', 'hourglass': '⏳',
+  'chart_with_upwards_trend': '📈', 'chart_with_downwards_trend': '📉',
+  'green_circle': '🟢', 'red_circle': '🔴', 'yellow_circle': '🟡', 'blue_circle': '🔵',
+  'question': '❓', 'exclamation': '❗', 'info': 'ℹ️',
+}
+
+const AUTOLINK_RE = /(https?:\/\/[^\s<>[\]()]*[^\s<>[\]().,;:!?'")\]}>]|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g
+
+function splitAutolinks(text) {
+  const parts = []
+  let lastIndex = 0
+  AUTOLINK_RE.lastIndex = 0
+  let m
+  while ((m = AUTOLINK_RE.exec(text)) !== null) {
+    if (m.index > lastIndex) {
+      parts.push({ type: 'text', value: text.slice(lastIndex, m.index) })
+    }
+    parts.push({ type: m[1].includes('@') ? 'email' : 'url', value: m[1] })
+    lastIndex = AUTOLINK_RE.lastIndex
+  }
+  if (lastIndex < text.length) {
+    parts.push({ type: 'text', value: text.slice(lastIndex) })
+  }
+  return parts
+}
+
+function smartPunctuation(text) {
+  return text
+    .replace(/---/g, '\u2014')
+    .replace(/--/g, '\u2013')
+    .replace(/\.\.\./g, '\u2026')
+    .replace(/"([^"]*?)"/g, '\u201C$1\u201D')
+    .replace(/'([^']*?)'/g, '\u2018$1\u2019')
+}
+
 // Scheme allowlist for <a href>. The final `[^:]*$` alternative matches any string
 // that contains no colon at all (bare filenames, query-only, etc.), since those
 // can't encode a dangerous scheme. Anything else (javascript:, data:, vbscript:,
@@ -196,12 +246,30 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
       }
     }
 
-    const nextSpecial = remaining.slice(1).search(/[*`![<~]/)
+    // Emoji shortcodes: :name: → emoji
+    match = remaining.match(/^:([a-z0-9_+-]+):/)
+    if (match && EMOJI_MAP[match[1]]) {
+      parts.push(<span key={key++} className="emoji" role="img" aria-label={match[1]}>{EMOJI_MAP[match[1]]}</span>)
+      remaining = remaining.slice(match[0].length)
+      continue
+    }
+
+    // Plain text fallback: extract until next special char, then post-process
+    // for autolinks (URLs, emails) and smart punctuation.
+    const nextSpecial = remaining.slice(1).search(/[*`![<~:]/)
+    const plainText = nextSpecial === -1 ? remaining : remaining.slice(0, nextSpecial + 1)
+    for (const seg of splitAutolinks(plainText)) {
+      if (seg.type === 'url') {
+        parts.push(<a key={key++} href={seg.value} target="_blank" rel="noopener noreferrer" className="autolink">{seg.value}</a>)
+      } else if (seg.type === 'email') {
+        parts.push(<a key={key++} href={`mailto:${seg.value}`} className="autolink">{seg.value}</a>)
+      } else {
+        parts.push(smartPunctuation(seg.value))
+      }
+    }
     if (nextSpecial === -1) {
-      parts.push(remaining)
       break
     } else {
-      parts.push(remaining.slice(0, nextSpecial + 1))
       remaining = remaining.slice(nextSpecial + 1)
     }
   }
