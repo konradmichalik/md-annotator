@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react'
 import DOMPurify from 'dompurify'
 import { InlineMarkdown } from './InlineMarkdown.jsx'
+import { TableToolbar } from './TableToolbar.jsx'
 
 export function slugify(text) {
   return text
@@ -131,6 +132,7 @@ export function BlockRenderer({ block, onImageClick, annotatedImages, hasNote, o
       return (
         <div className={`block-table-wrapper${noteClass}`} data-block-id={block.id}>
           {hasNote && <NoteBorder blockId={block.id} onClick={onNoteClick} />}
+          <TableToolbar headers={headers} rows={rows} />
           <table className="block-table">
             <thead>
               <tr>
