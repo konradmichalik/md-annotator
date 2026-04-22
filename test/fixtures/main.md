@@ -356,6 +356,16 @@ Trailing off... with an ellipsis.
 
 Code spans preserve punctuation: `"not smart"` and `don't---convert`.
 
+## Wide Table Test
+
+| ID | Feature | Status | Owner | Priority | Sprint | Estimate | Actual | Notes |
+|----|---------|--------|-------|----------|--------|----------|--------|-------|
+| 1 | Multi-file CLI | Done | Alice | High | 1 | 3d | 2d | Shipped in v0.8 |
+| 2 | Tab bar | Done | Bob | High | 1 | 2d | 3d | Required redesign |
+| 3 | Linked nav | Done | Alice | Medium | 2 | 1d | 1d | Uses React Router |
+| 4 | Table popout | In Progress | Charlie | Low | 4 | 1d | — | New feature |
+| 5 | Copy table | In Progress | Charlie | Low | 4 | 0.5d | — | MD + CSV export |
+
 ## Notes
 
 This paragraph contains some text you can **annotate for testing**. Try selecting different portions and marking them as deletions or adding comments.
