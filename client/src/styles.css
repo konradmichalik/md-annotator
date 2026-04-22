@@ -735,11 +735,40 @@ body {
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
   line-height: 1;
+  position: relative;
 }
 
 .table-toolbar-btn:hover {
   color: var(--text);
   border-color: var(--border);
+}
+
+.table-toolbar-btn--annotate:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* Tooltip for toolbar buttons */
+.table-toolbar-btn::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.2rem 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--bg-card);
+  background: var(--text);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.table-toolbar-btn:hover::after {
+  opacity: 1;
 }
 
 .table-toolbar-btn svg {

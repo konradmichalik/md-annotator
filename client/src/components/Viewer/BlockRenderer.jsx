@@ -73,7 +73,7 @@ function HtmlBlock({ block, noteClass }) {
   return <div ref={ref} className={`block-html${noteClass}`} data-block-id={block.id} />
 }
 
-export function BlockRenderer({ block, onImageClick, annotatedImages, hasNote, onNoteClick }) {
+export function BlockRenderer({ block, onImageClick, onTableAnnotate, annotatedImages, hasNote, onNoteClick }) {
   const noteClass = hasNote ? ' block-has-note' : ''
 
   switch (block.type) {
@@ -132,7 +132,7 @@ export function BlockRenderer({ block, onImageClick, annotatedImages, hasNote, o
       return (
         <div className={`block-table-wrapper${noteClass}`} data-block-id={block.id}>
           {hasNote && <NoteBorder blockId={block.id} onClick={onNoteClick} />}
-          <TableToolbar headers={headers} rows={rows} />
+          <TableToolbar headers={headers} rows={rows} onAnnotate={onTableAnnotate ? (e) => onTableAnnotate({ blockId: block.id, content: block.content, element: e.currentTarget.closest('.block-table-wrapper') }) : undefined} />
           <table className="block-table">
             <thead>
               <tr>

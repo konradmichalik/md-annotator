@@ -20,7 +20,7 @@ function tableToCSV(headers, rows) {
   return lines.join('\n')
 }
 
-export function TableToolbar({ headers, rows }) {
+export function TableToolbar({ headers, rows, onAnnotate }) {
   const [popoutOpen, setPopoutOpen] = useState(false)
   const [copied, setCopied] = useState(null)
 
@@ -47,7 +47,14 @@ export function TableToolbar({ headers, rows }) {
 
   return (
     <>
-      <div className="table-toolbar">
+      <div className="table-toolbar" role="toolbar" aria-label="Table actions">
+        {onAnnotate && (
+          <button type="button" className="table-toolbar-btn table-toolbar-btn--annotate" onClick={onAnnotate} title="Annotate table" aria-label="Annotate entire table">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M11.93 1.525a1.86 1.86 0 012.631 2.631l-7.964 7.964-3.496.874.874-3.496 7.955-7.973zm-1.06 2.12L4.575 9.94l-.467 1.869 1.869-.467 6.296-6.296-1.404-1.403z" />
+            </svg>
+          </button>
+        )}
         <button type="button" className="table-toolbar-btn" onClick={() => setPopoutOpen(true)} title="Open in overlay" aria-label="Open table in overlay">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <path d="M2 4.25A2.25 2.25 0 014.25 2h7.5A2.25 2.25 0 0114 4.25v7.5A2.25 2.25 0 0111.75 14h-7.5A2.25 2.25 0 012 11.75v-7.5zM4.25 3.5a.75.75 0 00-.75.75v7.5c0 .414.336.75.75.75h7.5a.75.75 0 00.75-.75v-7.5a.75.75 0 00-.75-.75h-7.5z" />

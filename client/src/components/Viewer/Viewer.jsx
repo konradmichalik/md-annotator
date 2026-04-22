@@ -533,13 +533,13 @@ export const Viewer = forwardRef(function Viewer({
     }
   }, [onSelectAnnotation, pendingSourceRef, highlighterRef, setToolbarState, setRequestedToolbarStep])
 
-  const handleDiagramClick = useCallback(({ blockId, element, content }) => {
+  const makeElementHandler = useCallback((targetType) => ({ blockId, content, element }) => {
     if (pendingSourceRef.current && highlighterRef.current) {
       highlighterRef.current.remove(pendingSourceRef.current.id)
       pendingSourceRef.current = null
     }
     const existing = annotationsRef.current.find(
-      a => a.targetType === 'diagram' && a.blockId === blockId
+      a => a.targetType === targetType && a.blockId === blockId
     )
     if (existing) {
       onSelectAnnotation(existing.id)
@@ -549,11 +549,14 @@ export const Viewer = forwardRef(function Viewer({
       setToolbarState({
         element,
         elementMode: true,
-        elementData: { targetType: 'diagram', blockId, originalText: content }
+        elementData: { targetType, blockId, originalText: content }
       })
       setRequestedToolbarStep(null)
     }
   }, [onSelectAnnotation, pendingSourceRef, highlighterRef, setToolbarState, setRequestedToolbarStep])
+
+  const handleDiagramClick = makeElementHandler('diagram')
+  const handleTableAnnotate = makeElementHandler('table')
 
   const handleLinkClick = useCallback((e) => {
     const anchor = e.target.closest('a[href]')
@@ -754,6 +757,7 @@ export const Viewer = forwardRef(function Viewer({
               key={block.id}
               block={block}
               onImageClick={handleImageClick}
+              onTableAnnotate={handleTableAnnotate}
               annotatedImages={annotatedImages}
               hasNote={noteBlockIds.has(block.id)}
               onNoteClick={handleNoteClick}
