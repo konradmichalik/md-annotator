@@ -5,6 +5,7 @@ import { MermaidBlock } from '../MermaidBlock.jsx'
 import { PlantUMLBlock } from '../PlantUMLBlock.jsx'
 import { KrokiBlock, KROKI_LANGUAGES } from '../KrokiBlock.jsx'
 import { PinpointOverlay } from '../PinpointOverlay.jsx'
+import { BlockHoverHint } from '../BlockHoverHint.jsx'
 import { BlockRenderer } from './BlockRenderer.jsx'
 import { CodeBlock } from './CodeBlock.jsx'
 import { useHighlighter } from '../../hooks/useHighlighter.js'
@@ -12,6 +13,10 @@ import { useDocumentSearch } from '../../hooks/useDocumentSearch.js'
 import { highlightMatches, setActiveMatch, clearSearchHighlights } from '../../utils/searchHighlight.js'
 import { SearchBar } from '../SearchBar.jsx'
 import { getQuickLabels, formatLabelText } from '../../utils/quickLabels.js'
+import { getItem, setItem } from '../../utils/storage.js'
+
+const PINPOINT_HINT_LEARNED_KEY = 'md-annotator-pinpoint-hint-learned'
+const HINT_SKIP_SELECTOR = 'a[href], button, .code-copy-btn, .diagram-controls, .annotation-highlight, .annotation-toolbar, .comment-popover'
 
 const MD_LINK_PATTERN = /\.(?:md|markdown|mdown|mkd)(?:[#?]|$)/i
 
@@ -78,6 +83,8 @@ export const Viewer = forwardRef(function Viewer({
   crossFileSearch,
 }, ref) {
   const [pinpointTarget, setPinpointTarget] = useState(null)
+  const [hoverHintTarget, setHoverHintTarget] = useState(null)
+  const hintLearnedRef = useRef(getItem(PINPOINT_HINT_LEARNED_KEY) === '1')
 
   const onBeforeHighlight = useCallback((currentState) => {
     if (currentState?.insertionMode) {
@@ -665,6 +672,11 @@ export const Viewer = forwardRef(function Viewer({
           originalText: blockText.length > 200 ? blockText.slice(0, 200) + '...' : blockText
         }
       })
+      if (!hintLearnedRef.current) {
+        hintLearnedRef.current = true
+        setItem(PINPOINT_HINT_LEARNED_KEY, '1')
+        setHoverHintTarget(null)
+      }
     }
     setRequestedToolbarStep(null)
     setPinpointTarget({ element: blockEl, label: getBlockLabel(blockEl) })
@@ -707,12 +719,33 @@ export const Viewer = forwardRef(function Viewer({
     if (!toolbarState) { setPinpointTarget(null) }
   }, [toolbarState])
 
+  // --- Block hover hint (select mode discoverability) ---
+  const handleBlockHover = useCallback((e) => {
+    if (pinpointMode || hintLearnedRef.current) { return }
+    if (toolbarState) { setHoverHintTarget(null); return }
+    const selection = window.getSelection()
+    if (selection && !selection.isCollapsed) { setHoverHintTarget(null); return }
+    if (e.target.closest(HINT_SKIP_SELECTOR)) { setHoverHintTarget(null); return }
+
+    let blockEl = e.target
+    while (blockEl && !blockEl.dataset?.blockId) { blockEl = blockEl.parentElement }
+    if (!blockEl || !containerRef.current?.contains(blockEl)) { setHoverHintTarget(null); return }
+
+    setHoverHintTarget(prev => (prev?.element === blockEl ? prev : { element: blockEl }))
+  }, [pinpointMode, toolbarState, containerRef])
+
+  const handleBlockHoverLeave = useCallback(() => {
+    setHoverHintTarget(null)
+  }, [])
+
   return (
     <div className="viewer-container">
       <article
         ref={containerRef}
         className={`viewer-article${pinpointMode ? ' pinpoint-mode' : ''}`}
         onClick={pinpointMode ? handlePinpointClick : handleLinkClick}
+        onMouseMove={handleBlockHover}
+        onMouseLeave={handleBlockHoverLeave}
       >
         {blocks.map(block =>
           block.type === 'code' && block.language === 'mermaid' ? (
@@ -778,6 +811,7 @@ export const Viewer = forwardRef(function Viewer({
           onOpenLink={toolbarState?.linkIsMd ? onOpenFile : null}
         />
         {pinpointMode && <PinpointOverlay target={pinpointTarget} />}
+        {!pinpointMode && <BlockHoverHint target={hoverHintTarget} />}
       </article>
       {(crossFileSearch ? crossFileSearch.isOpen : search.isOpen) && (
         <SearchBar
