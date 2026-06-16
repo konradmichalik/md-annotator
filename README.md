@@ -49,6 +49,7 @@
 
 - [**Claude Code**](#-claude-code-plugin) -- Plugin with `/annotate:md` slash command
 - [**OpenCode**](#-opencode-plugin) -- Plugin with `annotate_markdown` tool and `/annotate:md` command
+- [**Mistral Vibe**](#-mistral-vibe-skill) -- Skill with `/annotate-md` slash command
 - [**Standalone CLI**](#-standalone-cli) -- Use directly from the terminal without an AI agent
 
 ## 🔌 Claude Code Plugin
@@ -120,6 +121,34 @@ The agent can also use the `annotate_markdown` tool directly:
 ```
 annotate_markdown({ filePath: "/path/to/file.md" })
 annotate_markdown({ filePaths: ["/path/to/a.md", "/path/to/b.md"] })
+```
+
+## 🔶 Mistral Vibe Skill
+
+*md-annotator* is also available as a [Mistral Vibe](https://github.com/mistralai/mistral-vibe) skill. It drives the standalone CLI, so the CLI must be installed first.
+
+### 📦 Installation & Update
+
+```bash
+curl -fsSL https://konradmichalik.github.io/md-annotator/install.sh | bash
+```
+
+Then make the skill available to Vibe by copying (or symlinking) it into a skill directory Vibe discovers — globally in `~/.vibe/skills/` or per-project in `.vibe/skills/`:
+
+```bash
+cp -r apps/vibe/skills/annotate-md ~/.vibe/skills/annotate-md
+```
+
+> [!NOTE]
+> Vibe discovers skills from `~/.vibe/skills/`, `.vibe/skills/`, and any `skill_paths` configured in `config.toml`. See the [Mistral Vibe documentation](https://github.com/mistralai/mistral-vibe#skills-system) for more details.
+
+### 🚀 Usage
+
+Use the `/annotate-md` command in a Vibe session:
+
+```
+/annotate-md README.md
+/annotate-md docs/api.md docs/guide.md
 ```
 
 ## 💻 Standalone CLI
