@@ -14,7 +14,7 @@ Usage:
 
 Options:
   --help                       Show this help message
-  --origin <name>              Set caller origin (cli, claude-code, opencode)
+  --origin <name>              Set caller origin (cli, claude-code, opencode, vibe)
   --feedback-notes <json|path> AI notes to display as read-only annotations
 
 Environment:
@@ -53,7 +53,7 @@ function parseArgs(argv) {
     return { help: true }
   }
 
-  const validOrigins = ['cli', 'claude-code', 'opencode']
+  const validOrigins = ['cli', 'claude-code', 'opencode', 'vibe']
   let origin = 'cli'
   let feedbackNotes = null
   const filePaths = []
@@ -61,7 +61,7 @@ function parseArgs(argv) {
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--origin') {
       if (!args[i + 1] || args[i + 1].startsWith('-')) {
-        return { error: '--origin requires a value (cli, claude-code, opencode)' }
+        return { error: '--origin requires a value (cli, claude-code, opencode, vibe)' }
       }
       origin = args[i + 1]
       i++

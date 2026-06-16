@@ -44,7 +44,7 @@ function resolveNotesForFile(feedbackNotes, fileIndex, content) {
  * @param {Object} options - Server configuration
  * @param {string} [options.filePath] - Absolute path to markdown file (single-file compat)
  * @param {string[]} [options.filePaths] - Array of absolute paths to markdown files
- * @param {string} [options.origin='cli'] - Origin identifier ('cli' | 'claude-code' | 'opencode')
+ * @param {string} [options.origin='cli'] - Origin identifier ('cli' | 'claude-code' | 'opencode' | 'vibe')
  * @param {string} [options.htmlContent] - Embedded HTML content (for plugin usage)
  * @param {Function} [options.onReady] - Callback when server is ready: (url, port) => void
  * @returns {Promise<Object>} Server control object

@@ -43,6 +43,7 @@ function FileStats({ content }) {
 const ORIGIN_LABELS = {
   'claude-code': 'Claude Code',
   'opencode': 'OpenCode',
+  'vibe': 'Mistral Vibe',
 }
 
 export default function App() {
