@@ -21,6 +21,7 @@ import { useSettings } from './hooks/useSettings.js'
 import { useCrossFileSearch } from './hooks/useCrossFileSearch.js'
 import { SettingsModal } from './components/SettingsModal.jsx'
 import { getItem, setItem } from './utils/storage.js'
+import 'katex/dist/katex.min.css'
 import './styles.css'
 
 function getInitialSidebarCollapsed() {
@@ -97,11 +98,11 @@ export default function App() {
 
   // Derived state from active file
   const activeFile = files[activeFileIndex] || null
-  const activeAnnState = activeFile?.annState || initialAnnotationState
-  const { annotations } = activeAnnState
   // Plain-text files (YAML, JSON, logs, ...) have no meaningful rendered view
   const isPlainTextFile = activeFile?.isPlainText || false
   const effectiveViewMode = isPlainTextFile ? 'source' : viewMode
+  const activeAnnState = activeFile?.annState || initialAnnotationState
+  const { annotations } = activeAnnState
   const blocks = activeFile?.blocks || []
   const filePath = activeFile?.path || ''
   const totalAnnotationCount = files.reduce((sum, f) =>
@@ -360,13 +361,13 @@ export default function App() {
     return () => clearTimeout(timer)
   }, [annotations, submitted, activeFileIndex, activeFile])
 
+  // Adding an annotation leaves the panel in whatever state the user chose —
+  // reopening it here would pull focus away from what they are reading.
   const handleAddAnnotation = useCallback((ann) => {
     annDispatch({ type: 'ADD', annotation: ann })
   }, [annDispatch])
 
   const handleAddGlobalComment = useCallback(() => {
-  // Adding an annotation leaves the panel in whatever state the user chose —
-  // reopening it here would pull focus away from what they are reading.
     const ann = {
       id: crypto.randomUUID(),
       blockId: '',

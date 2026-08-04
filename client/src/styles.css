@@ -1465,6 +1465,39 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* === Math === */
+.block-math-wrapper {
+  position: relative;
+  margin: 1rem 0;
+}
+
+.block-math {
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  text-align: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.block-math:hover { background: var(--bg-secondary); border-color: var(--border); }
+
+.block-math:focus-visible {
+  outline: 2px solid currentcolor;
+  outline-offset: 2px;
+}
+
+.block-math.annotated-comment { background: rgb(250 204 21 / 18%); }
+.block-math.annotated-deletion { background: rgb(248 113 113 / 18%); }
+
+.inline-math { white-space: nowrap; }
+
+.block-math-error,
+.inline-math-error {
+  color: var(--text-muted);
+  text-decoration: underline dotted;
+}
+
 .comment-offscreen-pill {
   position: fixed;
   left: 50%;

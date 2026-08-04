@@ -1,3 +1,5 @@
+import { findDisplayMath } from './math.js'
+
 const HTML_BLOCK_TAGS = new Set([
   'address', 'article', 'aside', 'blockquote', 'center', 'dd', 'details',
   'dialog', 'dir', 'div', 'dl', 'dt', 'fieldset', 'figcaption', 'figure',
@@ -99,6 +101,22 @@ export function parseMarkdownToBlocks(markdown, { allowFrontmatter = true } = {}
         order: currentId,
         startLine: currentLineNum
       })
+      continue
+    }
+
+    // Display math: $$…$$ or \[…\]. An unterminated delimiter falls through to
+    // normal parsing so the rest of the document keeps its structure.
+    const displayMath = findDisplayMath(lines, i)
+    if (displayMath) {
+      flush()
+      blocks.push({
+        id: `block-${currentId++}`,
+        type: 'math',
+        content: displayMath.formula,
+        order: currentId,
+        startLine: currentLineNum
+      })
+      i = displayMath.endIndex
       continue
     }
 

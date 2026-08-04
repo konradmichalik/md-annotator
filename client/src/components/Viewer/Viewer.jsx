@@ -7,6 +7,7 @@ import { KrokiBlock, KROKI_LANGUAGES } from '../KrokiBlock.jsx'
 import { PinpointOverlay } from '../PinpointOverlay.jsx'
 import { BlockHoverHint } from '../BlockHoverHint.jsx'
 import { BlockRenderer } from './BlockRenderer.jsx'
+import { MathBlock } from './MathBlock.jsx'
 import { CodeBlock } from './CodeBlock.jsx'
 import { useHighlighter } from '../../hooks/useHighlighter.js'
 import { useDocumentSearch } from '../../hooks/useDocumentSearch.js'
@@ -487,6 +488,12 @@ export const Viewer = forwardRef(function Viewer({
     return map
   }, [annotations])
 
+  const annotatedMathBlocks = useMemo(() => {
+    const map = new Map()
+    annotations.filter(a => a.targetType === 'math').forEach(a => { map.set(a.blockId, a.type) })
+    return map
+  }, [annotations])
+
   const annotatedPinpointBlocks = useMemo(() => {
     const map = new Map()
     annotations.filter(a => a.targetType === 'pinpoint').forEach(a => { map.set(a.blockId, a.type) })
@@ -563,6 +570,7 @@ export const Viewer = forwardRef(function Viewer({
   }, [onSelectAnnotation, pendingSourceRef, highlighterRef, setToolbarState, setRequestedToolbarStep])
 
   const handleDiagramClick = makeElementHandler('diagram')
+  const handleMathClick = makeElementHandler('math')
   const handleTableAnnotate = makeElementHandler('table')
 
   const handleLinkClick = useCallback((e) => {
@@ -622,6 +630,7 @@ export const Viewer = forwardRef(function Viewer({
     if (block.type === 'blockquote') { return 'Blockquote' }
     if (block.type === 'frontmatter') { return 'Frontmatter' }
     if (block.type === 'hr') { return 'Divider' }
+    if (block.type === 'math') { return 'Formula' }
     return 'Paragraph'
   }, [blocks])
 
@@ -748,7 +757,16 @@ export const Viewer = forwardRef(function Viewer({
         onMouseLeave={handleBlockHoverLeave}
       >
         {blocks.map(block =>
-          block.type === 'code' && block.language === 'mermaid' ? (
+          block.type === 'math' ? (
+            <MathBlock
+              key={block.id}
+              block={block}
+              onMathClick={handleMathClick}
+              annotationType={annotatedMathBlocks.get(block.id) || null}
+              hasNote={noteBlockIds.has(block.id)}
+              onNoteClick={handleNoteClick}
+            />
+          ) : block.type === 'code' && block.language === 'mermaid' ? (
             <MermaidBlock
               key={block.id}
               block={block}

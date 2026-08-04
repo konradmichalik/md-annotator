@@ -37,6 +37,19 @@ function formatAnnotation(ann, block, heading) {
     return output + '\n'
   }
 
+  if (ann.targetType === 'math') {
+    const isDeletion = ann.type === 'DELETION'
+    const label = isDeletion ? 'Remove formula' : 'Comment on formula'
+    let output = `${heading} ${label} (Line ${blockStartLine})\n`
+    output += `\`\`\`latex\n${block?.content || ann.originalText}\n\`\`\`\n`
+    if (isDeletion) {
+      output += `> User wants this formula removed from the document.\n`
+    } else {
+      output += `> ${(ann.text ?? '').replace(/\n/g, '\n> ')}\n`
+    }
+    return output + '\n'
+  }
+
   if (ann.targetType === 'pinpoint') {
     const isDeletion = ann.type === 'DELETION'
     const label = isDeletion ? 'Remove block' : 'Comment on block'
