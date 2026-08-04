@@ -27,7 +27,8 @@ Options:
   --feedback-notes <json|path> AI notes to display as read-only annotations
 
 Environment:
-  MD_ANNOTATOR_PORT            Base port (default: 3000)
+  MD_ANNOTATOR_PORT            Port or inclusive range, e.g. 3000 or 3000-3010
+                               (default: an OS-assigned free port)
   MD_ANNOTATOR_BROWSER         Custom browser app name
   MD_ANNOTATOR_TIMEOUT         Heartbeat timeout in ms (default: 30000, range: 5000–300000)
   MD_ANNOTATOR_FEEDBACK_NOTES  JSON string or file path for feedback notes

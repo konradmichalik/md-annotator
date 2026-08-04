@@ -6,7 +6,7 @@
  * review, annotate, or approve the markdown file.
  *
  * Environment variables:
- *   MD_ANNOTATOR_PORT   - Override the server port (default: 3000)
+ *   MD_ANNOTATOR_PORT   - Port or inclusive range, e.g. 3000 or 3000-3010
  *   MD_ANNOTATOR_BROWSER - Custom browser application
  */
 

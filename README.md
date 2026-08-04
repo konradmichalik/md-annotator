@@ -174,7 +174,7 @@ The server starts on an available port (default 3000) and opens your browser aut
 
 | Variable               | Description                                                  |
 |------------------------|--------------------------------------------------------------|
-| `MD_ANNOTATOR_PORT`    | Override the server port (default: 3000)                     |
+| `MD_ANNOTATOR_PORT`    | Port or inclusive range (`3000` or `3000-3010`); the first free port in the range wins |
 | `MD_ANNOTATOR_BROWSER` | Custom browser application                                   |
 | `PLANTUML_SERVER_URL`  | PlantUML render server (default: `https://www.plantuml.com/plantuml`) |
 | `KROKI_SERVER_URL`     | Kroki render server (default: `https://kroki.io`)                    |
