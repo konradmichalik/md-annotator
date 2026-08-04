@@ -357,10 +357,11 @@ export default function App() {
 
   const handleAddAnnotation = useCallback((ann) => {
     annDispatch({ type: 'ADD', annotation: ann })
-    setSidebarCollapsed(false)
   }, [annDispatch])
 
   const handleAddGlobalComment = useCallback(() => {
+  // Adding an annotation leaves the panel in whatever state the user chose —
+  // reopening it here would pull focus away from what they are reading.
     const ann = {
       id: crypto.randomUUID(),
       blockId: '',
