@@ -53,6 +53,7 @@ export default function App() {
   const [status, setStatus] = useState('Loading...')
   const [submitted, setSubmitted] = useState(false)
   const [decision, setDecision] = useState(null) // 'approved' | 'feedback'
+  const [approvedNoteCount, setApprovedNoteCount] = useState(0)
   const { settings, updateSetting, resetSettings } = useSettings()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed)
   const [tocCollapsed, setTocCollapsed] = useState(getInitialTocCollapsed)
@@ -571,11 +572,23 @@ export default function App() {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [handleUndo, handleRedo, crossFileSearchProps, crossFileSearchState])
 
+  const collectAnnotatedFiles = () => files.map(f => ({
+    path: f.path,
+    annotations: f.annState.annotations.filter(a => a.type !== 'NOTES'),
+    blocks: f.blocks
+  }))
+
+  // Approving with annotations present keeps them as notes instead of discarding them
   const handleApprove = async () => {
     setSubmitted(true)
     setDecision('approved')
+    setApprovedNoteCount(totalAnnotationCount)
     try {
-      await fetch('/api/approve', { method: 'POST' })
+      await fetch('/api/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(totalAnnotationCount > 0 ? { files: collectAnnotatedFiles() } : {})
+      })
     } catch { /* server shuts down */ }
   }
 
@@ -583,15 +596,10 @@ export default function App() {
     setSubmitted(true)
     setDecision('feedback')
     try {
-      const feedbackFiles = files.map(f => ({
-        path: f.path,
-        annotations: f.annState.annotations.filter(a => a.type !== 'NOTES'),
-        blocks: f.blocks
-      }))
       await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ files: feedbackFiles })
+        body: JSON.stringify({ files: collectAnnotatedFiles() })
       })
     } catch { /* server shuts down */ }
   }
@@ -672,11 +680,15 @@ export default function App() {
               )}
             </div>
             <h1 className="done-title">
-              {decision === 'approved' ? 'Approved' : 'Feedback Submitted'}
+              {decision === 'approved'
+                ? (approvedNoteCount > 0 ? 'Approved with Notes' : 'Approved')
+                : 'Feedback Submitted'}
             </h1>
             <p className="done-message">
               {decision === 'approved'
-                ? 'No changes requested. The file was approved as-is.'
+                ? (approvedNoteCount > 0
+                  ? `Approved as-is. ${approvedNoteCount} annotation${approvedNoteCount !== 1 ? 's' : ''} passed along as notes.`
+                  : 'No changes requested. The file was approved as-is.')
                 : `${totalAnnotationCount} annotation${totalAnnotationCount !== 1 ? 's' : ''} ${ORIGIN_LABELS[origin] ? `sent to ${ORIGIN_LABELS[origin]}` : 'submitted'}.`}
             </p>
             {decision === 'feedback' && ORIGIN_LABELS[origin]
@@ -837,10 +849,11 @@ export default function App() {
           <button
             onClick={handleApprove}
             className="btn btn-approve"
-            disabled={totalAnnotationCount > 0}
-            title={totalAnnotationCount > 0 ? 'Remove annotations to approve' : 'Approve file as-is'}
+            title={totalAnnotationCount > 0
+              ? `Approve as-is and pass ${totalAnnotationCount} annotation(s) along as notes`
+              : 'Approve file as-is'}
           >
-            Approve
+            {totalAnnotationCount > 0 ? 'Approve with Notes' : 'Approve'}
           </button>
           <button
             onClick={() => setSettingsModalOpen(true)}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { exportFeedback, exportMultiFileFeedback } from '../../server/feedback.js'
+import { exportFeedback, exportMultiFileFeedback, formatApprovalOutput } from '../../server/feedback.js'
 
 const makeBlock = (overrides = {}) => ({
   id: 'block-0',
@@ -239,5 +239,39 @@ describe('exportMultiFileFeedback', () => {
     // Single annotated file → delegates to single-file format (no file headers)
     expect(output).not.toContain('## File: /b.md')
     expect(output).toContain('1 annotation')
+  })
+})
+
+describe('formatApprovalOutput', () => {
+  it('emits the plain approval marker when no notes were left', () => {
+    const output = formatApprovalOutput({ approved: true })
+
+    expect(output).toBe('APPROVED: No changes requested.\n')
+  })
+
+  it('emits the notes marker with the count and the formatted notes', () => {
+    const output = formatApprovalOutput({
+      approved: true,
+      annotationCount: 2,
+      feedback: '# Annotation Feedback\n\nsome notes\n'
+    })
+
+    expect(output).toContain('APPROVED WITH NOTES: 2 notes.')
+    expect(output).toContain('approved as-is')
+    expect(output).toContain('not as change requests')
+    expect(output).toContain('# Annotation Feedback')
+  })
+
+  it('uses the singular form for a single note', () => {
+    const output = formatApprovalOutput({ approved: true, annotationCount: 1, feedback: 'note' })
+
+    expect(output).toContain('APPROVED WITH NOTES: 1 note.')
+    expect(output).not.toContain('1 notes')
+  })
+
+  it('never emits the plain approval marker alongside notes', () => {
+    const output = formatApprovalOutput({ approved: true, annotationCount: 1, feedback: 'note' })
+
+    expect(output.startsWith('APPROVED:')).toBe(false)
   })
 })

@@ -194,7 +194,7 @@ Once a file is opened in the browser, you can:
 - **Annotate images & diagrams** -- click on images, Mermaid, PlantUML, or Kroki diagrams to comment or delete them
 - **View annotations** in the sidebar panel on the right
 - **Export** annotations as Markdown or JSON
-- **Approve** or **Submit Feedback** when done
+- **Approve** or **Submit Feedback** when done -- with annotations present, Approve becomes **Approve with Notes** and passes them along as context instead of discarding them
 
 When used with an AI agent (Claude Code or OpenCode), submitting feedback triggers the agent to apply your changes to the file. The agent then re-opens the annotator for another review round, so you can verify the edits and provide further feedback if needed. This review loop continues until you approve the result.
 

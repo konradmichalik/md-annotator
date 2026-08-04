@@ -4,6 +4,7 @@ import { resolve } from 'node:path'
 import { readFileSync } from 'node:fs'
 import { createServer } from './server/index.js'
 import { isAnnotatableFile, fileExists, supportedExtensions } from './server/file.js'
+import { formatApprovalOutput } from './server/feedback.js'
 import { openBrowser } from './server/browser.js'
 
 const HELP_TEXT = `
@@ -164,14 +165,16 @@ async function main() {
 
   // Log decision to stderr
   if (decision.approved) {
-    process.stderr.write('Decision: Approved (no changes)\n')
+    process.stderr.write(decision.feedback
+      ? `Decision: Approved with ${decision.annotationCount} note(s)\n`
+      : 'Decision: Approved (no changes)\n')
   } else {
     process.stderr.write(`Decision: Feedback with ${decision.annotationCount} annotation(s)\n`)
   }
 
   // Output feedback to stdout — this is what Claude reads
   const output = decision.approved
-    ? 'APPROVED: No changes requested.\n'
+    ? formatApprovalOutput(decision)
     : decision.feedback + '\n'
 
   process.stdout.write(output, () => {

@@ -1,4 +1,21 @@
 /**
+ * Format an approval decision for stdout.
+ *
+ * A plain approval means the document is fine as-is. An approval that carries
+ * annotations keeps them as notes: the user still approved the document, so the
+ * notes are context for the agent rather than a list of edits to apply.
+ */
+export function formatApprovalOutput(decision) {
+  if (!decision.feedback) {
+    return 'APPROVED: No changes requested.\n'
+  }
+  const count = decision.annotationCount
+  return `APPROVED WITH NOTES: ${count} note${count === 1 ? '' : 's'}. ` +
+    'The document is approved as-is — treat the notes below as context, not as change requests.\n\n' +
+    `${decision.feedback}\n`
+}
+
+/**
  * Format a single annotation as Markdown feedback.
  */
 function formatAnnotation(ann, block, heading) {

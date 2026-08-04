@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url";
 
 // Import from shared server modules
 import { startAnnotatorServer } from "../../server/annotator.js";
+import { formatApprovalOutput } from "../../server/feedback.js";
 import { openBrowser } from "../../server/browser.js";
 
 // Load HTML content at runtime
@@ -80,7 +81,7 @@ export const MdAnnotatorPlugin: Plugin = async (ctx) => {
           }
 
           if (result.approved) {
-            return "APPROVED: No changes requested.";
+            return formatApprovalOutput(result);
           }
 
           return result.feedback || "No feedback provided.";

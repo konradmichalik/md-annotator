@@ -28,6 +28,8 @@ md-annotator --origin vibe <file1.md> [file2.md ...]
 The command prints the result to stdout:
 
 - `APPROVED:` → the user approved the file with no changes. Confirm and stop.
+- `APPROVED WITH NOTES:` → the user approved the file as-is but left annotations.
+  Do **not** edit the file; read the notes as context, acknowledge them, and stop.
 - Structured annotation feedback → apply the requested edits to the file(s):
   - **"Remove this"** entries: delete the quoted text.
   - **"Comment on"** entries: apply the user's comment as a change to the referenced text.
@@ -52,4 +54,5 @@ Unless the user said otherwise, after applying all changes:
 
 3. **Evaluate the result:**
    - `APPROVED:` → the user is satisfied. Done.
+   - `APPROVED WITH NOTES:` → the user is satisfied. Summarize the notes without editing. Done.
    - More feedback → apply the changes and repeat from step 1.

@@ -43,4 +43,5 @@ Use `/annotate:md <file>` in the chat to trigger annotation.
 
 The tool returns either:
 - `APPROVED: No changes requested.` - User approved the file
+- `APPROVED WITH NOTES: <n> notes.` - User approved the file as-is and left annotations as context (do not edit)
 - Structured markdown feedback with annotations for the agent to apply

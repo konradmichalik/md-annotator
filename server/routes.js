@@ -140,7 +140,23 @@ export function createApiRouter(filePaths, resolveDecision, origin = 'cli', stor
     res.json(success({ saved: true, count: annotations.length }))
   })
 
-  router.post('/api/approve', (_req, res) => {
+  // Approving carries any annotations along as notes instead of discarding them
+  router.post('/api/approve', (req, res) => {
+    const { files } = req.body || {}
+
+    if (Array.isArray(files)) {
+      const noteCount = files.reduce(
+        (sum, f) => sum + (f.annotations || []).filter(a => a.type !== 'NOTES').length,
+        0
+      )
+      if (noteCount > 0) {
+        const notes = exportMultiFileFeedback(files)
+        res.json(success({ message: 'Approved with notes' }))
+        setTimeout(() => resolveDecision({ approved: true, feedback: notes, annotationCount: noteCount }), 100)
+        return
+      }
+    }
+
     res.json(success({ message: 'Approved' }))
     setTimeout(() => resolveDecision({ approved: true }), 100)
   })
