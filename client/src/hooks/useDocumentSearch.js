@@ -32,9 +32,12 @@ export function useDocumentSearch(containerRef, files) {
     }))
   }, [query, files])
 
-  // Run search when query changes (debounced)
+  // Run search when the query changes or the bar reopens (debounced).
+  // Depending on isOpen re-highlights a query that was kept from the last open.
   useEffect(() => {
     if (debounceRef.current) { clearTimeout(debounceRef.current) }
+
+    if (!isOpen) { return }
 
     if (!query) {
       clearSearchHighlights(containerRef.current)
@@ -56,7 +59,7 @@ export function useDocumentSearch(containerRef, files) {
     return () => {
       if (debounceRef.current) { clearTimeout(debounceRef.current) }
     }
-  }, [query, containerRef])
+  }, [query, isOpen, containerRef])
 
   // Update active match highlight when activeIndex changes
   useEffect(() => {
@@ -76,8 +79,9 @@ export function useDocumentSearch(containerRef, files) {
     setIsOpen(true)
   }, [])
 
+  // The query survives closing so reopening can offer it again (SearchBar
+  // selects it on focus, so typing still replaces it). Escape clears it first.
   const closeSearch = useCallback(() => {
-    setQuery('')
     setMatches([])
     setActiveIndex(0)
     clearSearchHighlights(containerRef.current)

@@ -10,8 +10,11 @@ export function useCrossFileSearch(files) {
   const [activeResultIndex, setActiveResultIndex] = useState(0)
   const debounceRef = useRef(null)
 
+  // isOpen is a dependency so reopening recomputes results for a kept query
   useEffect(() => {
     if (debounceRef.current) { clearTimeout(debounceRef.current) }
+
+    if (!isOpen) { return }
 
     if (!query) {
       setResults([])
@@ -28,7 +31,7 @@ export function useCrossFileSearch(files) {
     return () => {
       if (debounceRef.current) { clearTimeout(debounceRef.current) }
     }
-  }, [query, files])
+  }, [query, isOpen, files])
 
   const flatMatches = useMemo(() => {
     const flat = []
@@ -55,8 +58,8 @@ export function useCrossFileSearch(files) {
     setIsOpen(true)
   }, [])
 
+  // Query kept for the next open — see useDocumentSearch.closeSearch
   const closeSearch = useCallback(() => {
-    setQuery('')
     setResults([])
     setActiveResultIndex(0)
     setIsOpen(false)
