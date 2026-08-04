@@ -11,7 +11,7 @@ import express from 'express'
 import cors from 'cors'
 import { config } from './config.js'
 import { createApiRouter } from './routes.js'
-import { readMarkdownFile } from './file.js'
+import { readAnnotatableFile } from './file.js'
 import { convertNotesToAnnotations } from './notes.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -113,7 +113,7 @@ export async function startAnnotatorServer(options) {
   const stores = await Promise.all(
     filePaths.map(async (fp, index) => {
       try {
-        const content = await readMarkdownFile(fp)
+        const content = await readAnnotatableFile(fp)
         const contentHash = createHash('sha256').update(content).digest('hex')
         const notes = resolveNotesForFile(feedbackNotes, index, content)
         return { absolutePath: fp, contentHash, annotations: notes }

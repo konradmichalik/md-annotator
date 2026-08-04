@@ -1,16 +1,51 @@
 /**
- * File I/O utilities for markdown files.
+ * File I/O utilities for annotatable text files.
  */
 
-import { readFile } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import { access, constants } from 'node:fs/promises'
-import { extname, resolve } from 'node:path'
+import { basename, extname, resolve } from 'node:path'
 
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown', '.mdown', '.mkd'])
+
+// Formats rendered as raw source with line numbers instead of rendered markdown.
+// `.env` is deliberately excluded — those files routinely hold secrets.
+const PLAIN_TEXT_EXTENSIONS = new Set([
+  '.txt', '.text',
+  '.yaml', '.yml', '.json', '.jsonc', '.json5',
+  '.toml', '.ini', '.cfg', '.conf', '.properties',
+  '.csv', '.tsv', '.log', '.xml'
+])
+
+// Dotfiles whose extension says nothing useful about the format
+const PLAIN_TEXT_BASENAMES = new Set(['.env.example'])
+
+// Reading a huge file would freeze the parser and the browser alike
+const MAX_FILE_BYTES = 2 * 1024 * 1024
 
 export function isMarkdownFile(filePath) {
   const ext = extname(filePath).toLowerCase()
   return MARKDOWN_EXTENSIONS.has(ext)
+}
+
+export function isPlainTextFile(filePath) {
+  if (PLAIN_TEXT_BASENAMES.has(basename(filePath).toLowerCase())) {
+    return true
+  }
+  const ext = extname(filePath).toLowerCase()
+  return PLAIN_TEXT_EXTENSIONS.has(ext)
+}
+
+export function isAnnotatableFile(filePath) {
+  return isMarkdownFile(filePath) || isPlainTextFile(filePath)
+}
+
+export function supportedExtensions() {
+  return [
+    ...MARKDOWN_EXTENSIONS,
+    ...PLAIN_TEXT_EXTENSIONS,
+    ...PLAIN_TEXT_BASENAMES
+  ]
 }
 
 export async function fileExists(filePath) {
@@ -22,14 +57,24 @@ export async function fileExists(filePath) {
   }
 }
 
-export async function readMarkdownFile(filePath) {
+export async function readAnnotatableFile(filePath) {
   const absolutePath = resolve(filePath)
 
-  if (!isMarkdownFile(absolutePath)) {
-    throw new Error(`Not a Markdown file: ${absolutePath}`)
+  if (!isAnnotatableFile(absolutePath)) {
+    throw new Error(
+      `Unsupported file type: ${absolutePath}\n` +
+      `Supported: ${supportedExtensions().join(', ')}`
+    )
   }
 
   try {
+    const { size } = await stat(absolutePath)
+    if (size > MAX_FILE_BYTES) {
+      const mb = (size / 1024 / 1024).toFixed(1)
+      throw new Error(
+        `File too large: ${absolutePath} (${mb} MB, limit ${MAX_FILE_BYTES / 1024 / 1024} MB)`
+      )
+    }
     return await readFile(absolutePath, 'utf-8')
   } catch (error) {
     if (error.code === 'ENOENT') {
@@ -38,6 +83,9 @@ export async function readMarkdownFile(filePath) {
     if (error.code === 'EACCES') {
       throw new Error(`Permission denied: ${absolutePath}`)
     }
-    throw new Error(`Failed to read file: ${error.message}`)
+    if (error.code) {
+      throw new Error(`Failed to read file: ${error.message}`)
+    }
+    throw error
   }
 }

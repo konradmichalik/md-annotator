@@ -19,6 +19,7 @@
 ## ✨ Features
 
 - **Multi-File Support** -- Review multiple files in one session with a tabbed interface
+- **Config & Data Files** -- Annotate `.yaml`, `.yml`, `.json`, `.jsonc`, `.json5`, `.toml`, `.ini`, `.cfg`, `.conf`, `.properties`, `.csv`, `.tsv`, `.log`, `.xml`, `.txt` and `.env.example` as raw source with line numbers (a real `.env` is rejected, since those hold secrets)
 - **Linked Navigation** -- Click relative `.md` links to open them as new tabs (wiki-style browsing)
 - **Mermaid Diagrams** -- Renders `mermaid` code blocks as interactive diagrams with zoom, pan, and source toggle (adapts to light/dark theme)
 - **PlantUML Diagrams** -- Renders `plantuml` code blocks as SVG via a configurable PlantUML server with zoom, pan, and source toggle

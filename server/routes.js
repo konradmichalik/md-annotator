@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { relative, resolve, dirname, isAbsolute } from 'node:path'
 import { createHash } from 'node:crypto'
-import { readMarkdownFile, isMarkdownFile } from './file.js'
+import { readAnnotatableFile, isAnnotatableFile, isPlainTextFile } from './file.js'
 import { exportFeedback, exportMultiFileFeedback } from './feedback.js'
 import { listWorkspaceFiles } from './workspace.js'
 import { config } from './config.js'
@@ -32,7 +32,7 @@ export function createApiRouter(filePaths, resolveDecision, origin = 'cli', stor
     try {
       const files = await Promise.all(
         stores.map(async (store, index) => {
-          const content = await readMarkdownFile(store.absolutePath)
+          const content = await readAnnotatableFile(store.absolutePath)
           const relativePath = relative(process.cwd(), store.absolutePath) || store.absolutePath
           const currentHash = createHash('sha256').update(content).digest('hex')
           return {
@@ -40,7 +40,8 @@ export function createApiRouter(filePaths, resolveDecision, origin = 'cli', stor
             path: relativePath,
             content,
             contentHash: currentHash,
-            hashMismatch: currentHash !== store.contentHash
+            hashMismatch: currentHash !== store.contentHash,
+            isPlainText: isPlainTextFile(store.absolutePath)
           }
         })
       )
@@ -53,13 +54,14 @@ export function createApiRouter(filePaths, resolveDecision, origin = 'cli', stor
   // Single-file endpoint — backward compat (returns first file)
   router.get('/api/file', async (_req, res) => {
     try {
-      const content = await readMarkdownFile(filePaths[0])
+      const content = await readAnnotatableFile(filePaths[0])
       const relativePath = relative(process.cwd(), filePaths[0]) || filePaths[0]
       res.json(success({
         content,
         path: relativePath,
         origin,
-        contentHash: stores[0]?.contentHash || null
+        contentHash: stores[0]?.contentHash || null,
+        isPlainText: isPlainTextFile(filePaths[0])
       }))
     } catch (error) {
       res.status(500).json(failure(error.message))
@@ -85,12 +87,12 @@ export function createApiRouter(filePaths, resolveDecision, origin = 'cli', stor
       return res.status(403).json(failure('Access denied: path outside project directory'))
     }
 
-    if (!isMarkdownFile(absolutePath)) {
-      return res.status(400).json(failure('Not a markdown file'))
+    if (!isAnnotatableFile(absolutePath)) {
+      return res.status(400).json(failure('Unsupported file type'))
     }
 
     try {
-      const content = await readMarkdownFile(absolutePath)
+      const content = await readAnnotatableFile(absolutePath)
       const contentHash = createHash('sha256').update(content).digest('hex')
       const relativePath = relative(baseDir, absolutePath) || absolutePath
 
@@ -100,7 +102,13 @@ export function createApiRouter(filePaths, resolveDecision, origin = 'cli', stor
         fileIndex = stores.length - 1
       }
 
-      res.json(success({ index: fileIndex, path: relativePath, content, contentHash }))
+      res.json(success({
+        index: fileIndex,
+        path: relativePath,
+        content,
+        contentHash,
+        isPlainText: isPlainTextFile(absolutePath)
+      }))
     } catch (error) {
       res.status(404).json(failure(error.message))
     }

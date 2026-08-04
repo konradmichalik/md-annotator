@@ -3,14 +3,22 @@
 import { resolve } from 'node:path'
 import { readFileSync } from 'node:fs'
 import { createServer } from './server/index.js'
-import { isMarkdownFile, fileExists } from './server/file.js'
+import { isAnnotatableFile, fileExists, supportedExtensions } from './server/file.js'
 import { openBrowser } from './server/browser.js'
 
 const HELP_TEXT = `
-md-annotator — Annotate Markdown files in the browser
+md-annotator — Annotate Markdown and plain-text files in the browser
 
 Usage:
-  md-annotator [options] <file.md> [file2.md ...]
+  md-annotator [options] <file.md> [file2 ...]
+
+Supported files:
+  Markdown (.md, .markdown, .mdown, .mkd) renders as formatted markdown.
+  Config and data files (.yaml, .yml, .json, .jsonc, .json5, .toml, .ini,
+  .cfg, .conf, .properties, .csv, .tsv, .log, .xml, .txt, .text,
+  .env.example) render as raw source with line numbers.
+  Files above 2 MB are rejected. A real .env file is not supported — it
+  commonly holds secrets (.env.example is fine).
 
 Options:
   --help                       Show this help message
@@ -121,8 +129,9 @@ async function main() {
   const absolutePaths = []
   for (const fp of filePaths) {
     const abs = resolve(fp)
-    if (!isMarkdownFile(abs)) {
-      process.stderr.write(`Error: Not a Markdown file: ${fp}\n`)
+    if (!isAnnotatableFile(abs)) {
+      process.stderr.write(`Error: Unsupported file type: ${fp}\n`)
+      process.stderr.write(`Supported: ${supportedExtensions().join(', ')}\n`)
       process.exit(1)
     }
     if (!(await fileExists(abs))) {

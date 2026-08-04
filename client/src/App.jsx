@@ -98,6 +98,9 @@ export default function App() {
   const activeFile = files[activeFileIndex] || null
   const activeAnnState = activeFile?.annState || initialAnnotationState
   const { annotations } = activeAnnState
+  // Plain-text files (YAML, JSON, logs, ...) have no meaningful rendered view
+  const isPlainTextFile = activeFile?.isPlainText || false
+  const effectiveViewMode = isPlainTextFile ? 'source' : viewMode
   const blocks = activeFile?.blocks || []
   const filePath = activeFile?.path || ''
   const totalAnnotationCount = files.reduce((sum, f) =>
@@ -246,9 +249,10 @@ export default function App() {
           index: f.index,
           path: f.path,
           content: f.content,
-          blocks: parseMarkdownToBlocks(f.content),
+          blocks: parseMarkdownToBlocks(f.content, { allowFrontmatter: !f.isPlainText }),
           contentHash: f.contentHash,
-          hashMismatch: f.hashMismatch || false
+          hashMismatch: f.hashMismatch || false,
+          isPlainText: f.isPlainText || false
         }))
         filesDispatch({ type: 'INIT_FILES', files: loadedFiles })
         setOrigin(json.data.origin || 'cli')
@@ -316,13 +320,13 @@ export default function App() {
 
   // Restore highlights when switching files or view mode (Viewer/SourceView remounts via key)
   const prevFileIndexRef = useRef(0)
-  const prevViewModeRef = useRef(viewMode)
+  const prevViewModeRef = useRef(effectiveViewMode)
   useEffect(() => {
     const fileChanged = prevFileIndexRef.current !== activeFileIndex
-    const viewChanged = prevViewModeRef.current !== viewMode
+    const viewChanged = prevViewModeRef.current !== effectiveViewMode
     if (!fileChanged && !viewChanged) {return}
     prevFileIndexRef.current = activeFileIndex
-    prevViewModeRef.current = viewMode
+    prevViewModeRef.current = effectiveViewMode
     if (fileChanged) {
       prevLastActionRef.current = null
       setSelectedAnnotationId(null)
@@ -334,7 +338,7 @@ export default function App() {
       }, 100)
       return () => clearTimeout(timer)
     }
-  }, [activeFileIndex, annotations, viewMode])
+  }, [activeFileIndex, annotations, effectiveViewMode])
 
   // Auto-save annotations to server (debounced, scoped to active file)
   useEffect(() => {
@@ -404,7 +408,7 @@ export default function App() {
     // Switch to the matching view mode before opening the toolbar
     const needsSource = ann.targetType === 'source'
     const targetMode = needsSource ? 'source' : 'preview'
-    if (viewMode !== targetMode) {
+    if (effectiveViewMode !== targetMode) {
       setViewMode(targetMode)
       setTimeout(() => {
         viewerRef.current?.openEditToolbar(ann)
@@ -414,7 +418,7 @@ export default function App() {
     }
     setSelectedAnnotationId(id)
     setSidebarCollapsed(false)
-  }, [annotations, viewMode])
+  }, [annotations, effectiveViewMode])
 
   const handleImportAnnotations = useCallback((jsonData) => {
     const result = validateAnnotationImport(jsonData)
@@ -518,9 +522,10 @@ export default function App() {
           index: json.data.index,
           path: json.data.path,
           content: json.data.content,
-          blocks: parseMarkdownToBlocks(json.data.content),
+          blocks: parseMarkdownToBlocks(json.data.content, { allowFrontmatter: !json.data.isPlainText }),
           contentHash: json.data.contentHash,
-          hashMismatch: false
+          hashMismatch: false,
+          isPlainText: json.data.isPlainText || false
         }
         filesDispatch({ type: 'ADD_FILE', file: newFile })
         setActiveFileIndex(currentFiles.length)
@@ -718,7 +723,7 @@ export default function App() {
             fileIndex: activeFileIndex,
             updates: {
               content: updated.content,
-              blocks: parseMarkdownToBlocks(updated.content),
+              blocks: parseMarkdownToBlocks(updated.content, { allowFrontmatter: !updated.isPlainText }),
               contentHash: updated.contentHash,
               hashMismatch: false,
               annState: { ...initialAnnotationState }
@@ -761,17 +766,19 @@ export default function App() {
       )}
       <header className="app-header">
         <div className="header-left">
-          <button
-            onClick={toggleToc}
-            className="btn btn-icon"
-            title={tocCollapsed ? 'Show table of contents' : 'Hide table of contents'}
-            aria-label={tocCollapsed ? 'Show table of contents' : 'Hide table of contents'}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <line x1="9" y1="3" x2="9" y2="21"/>
-            </svg>
-          </button>
+          {!isPlainTextFile && (
+            <button
+              onClick={toggleToc}
+              className="btn btn-icon"
+              title={tocCollapsed ? 'Show table of contents' : 'Hide table of contents'}
+              aria-label={tocCollapsed ? 'Show table of contents' : 'Hide table of contents'}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <line x1="9" y1="3" x2="9" y2="21"/>
+              </svg>
+            </button>
+          )}
           <svg className="app-logo" viewBox="0 48 821 99" aria-label="md-annotator" role="img">
             <g transform="matrix(1,0,0,1,-53.9375,-433.25)">
               <path d="M168.625,539.5C169.042,537.583 169.5,535.521 170,533.313C170.5,531.104 170.75,529.375 170.75,528.125C170.75,526.542 170.479,525.292 169.938,524.375C169.396,523.458 168.417,523 167,523C165.583,523 164.125,523.521 162.625,524.563C161.125,525.604 159.667,526.979 158.25,528.688C156.833,530.396 155.479,532.333 154.188,534.5C152.896,536.667 151.75,538.875 150.75,541.125L142.625,577L125.875,577L133.5,541.875C134.083,539.292 134.583,536.792 135,534.375C135.417,531.958 135.625,529.708 135.625,527.625C135.625,524.542 134.458,523 132.125,523C130.958,523 129.625,523.542 128.125,524.625C126.625,525.708 125.125,527.104 123.625,528.813C122.125,530.521 120.708,532.458 119.375,534.625C118.042,536.792 117,539 116.25,541.25L109,577L91.5,577L102.625,523.375L95.5,521.75L95.5,517.5C96.833,516.833 98.479,516.208 100.438,515.625C102.396,515.042 104.458,514.563 106.625,514.188C108.792,513.813 111,513.521 113.25,513.313C115.5,513.104 117.583,513 119.5,513L122.125,514.5L117.25,532.75L117.75,532.75C119,530.5 120.521,528.188 122.312,525.813C124.104,523.438 126.125,521.313 128.375,519.438C130.625,517.563 133.042,516.021 135.625,514.813C138.208,513.604 140.833,513 143.5,513C144.5,513 145.542,513.167 146.625,513.5C147.708,513.833 148.729,514.438 149.688,515.313C150.646,516.188 151.417,517.375 152,518.875C152.583,520.375 152.875,522.292 152.875,524.625C152.875,525.792 152.771,527.125 152.562,528.625C152.354,530.125 152.083,531.5 151.75,532.75C153.167,530.167 154.833,527.667 156.75,525.25C158.667,522.833 160.729,520.729 162.938,518.938C165.146,517.146 167.479,515.708 169.938,514.625C172.396,513.542 174.958,513 177.625,513C180.792,513 183.375,514 185.375,516C187.375,518 188.375,520.75 188.375,524.25C188.375,526.917 188.125,529.458 187.625,531.875C187.125,534.292 186.583,536.833 186,539.5L178.875,568.375L187.625,568.375L187.625,572.625C186.792,573.292 185.646,573.958 184.188,574.625C182.729,575.292 181.167,575.875 179.5,576.375C177.833,576.875 176.125,577.292 174.375,577.625C172.625,577.958 171,578.125 169.5,578.125C166.5,578.125 164.417,577.521 163.25,576.313C162.083,575.104 161.5,573.75 161.5,572.25C161.5,569.833 162.083,566.5 163.25,562.25L168.625,539.5Z"/>
@@ -867,20 +874,24 @@ export default function App() {
       />
 
       <main className="app-main">
-        <TableOfContents
-          blocks={blocks}
-          annotations={annotations}
-          collapsed={tocCollapsed}
-          width={tocWidth}
-        />
-        {!tocCollapsed && (
-          <div
-            className="resize-handle"
-            onMouseDown={handleTocResize}
-          />
+        {!isPlainTextFile && (
+          <>
+            <TableOfContents
+              blocks={blocks}
+              annotations={annotations}
+              collapsed={tocCollapsed}
+              width={tocWidth}
+            />
+            {!tocCollapsed && (
+              <div
+                className="resize-handle"
+                onMouseDown={handleTocResize}
+              />
+            )}
+          </>
         )}
         <div className="viewer-wrapper">
-          <div className="view-toggle">
+          {!isPlainTextFile && <div className="view-toggle">
             <button
               className={`view-toggle-btn${viewMode === 'preview' ? ' active' : ''}`}
               onClick={() => setViewMode('preview')}
@@ -903,8 +914,8 @@ export default function App() {
                 <polyline strokeLinecap="round" strokeLinejoin="round" points="8 6 2 12 8 18" />
               </svg>
             </button>
-          </div>
-          {viewMode === 'preview' ? (
+          </div>}
+          {effectiveViewMode === 'preview' ? (
             <Viewer
               key={activeFile?.path || 'empty'}
               ref={viewerRef}
