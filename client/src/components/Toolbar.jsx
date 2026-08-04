@@ -73,7 +73,9 @@ export function Toolbar({ highlightElement, onAnnotate, onClose, onDelete, onQui
       const rect = highlightElement.getBoundingClientRect()
       const toolbarTop = Math.max(4, rect.top - 48)
 
-      if (rect.bottom < 0 || rect.top > window.innerHeight) {
+      // The floating menu is transient and dismisses itself when the selection
+      // scrolls away; an open comment input has to survive so its text isn't lost.
+      if ((rect.bottom < 0 || rect.top > window.innerHeight) && step === 'menu') {
         onClose()
         return
       }
