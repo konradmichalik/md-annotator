@@ -343,7 +343,7 @@ export const Viewer = forwardRef(function Viewer({
       anns.forEach(ann => { this.restoreHighlight(ann) })
     },
     openEditToolbar(ann) {
-      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'pinpoint' || ann.targetType === 'link' || ann.targetType === 'token') {
+      if (ann.targetType === 'image' || ann.targetType === 'diagram' || ann.targetType === 'math' || ann.targetType === 'pinpoint' || ann.targetType === 'link' || ann.targetType === 'token') {
         this.openElementEditToolbar(ann)
         return
       }
@@ -371,6 +371,10 @@ export const Viewer = forwardRef(function Viewer({
         targetEl = containerRef.current?.querySelector(
           `[data-block-id="${ann.blockId}"] .diagram-render-area`
         ) || containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
+      } else if (ann.targetType === 'math') {
+        targetEl = containerRef.current?.querySelector(
+          `[data-block-id="${ann.blockId}"] .annotatable-math`
+        )
       } else if (ann.targetType === 'pinpoint') {
         targetEl = containerRef.current?.querySelector(`[data-block-id="${ann.blockId}"]`)
       } else if (ann.targetType === 'link') {
