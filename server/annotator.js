@@ -133,17 +133,15 @@ export async function startAnnotatorServer(options) {
     res.json({ status: 'ok' })
   })
 
-  // Compute content hash per file for annotation persistence
+  // Compute content hash per file for annotation persistence. A read failure here
+  // (e.g. a file over the size limit) must reject startup — swallowing it would let
+  // the server come up with a store /api/files can never serve.
   const stores = await Promise.all(
     filePaths.map(async (fp, index) => {
-      try {
-        const content = await readAnnotatableFile(fp)
-        const contentHash = createHash('sha256').update(content).digest('hex')
-        const notes = resolveNotesForFile(feedbackNotes, index, content)
-        return { absolutePath: fp, contentHash, annotations: notes }
-      } catch (_e) {
-        return { absolutePath: fp, contentHash: null, annotations: [] }
-      }
+      const content = await readAnnotatableFile(fp)
+      const contentHash = createHash('sha256').update(content).digest('hex')
+      const notes = resolveNotesForFile(feedbackNotes, index, content)
+      return { absolutePath: fp, contentHash, annotations: notes }
     })
   )
 
