@@ -18,6 +18,8 @@ Address the annotation feedback above. The user has reviewed the markdown file i
 
 If the output shows `APPROVED:`, the user approved the file with no changes needed — confirm and stop.
 
+If the output shows `APPROVED WITH NOTES:`, the user approved the file as-is but left annotations. Do **not** edit the file. Read the notes, acknowledge them, and stop — they are context for your understanding, not change requests.
+
 ## Re-review loop
 
 After applying all changes:
@@ -35,4 +37,5 @@ After applying all changes:
 
 3. **Evaluate the result:**
    - `APPROVED:` → The user is satisfied. Done.
+   - `APPROVED WITH NOTES:` → The user is satisfied. Summarize the notes without editing. Done.
    - More feedback → Apply changes and repeat from step 1.

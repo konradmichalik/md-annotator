@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useFileAutocomplete } from '../hooks/useFileAutocomplete.js'
 import { FileAutocomplete } from './FileAutocomplete.jsx'
 import { TextareaBackdrop } from './TextareaBackdrop.jsx'
+import { getOffscreenSide } from '../utils/popoverVisibility.js'
 
 const POPOVER_WIDTH = 384
 const GAP = 8
@@ -33,10 +34,12 @@ export function CommentPopover({
   const [cursorPos, setCursorPos] = useState(initialText.length)
   const [position, setPosition] = useState(null)
   const [dragOffset, setDragOffset] = useState(null)
+  const [offscreenSide, setOffscreenSide] = useState(null)
   const textareaRef = useRef(null)
   const popoverRef = useRef(null)
   const isDragging = useRef(false)
 
+  const hasText = text.trim().length > 0
   const autocomplete = useFileAutocomplete(text, cursorPos)
 
   const applyAutocomplete = (index) => {
@@ -72,9 +75,10 @@ export function CommentPopover({
     return () => clearTimeout(id)
   }, [mode])
 
-  // Click outside to close (popover mode)
+  // Click outside to close (popover mode) — a popover holding text stays open so
+  // a stray click can't discard it. Escape and Cancel still close explicitly.
   useEffect(() => {
-    if (mode !== 'popover') {return}
+    if (mode !== 'popover' || hasText) {return}
 
     const handleMouseDown = (e) => {
       if (e.detail >= 2) { return }
@@ -84,7 +88,37 @@ export function CommentPopover({
     }
     document.addEventListener('mousedown', handleMouseDown)
     return () => document.removeEventListener('mousedown', handleMouseDown)
-  }, [mode, onClose])
+  }, [mode, hasText, onClose])
+
+  // Track whether the popover has scrolled out of view (anchored mode only —
+  // a dragged popover is pinned to the viewport and always visible)
+  useEffect(() => {
+    if (mode !== 'popover' || dragOffset) {
+      setOffscreenSide(null)
+      return
+    }
+
+    const update = () => {
+      const el = popoverRef.current
+      if (!el) {return}
+      const side = getOffscreenSide(el.getBoundingClientRect(), window.innerHeight)
+      setOffscreenSide((prev) => (prev === side ? prev : side))
+    }
+
+    update()
+    window.addEventListener('scroll', update, true)
+    window.addEventListener('resize', update)
+    return () => {
+      window.removeEventListener('scroll', update, true)
+      window.removeEventListener('resize', update)
+    }
+  }, [mode, dragOffset])
+
+  const scrollBackToPopover = useCallback(() => {
+    if (!anchorEl) {return}
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    anchorEl.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' })
+  }, [anchorEl])
 
   // Drag to reposition (popover mode only)
   const handleDragStart = useCallback((e) => {
@@ -96,11 +130,16 @@ export function CommentPopover({
     const startY = e.clientY
     const startLeft = rect.left
     const startTop = rect.top
+    const maxLeft = Math.max(GAP, window.innerWidth - rect.width - GAP)
+    const maxTop = Math.max(GAP, window.innerHeight - rect.height - GAP)
 
     const handleDragMove = (moveEvent) => {
       const dx = moveEvent.clientX - startX
       const dy = moveEvent.clientY - startY
-      setDragOffset({ left: startLeft + dx, top: startTop + dy })
+      setDragOffset({
+        left: Math.max(GAP, Math.min(startLeft + dx, maxLeft)),
+        top: Math.max(GAP, Math.min(startTop + dy, maxTop))
+      })
     }
 
     const handleDragEnd = () => {
@@ -213,7 +252,7 @@ export function CommentPopover({
         <button
           type="button"
           className="comment-popover-submit-btn"
-          disabled={!text.trim()}
+          disabled={!hasText}
           onClick={handleSubmit}
         >
           Save
@@ -224,7 +263,7 @@ export function CommentPopover({
 
   if (mode === 'dialog') {
     return createPortal(
-      <div className="comment-popover-overlay" onMouseDown={onClose}>
+      <div className="comment-popover-overlay" onMouseDown={hasText ? undefined : onClose}>
         <div
           ref={popoverRef}
           className="comment-popover comment-popover--dialog"
@@ -250,16 +289,34 @@ export function CommentPopover({
     }
 
   return createPortal(
-    <div
-      ref={popoverRef}
-      className={`comment-popover${dragOffset ? ' comment-popover--dragged' : ''}`}
-      style={popoverStyle}
-      onMouseDown={(e) => e.stopPropagation()}
-    >
-      {dragHandle}
-      {textarea}
-      {footer}
-    </div>,
+    <>
+      <div
+        ref={popoverRef}
+        className={`comment-popover${dragOffset ? ' comment-popover--dragged' : ''}`}
+        style={popoverStyle}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        {dragHandle}
+        {textarea}
+        {footer}
+      </div>
+      {offscreenSide && (
+        <button
+          type="button"
+          className={`comment-offscreen-pill comment-offscreen-pill--${offscreenSide}`}
+          onClick={scrollBackToPopover}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d={offscreenSide === 'above' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'}
+            />
+          </svg>
+          Open comment
+        </button>
+      )}
+    </>,
     document.body
   )
 }

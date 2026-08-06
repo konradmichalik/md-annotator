@@ -1,4 +1,6 @@
 import { sanitizeHTML } from '../../utils/sanitize.js'
+import { matchInlineMath } from '../../utils/math.js'
+import { renderMath } from '../../utils/renderMath.js'
 
 const EMOJI_MAP = {
   'wave': '👋', 'rocket': '🚀', 'warning': '⚠️', 'check': '✅',
@@ -124,6 +126,26 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
     if (match) {
       parts.push(<del key={key++}><InlineMarkdown text={match[1]} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={blockId} /></del>)
       remaining = remaining.slice(match[0].length)
+      continue
+    }
+
+    // Inline math: $…$ or \(…\) — guarded against dollar amounts
+    const mathMatch = matchInlineMath(remaining)
+    if (mathMatch) {
+      const rendered = renderMath(mathMatch.formula, mathMatch.display)
+      if (rendered.error) {
+        parts.push(<code key={key++} className="inline-math-error" title={rendered.error}>{mathMatch.raw}</code>)
+      } else {
+        parts.push(
+          <span
+            key={key++}
+            className="inline-math"
+            aria-label={`Formula: ${mathMatch.formula}`}
+            dangerouslySetInnerHTML={{ __html: rendered.html }}
+          />
+        )
+      }
+      remaining = remaining.slice(mathMatch.raw.length)
       continue
     }
 
@@ -257,7 +279,7 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
     // Plain text fallback: extract until next special char, then post-process
     // for autolinks (URLs, emails) and smart punctuation.
     // Break on markdown special chars or ':' only when NOT followed by '//' (URL scheme)
-    const nextSpecial = remaining.slice(1).search(/[*`![<~]|:(?!\/{2})/)
+    const nextSpecial = remaining.slice(1).search(/[*`![<~$]|\\[([]|:(?!\/{2})/)
     const plainText = nextSpecial === -1 ? remaining : remaining.slice(0, nextSpecial + 1)
     for (const seg of splitAutolinks(plainText)) {
       if (seg.type === 'url') {

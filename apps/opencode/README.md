@@ -36,11 +36,12 @@ Use `/annotate:md <file>` in the chat to trigger annotation.
 ## Environment Variables
 | Variable | Description |
 |----------|-------------|
-| `MD_ANNOTATOR_PORT` | Override the server port (default: 3000) |
+| `MD_ANNOTATOR_PORT` | Port or inclusive range (`3000` or `3000-3010`); the first free port in the range wins |
 | `MD_ANNOTATOR_BROWSER` | Custom browser application |
 
 ## Output
 
 The tool returns either:
 - `APPROVED: No changes requested.` - User approved the file
+- `APPROVED WITH NOTES: <n> notes.` - User approved the file as-is and left annotations as context (do not edit)
 - Structured markdown feedback with annotations for the agent to apply

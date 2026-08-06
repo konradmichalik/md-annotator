@@ -1465,6 +1465,71 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* === Math === */
+.block-math-wrapper {
+  position: relative;
+  margin: 1rem 0;
+}
+
+.block-math {
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  text-align: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.block-math:hover { background: var(--bg-secondary); border-color: var(--border); }
+
+.block-math:focus-visible {
+  outline: 2px solid currentcolor;
+  outline-offset: 2px;
+}
+
+.block-math.annotated-comment { background: rgb(250 204 21 / 18%); }
+.block-math.annotated-deletion { background: rgb(248 113 113 / 18%); }
+
+.inline-math { white-space: nowrap; }
+
+.block-math-error,
+.inline-math-error {
+  color: var(--text-muted);
+  text-decoration: underline dotted;
+}
+
+.comment-offscreen-pill {
+  position: fixed;
+  left: 50%;
+  z-index: 102;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  transform: translateX(-50%);
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+}
+
+.comment-offscreen-pill:hover { background: var(--bg-secondary); }
+.comment-offscreen-pill--above { top: 0.75rem; }
+.comment-offscreen-pill--below { bottom: 0.75rem; }
+
+@keyframes offscreen-pill-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .comment-offscreen-pill { animation: offscreen-pill-in 0.15s ease-out; }
+}
+
 .comment-popover-overlay {
   position: fixed;
   inset: 0;

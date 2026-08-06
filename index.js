@@ -3,14 +3,23 @@
 import { resolve } from 'node:path'
 import { readFileSync } from 'node:fs'
 import { createServer } from './server/index.js'
-import { isMarkdownFile, fileExists } from './server/file.js'
+import { isAnnotatableFile, fileExists, supportedExtensions } from './server/file.js'
+import { formatApprovalOutput } from './server/feedback.js'
 import { openBrowser } from './server/browser.js'
 
 const HELP_TEXT = `
-md-annotator — Annotate Markdown files in the browser
+md-annotator — Annotate Markdown and plain-text files in the browser
 
 Usage:
-  md-annotator [options] <file.md> [file2.md ...]
+  md-annotator [options] <file.md> [file2 ...]
+
+Supported files:
+  Markdown (.md, .markdown, .mdown, .mkd) renders as formatted markdown.
+  Config and data files (.yaml, .yml, .json, .jsonc, .json5, .toml, .ini,
+  .cfg, .conf, .properties, .csv, .tsv, .log, .xml, .txt, .text,
+  .env.example) render as raw source with line numbers.
+  Files above 2 MB are rejected. A real .env file is not supported — it
+  commonly holds secrets (.env.example is fine).
 
 Options:
   --help                       Show this help message
@@ -18,7 +27,8 @@ Options:
   --feedback-notes <json|path> AI notes to display as read-only annotations
 
 Environment:
-  MD_ANNOTATOR_PORT            Base port (default: 3000)
+  MD_ANNOTATOR_PORT            Port or inclusive range, e.g. 3000 or 3000-3010
+                               (default: an OS-assigned free port)
   MD_ANNOTATOR_BROWSER         Custom browser app name
   MD_ANNOTATOR_TIMEOUT         Heartbeat timeout in ms (default: 30000, range: 5000–300000)
   MD_ANNOTATOR_FEEDBACK_NOTES  JSON string or file path for feedback notes
@@ -121,8 +131,9 @@ async function main() {
   const absolutePaths = []
   for (const fp of filePaths) {
     const abs = resolve(fp)
-    if (!isMarkdownFile(abs)) {
-      process.stderr.write(`Error: Not a Markdown file: ${fp}\n`)
+    if (!isAnnotatableFile(abs)) {
+      process.stderr.write(`Error: Unsupported file type: ${fp}\n`)
+      process.stderr.write(`Supported: ${supportedExtensions().join(', ')}\n`)
       process.exit(1)
     }
     if (!(await fileExists(abs))) {
@@ -155,14 +166,16 @@ async function main() {
 
   // Log decision to stderr
   if (decision.approved) {
-    process.stderr.write('Decision: Approved (no changes)\n')
+    process.stderr.write(decision.feedback
+      ? `Decision: Approved with ${decision.annotationCount} note(s)\n`
+      : 'Decision: Approved (no changes)\n')
   } else {
     process.stderr.write(`Decision: Feedback with ${decision.annotationCount} annotation(s)\n`)
   }
 
   // Output feedback to stdout — this is what Claude reads
   const output = decision.approved
-    ? 'APPROVED: No changes requested.\n'
+    ? formatApprovalOutput(decision)
     : decision.feedback + '\n'
 
   process.stdout.write(output, () => {

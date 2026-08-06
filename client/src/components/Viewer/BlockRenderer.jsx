@@ -31,7 +31,7 @@ function parseTableContent(content) {
   return { headers, rows }
 }
 
-function NoteBorder({ blockId, onClick }) {
+export function NoteBorder({ blockId, onClick }) {
   return (
     <span
       className="block-note-border"

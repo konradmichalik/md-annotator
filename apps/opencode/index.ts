@@ -6,7 +6,7 @@
  * review, annotate, or approve the markdown file.
  *
  * Environment variables:
- *   MD_ANNOTATOR_PORT   - Override the server port (default: 3000)
+ *   MD_ANNOTATOR_PORT   - Port or inclusive range, e.g. 3000 or 3000-3010
  *   MD_ANNOTATOR_BROWSER - Custom browser application
  */
 
@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url";
 
 // Import from shared server modules
 import { startAnnotatorServer } from "../../server/annotator.js";
+import { formatApprovalOutput } from "../../server/feedback.js";
 import { openBrowser } from "../../server/browser.js";
 
 // Load HTML content at runtime
@@ -80,7 +81,7 @@ export const MdAnnotatorPlugin: Plugin = async (ctx) => {
           }
 
           if (result.approved) {
-            return "APPROVED: No changes requested.";
+            return formatApprovalOutput(result);
           }
 
           return result.feedback || "No feedback provided.";

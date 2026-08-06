@@ -11,8 +11,11 @@ export function SearchBar({
   const inputRef = useRef(null)
   const resultsRef = useRef(null)
 
+  // Select a query kept from the last open, so typing replaces it while
+  // Enter/arrows can continue the previous search untouched.
   useEffect(() => {
     inputRef.current?.focus()
+    inputRef.current?.select()
   }, [])
 
   // Scroll the active cross-file result into view

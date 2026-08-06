@@ -6,15 +6,34 @@ const DEFAULT_PORT = 3000
 const DEFAULT_HOST = '127.0.0.1'
 const DEFAULT_HEARTBEAT_TIMEOUT_MS = 30_000
 
-function getServerPort() {
-  const envPort = process.env.MD_ANNOTATOR_PORT
-  if (envPort) {
-    const parsed = parseInt(envPort, 10)
-    if (!isNaN(parsed) && parsed > 0 && parsed < 65536) {
-      return parsed
-    }
+// Guards against a spec like "1-65535" turning startup into a port scan
+const MAX_PORT_CANDIDATES = 256
+
+function isValidPort(port) {
+  return Number.isInteger(port) && port > 0 && port < 65536
+}
+
+/**
+ * Parse a port spec: a single port ("3000") or an inclusive range
+ * ("19432-19463"). Returns the candidate ports in order, or null when the spec
+ * is missing or malformed.
+ */
+export function parsePortSpec(spec) {
+  const trimmed = typeof spec === 'string' ? spec.trim() : ''
+  if (!trimmed) { return null }
+
+  const rangeMatch = trimmed.match(/^(\d+)\s*-\s*(\d+)$/)
+  if (rangeMatch) {
+    const start = parseInt(rangeMatch[1], 10)
+    const end = parseInt(rangeMatch[2], 10)
+    if (!isValidPort(start) || !isValidPort(end) || end < start) { return null }
+    const count = Math.min(end - start + 1, MAX_PORT_CANDIDATES)
+    return Array.from({ length: count }, (_, i) => start + i)
   }
-  return DEFAULT_PORT
+
+  if (!/^\d+$/.test(trimmed)) { return null }
+  const single = parseInt(trimmed, 10)
+  return isValidPort(single) ? [single] : null
 }
 
 function getServerHost() {
@@ -52,9 +71,13 @@ function getKrokiServerUrl() {
   return 'https://kroki.io'
 }
 
+const portCandidates = parsePortSpec(process.env.MD_ANNOTATOR_PORT)
+
 export const config = {
-  port: getServerPort(),
-  portExplicit: !!process.env.MD_ANNOTATOR_PORT,
+  // First candidate; `ports` carries the full range when one was configured
+  port: portCandidates?.[0] ?? DEFAULT_PORT,
+  ports: portCandidates ?? [DEFAULT_PORT],
+  portExplicit: !!portCandidates,
   host: getServerHost(),
   browser: process.env.MD_ANNOTATOR_BROWSER || null,
   heartbeatTimeoutMs: getHeartbeatTimeoutMs(),

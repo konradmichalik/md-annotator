@@ -11,7 +11,7 @@ import express from 'express'
 import cors from 'cors'
 import { config } from './config.js'
 import { createApiRouter } from './routes.js'
-import { readMarkdownFile } from './file.js'
+import { readAnnotatableFile } from './file.js'
 import { convertNotesToAnnotations } from './notes.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -36,6 +36,30 @@ function resolveNotesForFile(feedbackNotes, fileIndex, content) {
     return []
   }
   return convertNotesToAnnotations(feedbackNotes, content)
+}
+
+/**
+ * Bind to the first free port in `candidates`.
+ *
+ * The listen error must be observed — without a handler an occupied port leaves
+ * the promise pending and the CLI hangs instead of reporting the conflict.
+ */
+async function listenOnFirstFreePort(app, candidates, host) {
+  let lastError
+  for (const candidate of candidates) {
+    try {
+      return await new Promise((resolve, reject) => {
+        const s = app.listen(candidate, host, () => resolve(s))
+        s.once('error', reject)
+      })
+    } catch (error) {
+      if (error.code !== 'EADDRINUSE') { throw error }
+      lastError = error
+    }
+  }
+
+  if (candidates.length === 1) { throw lastError }
+  throw new Error(`No free port in ${candidates[0]}-${candidates.at(-1)} on ${host}`)
 }
 
 /**
@@ -109,17 +133,15 @@ export async function startAnnotatorServer(options) {
     res.json({ status: 'ok' })
   })
 
-  // Compute content hash per file for annotation persistence
+  // Compute content hash per file for annotation persistence. A read failure here
+  // (e.g. a file over the size limit) must reject startup — swallowing it would let
+  // the server come up with a store /api/files can never serve.
   const stores = await Promise.all(
     filePaths.map(async (fp, index) => {
-      try {
-        const content = await readMarkdownFile(fp)
-        const contentHash = createHash('sha256').update(content).digest('hex')
-        const notes = resolveNotesForFile(feedbackNotes, index, content)
-        return { absolutePath: fp, contentHash, annotations: notes }
-      } catch (_e) {
-        return { absolutePath: fp, contentHash: null, annotations: [] }
-      }
+      const content = await readAnnotatableFile(fp)
+      const contentHash = createHash('sha256').update(content).digest('hex')
+      const notes = resolveNotesForFile(feedbackNotes, index, content)
+      return { absolutePath: fp, contentHash, annotations: notes }
     })
   )
 
@@ -139,12 +161,10 @@ export async function startAnnotatorServer(options) {
   // API routes with multi-file support
   app.use(createApiRouter(filePaths, safeResolve, origin, stores))
 
-  // Start server — use port 0 to let the OS assign a free port instantly,
-  // falling back to configured port if explicitly set via MD_ANNOTATOR_PORT
-  const requestedPort = config.portExplicit ? config.port : 0
-  const server = await new Promise((resolve) => {
-    const s = app.listen(requestedPort, config.host, () => resolve(s))
-  })
+  // Start server — port 0 lets the OS assign a free port instantly; an explicit
+  // MD_ANNOTATOR_PORT may name a single port or a range to walk.
+  const candidates = config.portExplicit ? config.ports : [0]
+  const server = await listenOnFirstFreePort(app, candidates, config.host)
 
   const port = server.address().port
   // Match the URL host to the actual bind host to avoid IPv4/IPv6 resolution

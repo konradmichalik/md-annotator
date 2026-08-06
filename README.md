@@ -19,7 +19,9 @@
 ## ✨ Features
 
 - **Multi-File Support** -- Review multiple files in one session with a tabbed interface
+- **Config & Data Files** -- Annotate `.yaml`, `.yml`, `.json`, `.jsonc`, `.json5`, `.toml`, `.ini`, `.cfg`, `.conf`, `.properties`, `.csv`, `.tsv`, `.log`, `.xml`, `.txt`, `.text` and `.env.example` as raw source with line numbers (a real `.env` is rejected, since those hold secrets)
 - **Linked Navigation** -- Click relative `.md` links to open them as new tabs (wiki-style browsing)
+- **LaTeX Math** -- Renders inline `$…$` / `\(…\)` and display `$$…$$` / `\[…\]` via KaTeX with bundled fonts (works offline); display formulas are annotatable as a whole. Dollar amounts like `$5-$10` and unterminated `$$` stay literal text
 - **Mermaid Diagrams** -- Renders `mermaid` code blocks as interactive diagrams with zoom, pan, and source toggle (adapts to light/dark theme)
 - **PlantUML Diagrams** -- Renders `plantuml` code blocks as SVG via a configurable PlantUML server with zoom, pan, and source toggle
 - **Kroki Diagrams** -- Renders 27+ diagram formats (`graphviz`, `d2`, `ditaa`, `erd`, `nomnoml`, `excalidraw`, and more) via a configurable [Kroki](https://kroki.io) server
@@ -172,7 +174,7 @@ The server starts on an available port (default 3000) and opens your browser aut
 
 | Variable               | Description                                                  |
 |------------------------|--------------------------------------------------------------|
-| `MD_ANNOTATOR_PORT`    | Override the server port (default: 3000)                     |
+| `MD_ANNOTATOR_PORT`    | Port or inclusive range (`3000` or `3000-3010`); the first free port in the range wins |
 | `MD_ANNOTATOR_BROWSER` | Custom browser application                                   |
 | `PLANTUML_SERVER_URL`  | PlantUML render server (default: `https://www.plantuml.com/plantuml`) |
 | `KROKI_SERVER_URL`     | Kroki render server (default: `https://kroki.io`)                    |
@@ -193,7 +195,7 @@ Once a file is opened in the browser, you can:
 - **Annotate images & diagrams** -- click on images, Mermaid, PlantUML, or Kroki diagrams to comment or delete them
 - **View annotations** in the sidebar panel on the right
 - **Export** annotations as Markdown or JSON
-- **Approve** or **Submit Feedback** when done
+- **Approve** or **Submit Feedback** when done -- with annotations present, Approve becomes **Approve with Notes** and passes them along as context instead of discarding them
 
 When used with an AI agent (Claude Code or OpenCode), submitting feedback triggers the agent to apply your changes to the file. The agent then re-opens the annotator for another review round, so you can verify the edits and provide further feedback if needed. This review loop continues until you approve the result.
 
