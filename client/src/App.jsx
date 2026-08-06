@@ -581,28 +581,38 @@ export default function App() {
 
   // Approving with annotations present keeps them as notes instead of discarding them
   const handleApprove = async () => {
-    setSubmitted(true)
-    setDecision('approved')
-    setApprovedNoteCount(totalAnnotationCount)
     try {
-      await fetch('/api/approve', {
+      const response = await fetch('/api/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(totalAnnotationCount > 0 ? { files: collectAnnotatedFiles() } : {})
       })
-    } catch { /* server shuts down */ }
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`)
+      }
+      setSubmitted(true)
+      setDecision('approved')
+      setApprovedNoteCount(totalAnnotationCount)
+    } catch (err) {
+      setErrorStatus('Approve failed: ' + err.message)
+    }
   }
 
   const handleSubmitFeedback = async () => {
-    setSubmitted(true)
-    setDecision('feedback')
     try {
-      await fetch('/api/feedback', {
+      const response = await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ files: collectAnnotatedFiles() })
       })
-    } catch { /* server shuts down */ }
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`)
+      }
+      setSubmitted(true)
+      setDecision('feedback')
+    } catch (err) {
+      setErrorStatus('Submit failed: ' + err.message)
+    }
   }
 
   const { serverGone, reconnectState } = useServerConnection({ submitted })
