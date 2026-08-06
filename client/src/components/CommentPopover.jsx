@@ -130,11 +130,16 @@ export function CommentPopover({
     const startY = e.clientY
     const startLeft = rect.left
     const startTop = rect.top
+    const maxLeft = Math.max(GAP, window.innerWidth - rect.width - GAP)
+    const maxTop = Math.max(GAP, window.innerHeight - rect.height - GAP)
 
     const handleDragMove = (moveEvent) => {
       const dx = moveEvent.clientX - startX
       const dy = moveEvent.clientY - startY
-      setDragOffset({ left: startLeft + dx, top: startTop + dy })
+      setDragOffset({
+        left: Math.max(GAP, Math.min(startLeft + dx, maxLeft)),
+        top: Math.max(GAP, Math.min(startTop + dy, maxTop))
+      })
     }
 
     const handleDragEnd = () => {
