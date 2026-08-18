@@ -203,8 +203,10 @@ export function InlineMarkdown({ text, onImageClick, annotatedImages, blockId })
       continue
     }
 
-    // Links: [text](url) — supports nested brackets for badge patterns like [![alt](img)](url)
-    match = remaining.match(/^\[((?:[^[\]]|!?\[[^\]]*\]\([^)]*\))+)\]\(([^)]+)\)/)
+    // Links: [text](url) — the text may contain one level of nested brackets, which
+    // covers badge patterns ([![alt](img)](url)) as well as code spans holding
+    // brackets (`#[Route]`, `items[0]`).
+    match = remaining.match(/^\[((?:[^[\]]|\[[^[\]]*\])+)\]\(([^)]+)\)/)
     if (match) {
       const href = match[2]
       // Unsafe hrefs (javascript:, data:, vbscript:, …) → drop the <a> wrapper,

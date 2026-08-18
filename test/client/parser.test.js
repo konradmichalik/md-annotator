@@ -402,10 +402,47 @@ describe('parseMarkdownToBlocks', () => {
       const md = '<details>\n<summary>Click me</summary>\nHidden content\n</details>'
       const blocks = parseMarkdownToBlocks(md)
       expect(blocks).toHaveLength(4)
-      expect(blocks[0]).toMatchObject({ type: 'html', content: '<details>' })
-      expect(blocks[1]).toMatchObject({ type: 'html', content: '<summary>Click me</summary>' })
+      expect(blocks[0]).toMatchObject({ type: 'html', content: '<details>', htmlTag: 'details', htmlRole: 'open' })
+      expect(blocks[1]).toMatchObject({ type: 'html', content: 'Click me', htmlTag: 'summary', htmlRole: 'summary' })
       expect(blocks[2]).toMatchObject({ type: 'paragraph', content: 'Hidden content' })
-      expect(blocks[3]).toMatchObject({ type: 'html', content: '</details>' })
+      expect(blocks[3]).toMatchObject({ type: 'html', content: '</details>', htmlTag: 'details', htmlRole: 'close' })
+    })
+
+    it('marks a mixed-content wrapper with open and close roles', () => {
+      const blocks = parseMarkdownToBlocks('<div align="center">\n  <p>Hello</p>\n</div>')
+      expect(blocks[0]).toMatchObject({ htmlTag: 'div', htmlRole: 'open' })
+      expect(blocks[2]).toMatchObject({ htmlTag: 'div', htmlRole: 'close' })
+    })
+
+    it('leaves an unclosed wrapper without open/close roles', () => {
+      const blocks = parseMarkdownToBlocks('<details>\n<summary>Click me</summary>\nHidden content')
+      expect(blocks[0].htmlRole).toBeUndefined()
+    })
+
+    it('splits a summary that shares the opening details line', () => {
+      const md = '<details><summary>Click me</summary>\n\nHidden content\n\n</details>'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks[0]).toMatchObject({ type: 'html', content: '<details>', htmlRole: 'open' })
+      expect(blocks[1]).toMatchObject({ type: 'html', content: 'Click me', htmlRole: 'summary' })
+      expect(blocks[2]).toMatchObject({ type: 'paragraph', content: 'Hidden content' })
+      expect(blocks[3]).toMatchObject({ type: 'html', content: '</details>', htmlRole: 'close' })
+    })
+
+    it('keeps the open attributes on the details marker', () => {
+      const blocks = parseMarkdownToBlocks('<details open>\n<summary>S</summary>\nBody\n</details>')
+      expect(blocks[0]).toMatchObject({ type: 'html', content: '<details open>', htmlRole: 'open' })
+    })
+
+    it('keeps content that follows the closing tag', () => {
+      const blocks = parseMarkdownToBlocks('<details>\n<summary>S</summary>\nBody\n</details>After the accordion.')
+      expect(blocks[3]).toMatchObject({ type: 'html', content: '</details>', htmlRole: 'close', startLine: 4 })
+      expect(blocks[4]).toMatchObject({ type: 'paragraph', content: 'After the accordion.', startLine: 4 })
+    })
+
+    it('parses content that precedes the closing tag as markdown', () => {
+      const blocks = parseMarkdownToBlocks('<details>\n<summary>S</summary>\nHidden **content**</details>')
+      expect(blocks[2]).toMatchObject({ type: 'paragraph', content: 'Hidden **content**' })
+      expect(blocks[3]).toMatchObject({ type: 'html', content: '</details>', htmlRole: 'close' })
     })
 
     it('parses a picture element', () => {

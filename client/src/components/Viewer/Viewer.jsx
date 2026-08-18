@@ -6,7 +6,7 @@ import { PlantUMLBlock } from '../PlantUMLBlock.jsx'
 import { KrokiBlock, KROKI_LANGUAGES } from '../KrokiBlock.jsx'
 import { PinpointOverlay } from '../PinpointOverlay.jsx'
 import { BlockHoverHint } from '../BlockHoverHint.jsx'
-import { BlockRenderer } from './BlockRenderer.jsx'
+import { BlockRenderer, HtmlWrapper } from './BlockRenderer.jsx'
 import { MathBlock } from './MathBlock.jsx'
 import { CodeBlock } from './CodeBlock.jsx'
 import { useHighlighter } from '../../hooks/useHighlighter.js'
@@ -15,17 +15,16 @@ import { highlightMatches, setActiveMatch, clearSearchHighlights } from '../../u
 import { SearchBar } from '../SearchBar.jsx'
 import { getQuickLabels, formatLabelText } from '../../utils/quickLabels.js'
 import { getItem, setItem } from '../../utils/storage.js'
+import { groupHtmlWrappers } from '../../utils/htmlWrappers.js'
+import { isOpenableFileLink } from '../../utils/links.js'
 
 const PINPOINT_HINT_LEARNED_KEY = 'md-annotator-pinpoint-hint-learned'
 const HINT_SKIP_SELECTOR = 'a[href], button, .code-copy-btn, .diagram-controls, .annotation-highlight, .annotation-toolbar, .comment-popover'
 
-const MD_LINK_PATTERN = /\.(?:md|markdown|mdown|mkd)(?:[#?]|$)/i
-
 function getLinkInfo(el) {
   const linkEl = el.closest('a[data-href]') || el.querySelector('a[data-href]')
   const linkUrl = linkEl?.dataset?.href || null
-  const linkIsMd = linkUrl && !linkUrl.startsWith('http://') && !linkUrl.startsWith('https://') && MD_LINK_PATTERN.test(linkUrl)
-  return { linkUrl, linkIsMd }
+  return { linkUrl, linkIsOpenable: isOpenableFileLink(linkUrl) }
 }
 
 function removeInsertionMarker(el) {
@@ -585,7 +584,7 @@ export const Viewer = forwardRef(function Viewer({
       const selection = window.getSelection()
       if (!selection || selection.isCollapsed) {
         e.preventDefault()
-        const { linkUrl, linkIsMd } = getLinkInfo(anchor)
+        const { linkUrl, linkIsOpenable } = getLinkInfo(anchor)
         if (pendingSourceRef.current && highlighterRef.current) {
           highlighterRef.current.remove(pendingSourceRef.current.id)
           pendingSourceRef.current = null
@@ -596,7 +595,7 @@ export const Viewer = forwardRef(function Viewer({
         setToolbarState({
           element: anchor,
           linkUrl,
-          linkIsMd,
+          linkIsOpenable,
           elementMode: true,
           elementData: { targetType: 'link', blockId, originalText: linkText }
         })
@@ -644,7 +643,7 @@ export const Viewer = forwardRef(function Viewer({
     const anchor = e.target.closest('a[href]')
     if (anchor) {
       const href = anchor.getAttribute('href')
-      if (href && !href.startsWith('#') && !href.startsWith('http://') && !href.startsWith('https://') && MD_LINK_PATTERN.test(href)) {
+      if (isOpenableFileLink(href)) {
         e.preventDefault()
         onOpenFile?.(href)
       }
@@ -751,6 +750,77 @@ export const Viewer = forwardRef(function Viewer({
     setHoverHintTarget(null)
   }, [])
 
+  const blockNodes = useMemo(() => groupHtmlWrappers(blocks), [blocks])
+
+  const renderBlock = (block) =>
+    block.type === 'math' ? (
+      <MathBlock
+        key={block.id}
+        block={block}
+        onMathClick={handleMathClick}
+        annotationType={annotatedMathBlocks.get(block.id) || null}
+        hasNote={noteBlockIds.has(block.id)}
+        onNoteClick={handleNoteClick}
+      />
+    ) : block.type === 'code' && block.language === 'mermaid' ? (
+      <MermaidBlock
+        key={block.id}
+        block={block}
+        onDiagramClick={handleDiagramClick}
+        annotationType={annotatedDiagramBlocks.get(block.id) || null}
+        hasNote={noteBlockIds.has(block.id)}
+        onNoteClick={handleNoteClick}
+      />
+    ) : block.type === 'code' && block.language === 'plantuml' ? (
+      <PlantUMLBlock
+        key={block.id}
+        block={block}
+        serverUrl={plantumlServerUrl}
+        onDiagramClick={handleDiagramClick}
+        annotationType={annotatedDiagramBlocks.get(block.id) || null}
+        hasNote={noteBlockIds.has(block.id)}
+        onNoteClick={handleNoteClick}
+      />
+    ) : block.type === 'code' && KROKI_LANGUAGES.has(block.language) ? (
+      <KrokiBlock
+        key={block.id}
+        block={block}
+        serverUrl={krokiServerUrl}
+        onDiagramClick={handleDiagramClick}
+        annotationType={annotatedDiagramBlocks.get(block.id) || null}
+        hasNote={noteBlockIds.has(block.id)}
+        onNoteClick={handleNoteClick}
+      />
+    ) : block.type === 'code' ? (
+      <CodeBlock
+        key={block.id}
+        block={block}
+        hasNote={noteBlockIds.has(block.id)}
+        onNoteClick={handleNoteClick}
+        onTokenSelect={handleTokenSelect}
+      />
+    ) : (
+      <BlockRenderer
+        key={block.id}
+        block={block}
+        onImageClick={handleImageClick}
+        onTableAnnotate={handleTableAnnotate}
+        annotatedImages={annotatedImages}
+        hasNote={noteBlockIds.has(block.id)}
+        onNoteClick={handleNoteClick}
+      />
+    )
+
+  const renderNodes = (nodes) => nodes.map(node =>
+    node.kind === 'wrapper' ? (
+      <HtmlWrapper key={node.block.id} block={node.block}>
+        {renderNodes(node.children)}
+      </HtmlWrapper>
+    ) : (
+      renderBlock(node.block)
+    )
+  )
+
   return (
     <div className="viewer-container">
       <article
@@ -760,65 +830,7 @@ export const Viewer = forwardRef(function Viewer({
         onMouseMove={handleBlockHover}
         onMouseLeave={handleBlockHoverLeave}
       >
-        {blocks.map(block =>
-          block.type === 'math' ? (
-            <MathBlock
-              key={block.id}
-              block={block}
-              onMathClick={handleMathClick}
-              annotationType={annotatedMathBlocks.get(block.id) || null}
-              hasNote={noteBlockIds.has(block.id)}
-              onNoteClick={handleNoteClick}
-            />
-          ) : block.type === 'code' && block.language === 'mermaid' ? (
-            <MermaidBlock
-              key={block.id}
-              block={block}
-              onDiagramClick={handleDiagramClick}
-              annotationType={annotatedDiagramBlocks.get(block.id) || null}
-              hasNote={noteBlockIds.has(block.id)}
-              onNoteClick={handleNoteClick}
-            />
-          ) : block.type === 'code' && block.language === 'plantuml' ? (
-            <PlantUMLBlock
-              key={block.id}
-              block={block}
-              serverUrl={plantumlServerUrl}
-              onDiagramClick={handleDiagramClick}
-              annotationType={annotatedDiagramBlocks.get(block.id) || null}
-              hasNote={noteBlockIds.has(block.id)}
-              onNoteClick={handleNoteClick}
-            />
-          ) : block.type === 'code' && KROKI_LANGUAGES.has(block.language) ? (
-            <KrokiBlock
-              key={block.id}
-              block={block}
-              serverUrl={krokiServerUrl}
-              onDiagramClick={handleDiagramClick}
-              annotationType={annotatedDiagramBlocks.get(block.id) || null}
-              hasNote={noteBlockIds.has(block.id)}
-              onNoteClick={handleNoteClick}
-            />
-          ) : block.type === 'code' ? (
-            <CodeBlock
-              key={block.id}
-              block={block}
-              hasNote={noteBlockIds.has(block.id)}
-              onNoteClick={handleNoteClick}
-              onTokenSelect={handleTokenSelect}
-            />
-          ) : (
-            <BlockRenderer
-              key={block.id}
-              block={block}
-              onImageClick={handleImageClick}
-              onTableAnnotate={handleTableAnnotate}
-              annotatedImages={annotatedImages}
-              hasNote={noteBlockIds.has(block.id)}
-              onNoteClick={handleNoteClick}
-            />
-          )
-        )}
+        {renderNodes(blockNodes)}
         <Toolbar
           highlightElement={toolbarState?.element ?? null}
           onAnnotate={handleAnnotate}
@@ -830,7 +842,7 @@ export const Viewer = forwardRef(function Viewer({
           elementMode={toolbarState?.elementMode || false}
           insertionMode={toolbarState?.insertionMode || false}
           linkUrl={toolbarState?.linkUrl || null}
-          onOpenLink={toolbarState?.linkIsMd ? onOpenFile : null}
+          onOpenLink={toolbarState?.linkIsOpenable ? onOpenFile : null}
         />
         {pinpointMode && <PinpointOverlay target={pinpointTarget} />}
         {!pinpointMode && <BlockHoverHint target={hoverHintTarget} />}

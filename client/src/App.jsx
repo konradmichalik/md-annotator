@@ -520,6 +520,12 @@ export default function App() {
       const res = await fetch(`/api/file/open?${params}`)
       const json = await res.json()
       if (json.success) {
+        // A directory link resolves to its index document, so dedupe on the real path
+        const openIndex = filesRef.current.findIndex(f => f.path === json.data.path)
+        if (openIndex !== -1) {
+          setActiveFileIndex(openIndex)
+          return
+        }
         const newFile = {
           index: json.data.index,
           path: json.data.path,
@@ -530,7 +536,7 @@ export default function App() {
           isPlainText: json.data.isPlainText || false
         }
         filesDispatch({ type: 'ADD_FILE', file: newFile })
-        setActiveFileIndex(currentFiles.length)
+        setActiveFileIndex(filesRef.current.length)
       } else {
         setErrorStatus(`Could not open file: ${json.error}`)
       }

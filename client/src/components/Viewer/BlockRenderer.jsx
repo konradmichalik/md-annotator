@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react'
 import { sanitizeHTML } from '../../utils/sanitize.js'
+import { isWrapperTag, parseHtmlAttributes } from '../../utils/htmlWrappers.js'
 import { InlineMarkdown } from './InlineMarkdown.jsx'
 import { TableToolbar } from './TableToolbar.jsx'
 
@@ -71,6 +72,24 @@ function HtmlBlock({ block, noteClass }) {
     }
   }, [block.content])
   return <div ref={ref} className={`block-html${noteClass}`} data-block-id={block.id} />
+}
+
+/**
+ * Renders a balanced HTML wrapper (<details>, <div align="center">, …) as a real
+ * element around its inner blocks, so nesting-dependent elements keep working.
+ */
+export function HtmlWrapper({ block, noteClass = '', children }) {
+  const Tag = isWrapperTag(block.htmlTag) ? block.htmlTag : 'div'
+  const { className, ...attrs } = parseHtmlAttributes(block.content)
+  return (
+    <Tag
+      {...attrs}
+      className={`block-html-wrapper block-html-${Tag}${className ? ` ${className}` : ''}${noteClass}`}
+      data-block-id={block.id}
+    >
+      {children}
+    </Tag>
+  )
 }
 
 export function BlockRenderer({ block, onImageClick, onTableAnnotate, annotatedImages, hasNote, onNoteClick }) {
@@ -156,6 +175,15 @@ export function BlockRenderer({ block, onImageClick, onTableAnnotate, annotatedI
     }
 
     case 'html':
+      // The <summary> of an accordion must stay a direct child of its <details>
+      if (block.htmlRole === 'summary') {
+        return (
+          <summary className={`block-html-summary${noteClass}`} data-block-id={block.id}>
+            {hasNote && <NoteBorder blockId={block.id} onClick={onNoteClick} />}
+            <InlineMarkdown text={block.content} onImageClick={onImageClick} annotatedImages={annotatedImages} blockId={block.id} />
+          </summary>
+        )
+      }
       return (
         <HtmlBlock block={block} noteClass={noteClass} />
       )

@@ -15,7 +15,7 @@ const HTML_VOID_TAGS = new Set([
 ])
 
 // HTML tags that can contain markdown content (e.g. <div align="center">)
-const HTML_MIXED_CONTENT_TAGS = new Set([
+export const HTML_MIXED_CONTENT_TAGS = new Set([
   'div', 'section', 'details', 'aside', 'article', 'figure', 'figcaption',
   'header', 'footer', 'main', 'nav', 'center'
 ])
@@ -300,31 +300,48 @@ export function parseMarkdownToBlocks(markdown, { allowFrontmatter = true } = {}
           // Mixed content wrapper: split into open tag + inner markdown + close tag
           const closePattern = new RegExp(`</${tagName}\\s*>`, 'i')
           const openPattern = new RegExp(`<${tagName}[\\s>/]`, 'i')
+          const openTag = line.match(new RegExp(`^\\s*<${tagName}(?:\\s[^>]*)?>`, 'i'))?.[0] ?? line
           const innerLines = []
+          const trailing = line.slice(openTag.length)
+          if (trailing.trim()) { innerLines.push(trailing) }
+          // Content sharing the opening line belongs to that same line number
+          const innerLineOffset = innerLines.length > 0 ? htmlStartLine - 1 : htmlStartLine
           let closingLine = null
+          let closingLineNum = null
+          let afterClose = ''
           let depth = 1
           i++
           while (i < lines.length) {
             if (openPattern.test(lines[i].trim())) { depth++ }
             if (closePattern.test(lines[i].trim())) {
               depth--
-              if (depth === 0) { closingLine = lines[i]; break }
+              if (depth === 0) {
+                const closeMatch = lines[i].match(closePattern)
+                const prefix = lines[i].slice(0, closeMatch.index)
+                if (prefix.trim()) { innerLines.push(prefix) }
+                closingLine = closeMatch[0]
+                afterClose = lines[i].slice(closeMatch.index + closeMatch[0].length)
+                closingLineNum = i + 1
+                break
+              }
             }
             innerLines.push(lines[i])
             i++
           }
 
-          // Emit opening tag
+          // Emit opening tag. A balanced wrapper carries open/close roles so the
+          // renderer can nest the inner blocks inside a real element.
           blocks.push({
             id: `block-${currentId++}`,
             type: 'html',
-            content: line,
+            content: openTag,
             order: currentId,
-            startLine: htmlStartLine
+            startLine: htmlStartLine,
+            ...(closingLine ? { htmlTag: tagName, htmlRole: 'open' } : {})
           })
           // Recursively parse inner content as markdown
           for (const inner of parseMarkdownToBlocks(innerLines.join('\n'), { allowFrontmatter: false })) {
-            blocks.push({ ...inner, id: `block-${currentId++}`, order: currentId, startLine: htmlStartLine + inner.startLine })
+            blocks.push({ ...inner, id: `block-${currentId++}`, order: currentId, startLine: innerLineOffset + inner.startLine })
           }
           // Emit closing tag
           if (closingLine) {
@@ -333,10 +350,36 @@ export function parseMarkdownToBlocks(markdown, { allowFrontmatter = true } = {}
               type: 'html',
               content: closingLine,
               order: currentId,
-              startLine: htmlStartLine + innerLines.length + 1
+              startLine: closingLineNum,
+              htmlTag: tagName,
+              htmlRole: 'close'
             })
+            // Content trailing the closing tag belongs after the wrapper, on that same line
+            if (afterClose.trim()) {
+              for (const after of parseMarkdownToBlocks(afterClose, { allowFrontmatter: false })) {
+                blocks.push({ ...after, id: `block-${currentId++}`, order: currentId, startLine: closingLineNum })
+              }
+            }
           }
           continue
+        }
+
+        // <summary> is an accordion label: keep only its inner markdown so it can
+        // render as a real <summary> child of <details>.
+        if (tagName === 'summary' && hasSameLineClose) {
+          const summaryInner = trimmed.match(/^<summary(?:\s[^>]*)?>([\s\S]*)<\/summary\s*>$/i)
+          if (summaryInner) {
+            blocks.push({
+              id: `block-${currentId++}`,
+              type: 'html',
+              content: summaryInner[1].trim(),
+              order: currentId,
+              startLine: htmlStartLine,
+              htmlTag: 'summary',
+              htmlRole: 'summary'
+            })
+            continue
+          }
         }
 
         // Non-mixed HTML: collect everything as one opaque block
