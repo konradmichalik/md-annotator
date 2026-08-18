@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { relative, resolve, dirname, isAbsolute } from 'node:path'
 import { createHash } from 'node:crypto'
-import { readAnnotatableFile, isAnnotatableFile, isPlainTextFile, resolveAnnotatablePath } from './file.js'
+import { readAnnotatableFile, isAnnotatableFile, isPathInside, isPlainTextFile, resolveAnnotatablePath } from './file.js'
 import { exportFeedback, exportMultiFileFeedback } from './feedback.js'
 import { listWorkspaceFiles } from './workspace.js'
 import { config } from './config.js'
@@ -85,6 +85,11 @@ export function createApiRouter(filePaths, resolveDecision, origin = 'cli', stor
 
     const rel = relative(baseDir, absolutePath)
     if (rel.startsWith('..') || rel === '' || isAbsolute(rel)) {
+      return res.status(403).json(failure('Access denied: path outside project directory'))
+    }
+
+    // The lexical check above cannot see through a symbolic link
+    if (!await isPathInside(baseDir, absolutePath)) {
       return res.status(403).json(failure('Access denied: path outside project directory'))
     }
 

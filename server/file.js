@@ -2,9 +2,9 @@
  * File I/O utilities for annotatable text files.
  */
 
-import { readFile, stat } from 'node:fs/promises'
+import { readFile, realpath, stat } from 'node:fs/promises'
 import { access, constants } from 'node:fs/promises'
-import { basename, extname, join, resolve } from 'node:path'
+import { basename, extname, isAbsolute, join, relative, resolve } from 'node:path'
 
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown', '.mdown', '.mkd'])
 
@@ -58,6 +58,24 @@ export async function fileExists(filePath) {
   } catch {
     return false
   }
+}
+
+/**
+ * Whether `targetPath` lives inside `baseDir`, compared on canonical paths so a
+ * symbolic link cannot smuggle a target out of the project. Paths that cannot be
+ * canonicalized (a target that does not exist yet) fall back to a lexical check.
+ */
+export async function isPathInside(baseDir, targetPath) {
+  const canonical = async (p) => {
+    try {
+      return await realpath(p)
+    } catch {
+      return resolve(p)
+    }
+  }
+
+  const rel = relative(await canonical(baseDir), await canonical(targetPath))
+  return rel !== '' && !rel.startsWith('..') && !isAbsolute(rel)
 }
 
 /**

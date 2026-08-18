@@ -1,4 +1,6 @@
 import { join } from 'node:path'
+import { mkdtemp, mkdir, writeFile, symlink } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { describe, it, expect } from 'vitest'
 import {
   isMarkdownFile,
@@ -7,7 +9,8 @@ import {
   supportedExtensions,
   fileExists,
   readAnnotatableFile,
-  resolveAnnotatablePath
+  resolveAnnotatablePath,
+  isPathInside
 } from '../../server/file.js'
 
 describe('isMarkdownFile', () => {
@@ -175,5 +178,39 @@ describe('resolveAnnotatablePath', () => {
   it('returns a non-existent path unchanged', async () => {
     const missing = join(repoRoot, 'nope', 'missing.md')
     expect(await resolveAnnotatablePath(missing)).toBe(missing)
+  })
+})
+
+describe('isPathInside', () => {
+  const repoRoot = join(import.meta.dirname, '..', '..')
+
+  it('accepts a file inside the base directory', async () => {
+    expect(await isPathInside(repoRoot, join(repoRoot, 'README.md'))).toBe(true)
+  })
+
+  it('rejects a file outside the base directory', async () => {
+    expect(await isPathInside(join(repoRoot, 'server'), join(repoRoot, 'README.md'))).toBe(false)
+  })
+
+  it('rejects the base directory itself', async () => {
+    expect(await isPathInside(repoRoot, repoRoot)).toBe(false)
+  })
+
+  it('rejects a target reached through a symbolic link', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'md-annotator-symlink-'))
+    const workspace = join(root, 'workspace')
+    const external = join(root, 'external')
+    await mkdir(workspace)
+    await mkdir(external)
+    await writeFile(join(external, 'README.md'), '# outside')
+    await symlink(external, join(workspace, 'linked-dir'), 'dir')
+
+    const escaped = join(workspace, 'linked-dir', 'README.md')
+    expect(await isPathInside(workspace, escaped)).toBe(false)
+  })
+
+  it('falls back to a lexical check for a non-existent target', async () => {
+    expect(await isPathInside(repoRoot, join(repoRoot, 'docs', 'missing.md'))).toBe(true)
+    expect(await isPathInside(repoRoot, join(repoRoot, '..', 'missing.md'))).toBe(false)
   })
 })
