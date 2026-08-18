@@ -24,7 +24,7 @@ const PLAIN_TEXT_BASENAMES = new Set(['.env.example'])
 const MAX_FILE_BYTES = 2 * 1024 * 1024
 
 // A link may point at a directory (e.g. `docs/routing/`), meaning its index document
-const DIRECTORY_INDEX_FILES = ['README.md', 'readme.md', 'index.md', 'Index.md']
+const DIRECTORY_INDEX_FILES = ['README.md', 'readme.md', 'index.md']
 
 export function isMarkdownFile(filePath) {
   const ext = extname(filePath).toLowerCase()
