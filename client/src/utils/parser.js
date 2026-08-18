@@ -308,6 +308,7 @@ export function parseMarkdownToBlocks(markdown, { allowFrontmatter = true } = {}
           const innerLineOffset = innerLines.length > 0 ? htmlStartLine - 1 : htmlStartLine
           let closingLine = null
           let closingLineNum = null
+          let afterClose = ''
           let depth = 1
           i++
           while (i < lines.length) {
@@ -315,10 +316,11 @@ export function parseMarkdownToBlocks(markdown, { allowFrontmatter = true } = {}
             if (closePattern.test(lines[i].trim())) {
               depth--
               if (depth === 0) {
-                const closeIndex = lines[i].search(closePattern)
-                const prefix = lines[i].slice(0, closeIndex)
+                const closeMatch = lines[i].match(closePattern)
+                const prefix = lines[i].slice(0, closeMatch.index)
                 if (prefix.trim()) { innerLines.push(prefix) }
-                closingLine = lines[i].slice(closeIndex)
+                closingLine = closeMatch[0]
+                afterClose = lines[i].slice(closeMatch.index + closeMatch[0].length)
                 closingLineNum = i + 1
                 break
               }
@@ -352,6 +354,12 @@ export function parseMarkdownToBlocks(markdown, { allowFrontmatter = true } = {}
               htmlTag: tagName,
               htmlRole: 'close'
             })
+            // Content trailing the closing tag belongs after the wrapper, on that same line
+            if (afterClose.trim()) {
+              for (const after of parseMarkdownToBlocks(afterClose, { allowFrontmatter: false })) {
+                blocks.push({ ...after, id: `block-${currentId++}`, order: currentId, startLine: closingLineNum })
+              }
+            }
           }
           continue
         }

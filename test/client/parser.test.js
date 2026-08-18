@@ -433,6 +433,12 @@ describe('parseMarkdownToBlocks', () => {
       expect(blocks[0]).toMatchObject({ type: 'html', content: '<details open>', htmlRole: 'open' })
     })
 
+    it('keeps content that follows the closing tag', () => {
+      const blocks = parseMarkdownToBlocks('<details>\n<summary>S</summary>\nBody\n</details>After the accordion.')
+      expect(blocks[3]).toMatchObject({ type: 'html', content: '</details>', htmlRole: 'close', startLine: 4 })
+      expect(blocks[4]).toMatchObject({ type: 'paragraph', content: 'After the accordion.', startLine: 4 })
+    })
+
     it('parses content that precedes the closing tag as markdown', () => {
       const blocks = parseMarkdownToBlocks('<details>\n<summary>S</summary>\nHidden **content**</details>')
       expect(blocks[2]).toMatchObject({ type: 'paragraph', content: 'Hidden **content**' })
