@@ -6,7 +6,7 @@ import { PlantUMLBlock } from '../PlantUMLBlock.jsx'
 import { KrokiBlock, KROKI_LANGUAGES } from '../KrokiBlock.jsx'
 import { PinpointOverlay } from '../PinpointOverlay.jsx'
 import { BlockHoverHint } from '../BlockHoverHint.jsx'
-import { BlockRenderer } from './BlockRenderer.jsx'
+import { BlockRenderer, HtmlWrapper } from './BlockRenderer.jsx'
 import { MathBlock } from './MathBlock.jsx'
 import { CodeBlock } from './CodeBlock.jsx'
 import { useHighlighter } from '../../hooks/useHighlighter.js'
@@ -15,6 +15,7 @@ import { highlightMatches, setActiveMatch, clearSearchHighlights } from '../../u
 import { SearchBar } from '../SearchBar.jsx'
 import { getQuickLabels, formatLabelText } from '../../utils/quickLabels.js'
 import { getItem, setItem } from '../../utils/storage.js'
+import { groupHtmlWrappers } from '../../utils/htmlWrappers.js'
 
 const PINPOINT_HINT_LEARNED_KEY = 'md-annotator-pinpoint-hint-learned'
 const HINT_SKIP_SELECTOR = 'a[href], button, .code-copy-btn, .diagram-controls, .annotation-highlight, .annotation-toolbar, .comment-popover'
@@ -751,6 +752,77 @@ export const Viewer = forwardRef(function Viewer({
     setHoverHintTarget(null)
   }, [])
 
+  const blockNodes = useMemo(() => groupHtmlWrappers(blocks), [blocks])
+
+  const renderBlock = (block) =>
+    block.type === 'math' ? (
+      <MathBlock
+        key={block.id}
+        block={block}
+        onMathClick={handleMathClick}
+        annotationType={annotatedMathBlocks.get(block.id) || null}
+        hasNote={noteBlockIds.has(block.id)}
+        onNoteClick={handleNoteClick}
+      />
+    ) : block.type === 'code' && block.language === 'mermaid' ? (
+      <MermaidBlock
+        key={block.id}
+        block={block}
+        onDiagramClick={handleDiagramClick}
+        annotationType={annotatedDiagramBlocks.get(block.id) || null}
+        hasNote={noteBlockIds.has(block.id)}
+        onNoteClick={handleNoteClick}
+      />
+    ) : block.type === 'code' && block.language === 'plantuml' ? (
+      <PlantUMLBlock
+        key={block.id}
+        block={block}
+        serverUrl={plantumlServerUrl}
+        onDiagramClick={handleDiagramClick}
+        annotationType={annotatedDiagramBlocks.get(block.id) || null}
+        hasNote={noteBlockIds.has(block.id)}
+        onNoteClick={handleNoteClick}
+      />
+    ) : block.type === 'code' && KROKI_LANGUAGES.has(block.language) ? (
+      <KrokiBlock
+        key={block.id}
+        block={block}
+        serverUrl={krokiServerUrl}
+        onDiagramClick={handleDiagramClick}
+        annotationType={annotatedDiagramBlocks.get(block.id) || null}
+        hasNote={noteBlockIds.has(block.id)}
+        onNoteClick={handleNoteClick}
+      />
+    ) : block.type === 'code' ? (
+      <CodeBlock
+        key={block.id}
+        block={block}
+        hasNote={noteBlockIds.has(block.id)}
+        onNoteClick={handleNoteClick}
+        onTokenSelect={handleTokenSelect}
+      />
+    ) : (
+      <BlockRenderer
+        key={block.id}
+        block={block}
+        onImageClick={handleImageClick}
+        onTableAnnotate={handleTableAnnotate}
+        annotatedImages={annotatedImages}
+        hasNote={noteBlockIds.has(block.id)}
+        onNoteClick={handleNoteClick}
+      />
+    )
+
+  const renderNodes = (nodes) => nodes.map(node =>
+    node.kind === 'wrapper' ? (
+      <HtmlWrapper key={node.block.id} block={node.block}>
+        {renderNodes(node.children)}
+      </HtmlWrapper>
+    ) : (
+      renderBlock(node.block)
+    )
+  )
+
   return (
     <div className="viewer-container">
       <article
@@ -760,65 +832,7 @@ export const Viewer = forwardRef(function Viewer({
         onMouseMove={handleBlockHover}
         onMouseLeave={handleBlockHoverLeave}
       >
-        {blocks.map(block =>
-          block.type === 'math' ? (
-            <MathBlock
-              key={block.id}
-              block={block}
-              onMathClick={handleMathClick}
-              annotationType={annotatedMathBlocks.get(block.id) || null}
-              hasNote={noteBlockIds.has(block.id)}
-              onNoteClick={handleNoteClick}
-            />
-          ) : block.type === 'code' && block.language === 'mermaid' ? (
-            <MermaidBlock
-              key={block.id}
-              block={block}
-              onDiagramClick={handleDiagramClick}
-              annotationType={annotatedDiagramBlocks.get(block.id) || null}
-              hasNote={noteBlockIds.has(block.id)}
-              onNoteClick={handleNoteClick}
-            />
-          ) : block.type === 'code' && block.language === 'plantuml' ? (
-            <PlantUMLBlock
-              key={block.id}
-              block={block}
-              serverUrl={plantumlServerUrl}
-              onDiagramClick={handleDiagramClick}
-              annotationType={annotatedDiagramBlocks.get(block.id) || null}
-              hasNote={noteBlockIds.has(block.id)}
-              onNoteClick={handleNoteClick}
-            />
-          ) : block.type === 'code' && KROKI_LANGUAGES.has(block.language) ? (
-            <KrokiBlock
-              key={block.id}
-              block={block}
-              serverUrl={krokiServerUrl}
-              onDiagramClick={handleDiagramClick}
-              annotationType={annotatedDiagramBlocks.get(block.id) || null}
-              hasNote={noteBlockIds.has(block.id)}
-              onNoteClick={handleNoteClick}
-            />
-          ) : block.type === 'code' ? (
-            <CodeBlock
-              key={block.id}
-              block={block}
-              hasNote={noteBlockIds.has(block.id)}
-              onNoteClick={handleNoteClick}
-              onTokenSelect={handleTokenSelect}
-            />
-          ) : (
-            <BlockRenderer
-              key={block.id}
-              block={block}
-              onImageClick={handleImageClick}
-              onTableAnnotate={handleTableAnnotate}
-              annotatedImages={annotatedImages}
-              hasNote={noteBlockIds.has(block.id)}
-              onNoteClick={handleNoteClick}
-            />
-          )
-        )}
+        {renderNodes(blockNodes)}
         <Toolbar
           highlightElement={toolbarState?.element ?? null}
           onAnnotate={handleAnnotate}
