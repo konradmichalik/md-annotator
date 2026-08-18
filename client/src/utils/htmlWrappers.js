@@ -14,8 +14,6 @@ import { HTML_MIXED_CONTENT_TAGS } from './parser.js'
 // handlers are deliberately absent (the sanitizer strips them too).
 const ATTR_ALLOWLIST = new Set(['id', 'class', 'align', 'open', 'title', 'lang', 'dir'])
 
-const BOOLEAN_ATTRS = new Set(['open'])
-
 const ATTR_RE = /([a-zA-Z-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g
 
 export function isWrapperTag(tagName) {
@@ -32,10 +30,13 @@ export function parseHtmlAttributes(openTag) {
   while ((match = ATTR_RE.exec(inner)) !== null) {
     const name = match[1].toLowerCase()
     if (!ATTR_ALLOWLIST.has(name)) { continue }
+    // `open` is a boolean attribute: present means on, whatever the value says
+    if (name === 'open') {
+      props.open = true
+      continue
+    }
     const value = match[2] ?? match[3] ?? match[4]
-    if (BOOLEAN_ATTRS.has(name)) {
-      props[name] = value === undefined || value !== 'false'
-    } else if (value !== undefined) {
+    if (value !== undefined) {
       props[name === 'class' ? 'className' : name] = value
     }
   }

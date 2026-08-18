@@ -79,6 +79,14 @@ describe('parseHtmlAttributes', () => {
     expect(parseHtmlAttributes('<details open>')).toEqual({ open: true })
   })
 
+  it('treats any present open attribute as true', () => {
+    // HTML boolean attributes are on by presence: <details open="false"> is open
+    expect(parseHtmlAttributes('<details open="">')).toEqual({ open: true })
+    expect(parseHtmlAttributes('<details open="false">')).toEqual({ open: true })
+    expect(parseHtmlAttributes('<details open="0">')).toEqual({ open: true })
+    expect(parseHtmlAttributes('<details open=open>')).toEqual({ open: true })
+  })
+
   it('drops attributes outside the allowlist', () => {
     expect(parseHtmlAttributes('<div style="color:red" onclick="x()" data-x="1">')).toEqual({})
   })
@@ -97,5 +105,15 @@ describe('isWrapperTag', () => {
   it('rejects anything else', () => {
     expect(isWrapperTag('script')).toBe(false)
     expect(isWrapperTag(undefined)).toBe(false)
+  })
+})
+
+describe('groupHtmlWrappers with trailing content', () => {
+  it('keeps a block that follows the closing tag outside the wrapper', () => {
+    const blocks = parseMarkdownToBlocks('<details>\n<summary>S</summary>\nBody\n</details>After the accordion.')
+    const nodes = groupHtmlWrappers(blocks)
+    expect(nodes).toHaveLength(2)
+    expect(nodes[0].kind).toBe('wrapper')
+    expect(nodes[1]).toMatchObject({ kind: 'block', block: { content: 'After the accordion.' } })
   })
 })
