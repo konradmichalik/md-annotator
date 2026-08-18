@@ -4,7 +4,7 @@
 
 import { readFile, stat } from 'node:fs/promises'
 import { access, constants } from 'node:fs/promises'
-import { basename, extname, resolve } from 'node:path'
+import { basename, extname, join, resolve } from 'node:path'
 
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown', '.mdown', '.mkd'])
 
@@ -22,6 +22,9 @@ const PLAIN_TEXT_BASENAMES = new Set(['.env.example'])
 
 // Reading a huge file would freeze the parser and the browser alike
 const MAX_FILE_BYTES = 2 * 1024 * 1024
+
+// A link may point at a directory (e.g. `docs/routing/`), meaning its index document
+const DIRECTORY_INDEX_FILES = ['README.md', 'readme.md', 'index.md', 'Index.md']
 
 export function isMarkdownFile(filePath) {
   const ext = extname(filePath).toLowerCase()
@@ -55,6 +58,32 @@ export async function fileExists(filePath) {
   } catch {
     return false
   }
+}
+
+/**
+ * Maps a link target to the file it stands for: a directory resolves to its index
+ * document, everything else is returned unchanged.
+ */
+export async function resolveAnnotatablePath(targetPath) {
+  const absolutePath = resolve(targetPath)
+
+  try {
+    const stats = await stat(absolutePath)
+    if (!stats.isDirectory()) {
+      return absolutePath
+    }
+  } catch {
+    return absolutePath
+  }
+
+  for (const indexFile of DIRECTORY_INDEX_FILES) {
+    const candidate = join(absolutePath, indexFile)
+    if (await fileExists(candidate)) {
+      return candidate
+    }
+  }
+
+  return absolutePath
 }
 
 export async function readAnnotatableFile(filePath) {

@@ -16,17 +16,15 @@ import { SearchBar } from '../SearchBar.jsx'
 import { getQuickLabels, formatLabelText } from '../../utils/quickLabels.js'
 import { getItem, setItem } from '../../utils/storage.js'
 import { groupHtmlWrappers } from '../../utils/htmlWrappers.js'
+import { isOpenableFileLink } from '../../utils/links.js'
 
 const PINPOINT_HINT_LEARNED_KEY = 'md-annotator-pinpoint-hint-learned'
 const HINT_SKIP_SELECTOR = 'a[href], button, .code-copy-btn, .diagram-controls, .annotation-highlight, .annotation-toolbar, .comment-popover'
 
-const MD_LINK_PATTERN = /\.(?:md|markdown|mdown|mkd)(?:[#?]|$)/i
-
 function getLinkInfo(el) {
   const linkEl = el.closest('a[data-href]') || el.querySelector('a[data-href]')
   const linkUrl = linkEl?.dataset?.href || null
-  const linkIsMd = linkUrl && !linkUrl.startsWith('http://') && !linkUrl.startsWith('https://') && MD_LINK_PATTERN.test(linkUrl)
-  return { linkUrl, linkIsMd }
+  return { linkUrl, linkIsOpenable: isOpenableFileLink(linkUrl) }
 }
 
 function removeInsertionMarker(el) {
@@ -586,7 +584,7 @@ export const Viewer = forwardRef(function Viewer({
       const selection = window.getSelection()
       if (!selection || selection.isCollapsed) {
         e.preventDefault()
-        const { linkUrl, linkIsMd } = getLinkInfo(anchor)
+        const { linkUrl, linkIsOpenable } = getLinkInfo(anchor)
         if (pendingSourceRef.current && highlighterRef.current) {
           highlighterRef.current.remove(pendingSourceRef.current.id)
           pendingSourceRef.current = null
@@ -597,7 +595,7 @@ export const Viewer = forwardRef(function Viewer({
         setToolbarState({
           element: anchor,
           linkUrl,
-          linkIsMd,
+          linkIsOpenable,
           elementMode: true,
           elementData: { targetType: 'link', blockId, originalText: linkText }
         })
@@ -645,7 +643,7 @@ export const Viewer = forwardRef(function Viewer({
     const anchor = e.target.closest('a[href]')
     if (anchor) {
       const href = anchor.getAttribute('href')
-      if (href && !href.startsWith('#') && !href.startsWith('http://') && !href.startsWith('https://') && MD_LINK_PATTERN.test(href)) {
+      if (isOpenableFileLink(href)) {
         e.preventDefault()
         onOpenFile?.(href)
       }
@@ -844,7 +842,7 @@ export const Viewer = forwardRef(function Viewer({
           elementMode={toolbarState?.elementMode || false}
           insertionMode={toolbarState?.insertionMode || false}
           linkUrl={toolbarState?.linkUrl || null}
-          onOpenLink={toolbarState?.linkIsMd ? onOpenFile : null}
+          onOpenLink={toolbarState?.linkIsOpenable ? onOpenFile : null}
         />
         {pinpointMode && <PinpointOverlay target={pinpointTarget} />}
         {!pinpointMode && <BlockHoverHint target={hoverHintTarget} />}

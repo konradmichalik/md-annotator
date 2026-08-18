@@ -6,7 +6,8 @@ import {
   isAnnotatableFile,
   supportedExtensions,
   fileExists,
-  readAnnotatableFile
+  readAnnotatableFile,
+  resolveAnnotatablePath
 } from '../../server/file.js'
 
 describe('isMarkdownFile', () => {
@@ -145,5 +146,34 @@ describe('readAnnotatableFile', () => {
     const fixturePath = join(import.meta.dirname, '..', '..', 'package.json')
     const content = await readAnnotatableFile(fixturePath)
     expect(content).toContain('md-annotator')
+  })
+})
+
+describe('resolveAnnotatablePath', () => {
+  const repoRoot = join(import.meta.dirname, '..', '..')
+
+  it('resolves a directory to its README', async () => {
+    const resolved = await resolveAnnotatablePath(repoRoot)
+    expect(resolved).toBe(join(repoRoot, 'README.md'))
+  })
+
+  it('resolves a directory given with a trailing slash', async () => {
+    const resolved = await resolveAnnotatablePath(`${repoRoot}/`)
+    expect(resolved).toBe(join(repoRoot, 'README.md'))
+  })
+
+  it('leaves a file path untouched', async () => {
+    const filePath = join(repoRoot, 'README.md')
+    expect(await resolveAnnotatablePath(filePath)).toBe(filePath)
+  })
+
+  it('returns the directory itself when it holds no index document', async () => {
+    const dir = join(repoRoot, 'test', 'fixtures', 'docs')
+    expect(await resolveAnnotatablePath(dir)).toBe(dir)
+  })
+
+  it('returns a non-existent path unchanged', async () => {
+    const missing = join(repoRoot, 'nope', 'missing.md')
+    expect(await resolveAnnotatablePath(missing)).toBe(missing)
   })
 })
