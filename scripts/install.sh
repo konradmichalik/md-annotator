@@ -80,6 +80,7 @@ echo "  CLAUDE CODE SETUP"
 echo "=========================================="
 echo ""
 
+npm uninstall -g md-annotator 2>/dev/null || true
 npm install -g annotaitr@latest
 echo "Installed annotaitr CLI globally (md-annotator still works as an alias)"
 
