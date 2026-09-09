@@ -21,7 +21,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build client
         run: npm run build
@@ -32,7 +32,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Install opencode plugin dependencies
-        run: npm install
+        run: npm ci
         working-directory: apps/opencode
 
       - name: Build opencode plugin
