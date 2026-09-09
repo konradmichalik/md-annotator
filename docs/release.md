@@ -45,8 +45,8 @@ The tag format must be `X.Y.Z` (no `v` prefix). The release workflow validates t
 The `.github/workflows/release.yml` workflow triggers on any tag push and:
 
 1. Validates the tag matches `X.Y.Z` format
-2. Creates a GitHub Release via `softprops/action-gh-release`
-3. Auto-generates release notes from merged PRs since the last tag
+1. Creates a GitHub Release via `softprops/action-gh-release`
+1. Auto-generates release notes from merged PRs since the last tag
 
 ### 6. Verify
 

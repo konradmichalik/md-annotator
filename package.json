@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Browser-based image and Markdown annotator for AI-assisted review, with built-in web page capture",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "bin": {
     "annotaitr": "./index.js",
     "md-annotator": "./index.js"
