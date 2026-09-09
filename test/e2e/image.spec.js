@@ -1,4 +1,4 @@
-// test/e2e/flow.spec.js
+// test/e2e/image.spec.js
 import { spawn } from 'node:child_process'
 import { writeFile, rm, mkdtemp, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'

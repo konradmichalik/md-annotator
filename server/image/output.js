@@ -8,7 +8,7 @@ import { join } from 'node:path'
  * overwritten mid-session.
  */
 export async function writeAnnotatedImage(buffer) {
-  const dir = await mkdtemp(join(tmpdir(), 'img-annotator-'))
+  const dir = await mkdtemp(join(tmpdir(), 'annotaitr-'))
   const path = join(dir, 'annotated.png')
   await writeFile(path, buffer)
   return path
