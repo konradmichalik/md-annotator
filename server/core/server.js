@@ -35,8 +35,12 @@ async function listenOnFirstFreePort(app, candidates, host) {
 
 /**
  * @param {Object} options
- * @param {string} options.bundleDir - directory holding the built client's index.html
- *   (falls back to serving the directory as static files in dev, when unbuilt)
+ * @param {string} [options.bundleDir] - directory holding the built client's index.html
+ *   (falls back to serving the directory as static files in dev, when unbuilt).
+ *   Ignored when `htmlContent` is given.
+ * @param {string} [options.htmlContent] - pre-loaded HTML to serve at `/` directly,
+ *   instead of reading `bundleDir`. Used by apps/opencode, which bundles its own
+ *   copy of the client HTML alongside the plugin rather than shipping client/dist.
  * @param {string[]} [options.staticDirs] - extra directories served as static assets
  *   (markdown mode serves each annotated file's directory plus cwd, for relative
  *   images; image mode needs none)
@@ -45,9 +49,11 @@ async function listenOnFirstFreePort(app, candidates, host) {
  *   decision promise exactly once
  * @param {Function} [options.onReady] - (url, port) => void
  */
-export async function startAnnotatorServer({ bundleDir, staticDirs = [], mountRoutes, onReady = null }) {
-  const distIndex = join(bundleDir, 'index.html')
-  const preloadedHtml = existsSync(distIndex) ? readFileSync(distIndex, 'utf-8') : null
+export async function startAnnotatorServer({ bundleDir, htmlContent = null, staticDirs = [], mountRoutes, onReady = null }) {
+  const preloadedHtml = htmlContent ?? (() => {
+    const distIndex = join(bundleDir, 'index.html')
+    return existsSync(distIndex) ? readFileSync(distIndex, 'utf-8') : null
+  })()
 
   const app = express()
   app.use(cors())

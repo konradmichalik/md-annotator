@@ -36,10 +36,12 @@ function resolveNotesForFile(feedbackNotes, fileIndex, content) {
  * @param {string[]} options.filePaths - absolute paths to markdown/plain-text files
  * @param {string} [options.origin='cli']
  * @param {Array} [options.feedbackNotes] - AI notes to attach to the first file
+ * @param {string} [options.htmlContent] - pre-loaded HTML to serve instead of the
+ *   built client/dist bundle (used by apps/opencode, which bundles its own copy)
  * @param {Function} [options.onReady] - (url, port) => void
  */
 export async function buildMarkdownServer(options) {
-  const { filePaths, origin = 'cli', feedbackNotes = null, onReady = null } = options
+  const { filePaths, origin = 'cli', feedbackNotes = null, htmlContent = null, onReady = null } = options
 
   // Compute content hash per file for annotation persistence. A read failure
   // here (e.g. a file over the size limit) must reject startup — swallowing
@@ -60,6 +62,7 @@ export async function buildMarkdownServer(options) {
 
   return startAnnotatorServer({
     bundleDir,
+    htmlContent,
     staticDirs: [...servedDirs],
     onReady,
     mountRoutes(app, { safeResolve }) {

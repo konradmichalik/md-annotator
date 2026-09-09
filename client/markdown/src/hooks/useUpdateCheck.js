@@ -1,7 +1,7 @@
 /* global __APP_VERSION__ */
 import { useState, useEffect } from 'react'
 
-const GITHUB_API = 'https://api.github.com/repos/konradmichalik/md-annotator/releases/latest'
+const GITHUB_API = 'https://api.github.com/repos/konradmichalik/annotaitr/releases/latest'
 
 function compareVersions(current, latest) {
   const clean = (v) => v.replace(/^v/, '')
@@ -40,7 +40,7 @@ export function useUpdateCheck() {
             currentVersion,
             latestVersion: previewVersion,
             updateAvailable: true,
-            releaseUrl: `https://github.com/konradmichalik/md-annotator/releases/tag/v${cleanPreview}`
+            releaseUrl: `https://github.com/konradmichalik/annotaitr/releases/tag/v${cleanPreview}`
           })
           return
         }

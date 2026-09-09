@@ -26,7 +26,7 @@ jobs:
       - name: Build client
         run: npm run build
 
-      - name: Publish md-annotator to npm
+      - name: Publish annotaitr to npm
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -39,7 +39,7 @@ jobs:
         run: npm run build
         working-directory: apps/opencode
 
-      - name: Publish md-annotator-opencode to npm
+      - name: Publish annotaitr-opencode to npm
         run: npm publish --access public
         working-directory: apps/opencode
         env:

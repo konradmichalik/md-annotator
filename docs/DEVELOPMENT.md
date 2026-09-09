@@ -3,18 +3,23 @@
 ## Getting Started
 
 ```bash
-git clone https://github.com/konradmichalik/md-annotator.git
-cd md-annotator
+git clone https://github.com/konradmichalik/annotaitr.git
+cd annotaitr
 npm install && npm run build
 ```
 
 ## Commands
 
 ```bash
-npm run dev:client   # Vite dev server with HMR (client only)
-npm run build        # Production build (single-file HTML)
-npm run dev          # CLI with --watch
+npm run dev:client        # Vite dev server with HMR (markdown client)
+npm run dev:client:image  # Vite dev server with HMR (image client)
+npm run build              # Production build, both clients (single-file HTML each)
+npm run dev                # CLI with --watch
+npm run test:e2e           # Playwright E2E tests
 ```
+
+`dev:client`/`dev:client:image` serve the client alone; point them at a
+separately-running server with `ANNOTAITR_NO_OPEN=1 node index.js <target>`.
 
 ## Claude Code Plugin Testing
 
@@ -41,7 +46,7 @@ npm run build
 cd ../..
 ```
 
-This builds the client SPA first (`client/dist/index.html`), then the OpenCode plugin copies it as `annotator.html` and bundles the server code into `apps/opencode/dist/index.js`.
+This builds both client SPAs (`client/dist/markdown/index.html`, `client/dist/image/index.html`); the OpenCode plugin copies the markdown one (opencode stays markdown-only for now) as `annotator.html` and bundles the server code into `apps/opencode/dist/index.js`.
 
 ### 2. Link the CLI globally
 
@@ -49,7 +54,7 @@ This builds the client SPA first (`client/dist/index.html`), then the OpenCode p
 npm link
 ```
 
-The plugin uses the `md-annotator` CLI as a fallback, so it needs to be available in `PATH`.
+The plugin uses the `annotaitr` CLI as a fallback, so it needs to be available in `PATH` (`md-annotator` also works, as a `bin` alias).
 
 ### 3. Configure OpenCode to use the local plugin
 
@@ -83,9 +88,4 @@ npm run build && cd apps/opencode && npm run build && cd ../..
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `MD_ANNOTATOR_PORT` | Override the server port (default: 3000) |
-| `MD_ANNOTATOR_BROWSER` | Custom browser application |
-| `MD_ANNOTATOR_TIMEOUT` | Heartbeat timeout in ms (default: 30000, range: 5000–300000) |
-| `MD_ANNOTATOR_FEEDBACK_NOTES` | JSON string or file path for feedback notes |
+See the README's [Environment Variables](../README.md#environment-variables) table for the full `ANNOTAITR_*` list (`MD_ANNOTATOR_*`/`IMG_ANNOTATOR_*` still work as deprecated fallbacks).
