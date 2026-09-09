@@ -1,6 +1,6 @@
 {
-  "name": "md-annotator-opencode",
-  "version": "0.13.1",
+  "name": "annotaitr-opencode",
+  "version": "1.0.0",
   "description": "OpenCode plugin for interactive markdown annotation",
   "license": "MIT",
   "type": "module",
@@ -19,7 +19,7 @@
     "ai-agent"
   ],
   "scripts": {
-    "build": "cp ../../client/dist/index.html ./annotator.html && tsup",
+    "build": "cp ../../client/dist/markdown/index.html ./annotator.html && tsup",
     "postinstall": "mkdir -p ${XDG_CONFIG_HOME:-$HOME/.config}/opencode/command && cp ./commands/*.md ${XDG_CONFIG_HOME:-$HOME/.config}/opencode/command/ 2>/dev/null || true"
   },
   "dependencies": {

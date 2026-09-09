@@ -9,3 +9,5 @@ apps/opencode/annotator.html
 IDEAS.md
 plans/
 opencode.json
+.import/
+test-results/

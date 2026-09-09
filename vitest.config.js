@@ -5,10 +5,11 @@ export default defineConfig({
     jsx: 'automatic'
   },
   test: {
+    exclude: ['node_modules/**', 'test/e2e/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['server/**/*.js', 'client/src/**/*.js'],
+      include: ['server/**/*.js', 'client/image/src/**/*.js', 'client/markdown/src/**/*.js'],
       exclude: ['node_modules/', 'client/dist/']
     }
   }

@@ -1,13 +1,15 @@
 /**
- * md-annotator Plugin for OpenCode
+ * annotaitr Plugin for OpenCode
  *
- * Provides interactive markdown annotation in the browser.
+ * Provides interactive markdown annotation in the browser. Image mode is not
+ * exposed here yet (see docs/superpowers/specs for the phase-2 plan).
  * When the agent calls annotate_markdown, the UI opens for the user to
  * review, annotate, or approve the markdown file.
  *
  * Environment variables:
- *   MD_ANNOTATOR_PORT   - Port or inclusive range, e.g. 3000 or 3000-3010
- *   MD_ANNOTATOR_BROWSER - Custom browser application
+ *   ANNOTAITR_PORT    - Port or inclusive range, e.g. 3000 or 3000-3010
+ *   ANNOTAITR_BROWSER - Custom browser application
+ *   (MD_ANNOTATOR_* still works as a deprecated fallback)
  */
 
 import { type Plugin, tool } from "@opencode-ai/plugin";
@@ -16,9 +18,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // Import from shared server modules
-import { startAnnotatorServer } from "../../server/annotator.js";
-import { formatApprovalOutput } from "../../server/feedback.js";
-import { openBrowser } from "../../server/browser.js";
+import { buildMarkdownServer } from "../../server/markdown/adapter.js";
+import { formatApprovalOutput } from "../../server/markdown/feedback.js";
+import { openBrowser } from "../../server/core/browser.js";
 
 // Load HTML content at runtime
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -59,7 +61,7 @@ export const MdAnnotatorPlugin: Plugin = async (ctx) => {
             return "ERROR: No file paths provided.";
           }
 
-          const server = await startAnnotatorServer({
+          const server = await buildMarkdownServer({
             filePaths: paths,
             origin: "opencode",
             htmlContent,

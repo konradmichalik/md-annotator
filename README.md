@@ -1,208 +1,163 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/images/logo-light.png">
-    <img alt="md-annotator" src="docs/images/logo-light.png" width="400">
-  </picture>
-</p>
+<div align="center">
 
-<p align="center">
-  An AI coding agent plugin that opens Markdown files in a local browser-based annotator.<br>
-  Select text to mark deletions or add comments, then let the coding agent apply your feedback.
-</p>
+# <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg"><source media="(prefers-color-scheme: light)" srcset="docs/images/logo.svg"><img alt="annotaitr" src="docs/images/logo.svg" width="300"></picture>
 
-> [!NOTE]
-> This plugin is heavily inspired by the excellent [plannotator](https://plannotator.ai/) plugin and uses a similar general approach for Markdown files. Useful for reviewing documentation in software projects.
+An AI coding agent plugin that opens images, captured web pages, or Markdown files in a browser-based annotator.
 
-![md-annotator](docs/images/screenshot.jpg)
+[![Test](https://github.com/konradmichalik/annotaitr/actions/workflows/test.yml/badge.svg)](https://github.com/konradmichalik/annotaitr/actions/workflows/test.yml)
+[![License](https://img.shields.io/github/license/konradmichalik/annotaitr)](LICENSE)
+
+![annotaitr](docs/images/screenshot.jpg)
+
+</div>
+
+An AI coding agent can read source code but has no way to point at a rendered
+page or a prose document and say "this, right here." annotaitr closes that
+gap: it captures a web page or opens an image or Markdown file in the
+browser, lets a person mark it up with boxes, arrows and comments or with
+text selections, and hands the agent back structured feedback it can act on
+directly, instead of the person writing out pixel coordinates or line
+numbers by hand.
 
 ## ✨ Features
 
-- **Multi-File Support** -- Review multiple files in one session with a tabbed interface
-- **Config & Data Files** -- Annotate `.yaml`, `.yml`, `.json`, `.jsonc`, `.json5`, `.toml`, `.ini`, `.cfg`, `.conf`, `.properties`, `.csv`, `.tsv`, `.log`, `.xml`, `.txt`, `.text` and `.env.example` as raw source with line numbers (a real `.env` is rejected, since those hold secrets)
-- **Linked Navigation** -- Click relative `.md` links to open them as new tabs (wiki-style browsing); a link to a directory (`docs/routing/`) opens that directory's `README.md` or `index.md`
-- **LaTeX Math** -- Renders inline `$…$` / `\(…\)` and display `$$…$$` / `\[…\]` via KaTeX with bundled fonts (works offline); display formulas are annotatable as a whole. Dollar amounts like `$5-$10` and unterminated `$$` stay literal text
-- **Mermaid Diagrams** -- Renders `mermaid` code blocks as interactive diagrams with zoom, pan, and source toggle (adapts to light/dark theme)
-- **PlantUML Diagrams** -- Renders `plantuml` code blocks as SVG via a configurable PlantUML server with zoom, pan, and source toggle
-- **Kroki Diagrams** -- Renders 27+ diagram formats (`graphviz`, `d2`, `ditaa`, `erd`, `nomnoml`, `excalidraw`, and more) via a configurable [Kroki](https://kroki.io) server
-- **File References** -- Type `@` in comments to autocomplete and reference other project files
-- **Export & Import** -- Export annotations as Markdown or JSON; re-import JSON to continue a review later
-- **Annotation Persistence** -- Annotations auto-save to the server and survive page reloads (validated by content hash)
-- **Undo / Redo** -- Full undo/redo history for annotations (`Cmd+Z` / `Cmd+Shift+Z`)
-- **Quick Labels** -- Categorize annotations instantly with 10 predefined labels (`Alt+1`--`0`) shown as colored pills with SVG icons
-- **Inline Editing** -- Click highlighted text to edit annotation type or comment in-place
-- **Table of Contents** -- Collapsible sidebar with scroll tracking and per-section annotation count badges
-- **Syntax Highlighting** -- Code blocks rendered with highlight.js
-- **Dark Mode** -- Light, dark, and auto theme (follows system preference)
-- **Auto-Close Tab** -- Opt-in countdown that closes the browser tab after submitting feedback
-- **Update Notifications** -- Banner when a new GitHub release is available
-- **Heartbeat Detection** -- Graceful shutdown when the browser tab is closed
-- **IDE Integration** -- Annotate the currently open file in VSCode, Cursor, or JetBrains without arguments
-- **Iterative Review** -- AI agent applies your feedback and re-opens the annotator for another review round until you approve
+Which mode runs is auto-detected from the target: see Usage below and
+[How it works](docs/how-it-works.md) for the mechanism behind both.
 
-## 📋 Prerequisites
+**Image and web page review:**
 
-- **Node.js** 22+ and **npm**
-- A modern **browser** (opens automatically)
+- **Web page capture**: full-page screenshot of any `http(s)` URL via Playwright, at a chosen viewport
+- **Clipboard support**: run with no target to annotate whatever screenshot is on the (macOS) clipboard
+- **Drawing tools**: boxes, arrows, freehand marks, and numbered comment pins, each with an optional comment and color
+- **Coarse position descriptions**: feedback names each annotation's plain-language position, and flags annotations positioned close together
+- **Annotated screenshot export**: submitting bakes the markup into a copy of the image and passes its path to the agent
 
-## 🔗 Integrations
+**Markdown and plain-text review:**
 
-*md-annotator* supports the following integrations:
+- **Multi-file support**: review multiple files in one session with a tabbed interface
+- **Config and data files**: annotate YAML, JSON, TOML, CSV, XML and more as raw source with line numbers
+- **Linked navigation**: click relative `.md` links to open them as new tabs
+- **LaTeX math, Mermaid, PlantUML, and Kroki diagrams**: rendered inline, annotatable as a whole
+- **File references**: type `@` in a comment to autocomplete other project files
+- **Quick labels**: categorize a selection instantly with a predefined label
+- **Annotation persistence**: annotations auto-save to the server and survive page reloads
 
-- [**Claude Code**](#-claude-code-plugin) -- Plugin with `/annotate:md` slash command
-- [**OpenCode**](#-opencode-plugin) -- Plugin with `annotate_markdown` tool and `/annotate:md` command
-- [**Mistral Vibe**](#-mistral-vibe-skill) -- Skill with `/annotate-md` slash command
-- [**Standalone CLI**](#-standalone-cli) -- Use directly from the terminal without an AI agent
+**Both modes:**
 
-## 🔌 Claude Code Plugin
+- **Export and import**: annotations as Markdown or JSON, to continue a review later
+- **Dark mode**, **undo/redo**, and an **auto-close** timer after submitting
+- **Iterative review**: the agent applies your feedback and re-opens the annotator for another round until you approve
 
-*md-annotator* is a Claude Code plugin. After installation the slash command `/annotate:md` is available in any Claude Code session.
+## 🔥 Installation
 
-### 📦 Installation & Update
+> [!IMPORTANT]
+> Requires Node.js 22+ and npm. Image mode additionally needs `playwright`
+> and `@napi-rs/canvas`, both `optionalDependencies` installed by default. A
+> markdown-only install can skip them and gets an actionable error if image
+> mode is ever invoked without them.
 
-Native Claude Code plugin commands:
+Upgrading from `md-annotator`? See [docs/migration.md](docs/migration.md).
+
+### Claude Code plugin
 
 ```bash
-claude plugin marketplace add konradmichalik/md-annotator
-claude plugin install annotate@md-annotator
+claude plugin marketplace add konradmichalik/annotaitr
+claude plugin install annotaitr@annotaitr
 ```
 
-Or via the installer script (also installs the standalone CLI):
+Or via the installer script, which also installs the standalone CLI:
 
 ```bash
-curl -fsSL https://konradmichalik.github.io/md-annotator/install.sh | bash
+curl -fsSL https://konradmichalik.github.io/annotaitr/install.sh | bash
 ```
 
-### 🚀 Usage
+### OpenCode plugin
 
-Inside a Claude Code session:
-
-```
-/annotate:md README.md
-/annotate:md docs/api.md docs/guide.md
-```
-
-Or, with IDE integration (VSCode/Cursor/JetBrains), just run without arguments to annotate the currently open file:
-
-```
-/annotate:md
-```
-
-## 🔷 OpenCode Plugin
-
-*md-annotator* is also available as an OpenCode plugin.
-
-### 📦 Installation & Update
-
-```bash
-curl -fsSL https://konradmichalik.github.io/md-annotator/install.sh | bash
-```
-
-Then add to your `opencode.json`:
+Markdown-only for now. Add to `opencode.json`:
 
 ```json
 {
-  "plugin": ["md-annotator-opencode@latest"]
+  "plugin": ["annotaitr-opencode@latest"]
 }
 ```
 
-> [!NOTE]
-> See [OpenCode documentation](https://opencode.ai/docs/plugins) for more details.
+### Mistral Vibe skill
 
-### 🚀 Usage
+Markdown-only for now, and drives the standalone CLI, so install that too:
 
-Use the `/annotate:md` command in the chat:
-
+```bash
+curl -fsSL https://konradmichalik.github.io/annotaitr/install.sh | bash
+cp -r apps/vibe/skills/annotate ~/.vibe/skills/annotate
 ```
+
+### Standalone CLI
+
+```bash
+npm install -g annotaitr
+```
+
+## 🚀 Quick start
+
+```bash
+annotaitr README.md
+```
+
+Opens `README.md` in the browser; approve it or leave annotations, and
+`annotaitr` prints the result to stdout once you're done.
+
+## ⚡ Usage
+
+**Claude Code:**
+
+```text
+/annotaitr:review ./anything      # auto-detects image vs. markdown
+```
+
+Or force a mode directly: `/annotaitr:md README.md`, `/annotaitr:image ./mockup.png`.
+
+**OpenCode:**
+
+```text
 /annotate:md README.md
-/annotate:md docs/api.md docs/guide.md
 ```
 
-The agent can also use the `annotate_markdown` tool directly:
+or the tool directly: `annotate_markdown({ filePath: "/path/to/file.md" })`.
 
+**Mistral Vibe:**
+
+```text
+/annotate README.md
 ```
-annotate_markdown({ filePath: "/path/to/file.md" })
-annotate_markdown({ filePaths: ["/path/to/a.md", "/path/to/b.md"] })
-```
 
-## 🔶 Mistral Vibe Skill
-
-*md-annotator* is also available as a [Mistral Vibe](https://github.com/mistralai/mistral-vibe) skill. It drives the standalone CLI, so the CLI must be installed first.
-
-### 📦 Installation & Update
+**Standalone CLI**, mode auto-detected from the target:
 
 ```bash
-curl -fsSL https://konradmichalik.github.io/md-annotator/install.sh | bash
+annotaitr README.md               # markdown
+annotaitr ./mockup.png            # image, local file
+annotaitr http://localhost:3000   # image, capture
 ```
 
-Then make the skill available to Vibe by copying (or symlinking) it into a skill directory Vibe discovers — globally in `~/.vibe/skills/` or per-project in `.vibe/skills/`:
+Full flag and environment variable reference: [docs/usage.md](docs/usage.md).
 
-```bash
-cp -r apps/vibe/skills/annotate-md ~/.vibe/skills/annotate-md
-```
+## 📚 Documentation
 
-> [!NOTE]
-> Vibe discovers skills from `~/.vibe/skills/`, `.vibe/skills/`, and any `skill_paths` configured in `config.toml`. See the [Mistral Vibe documentation](https://github.com/mistralai/mistral-vibe#skills-system) for more details.
+| Topic | What's inside |
+|-------|----------------|
+| [Usage](docs/usage.md) | Every flag, environment variable, exit code, and the mode-detection rules |
+| [How it works](docs/how-it-works.md) | The annotation and review-loop mechanism behind each mode |
+| [Development](docs/development.md) | Local setup, build commands, plugin testing |
 
-### 🚀 Usage
+## 🧑‍💻 Contributing
 
-Use the `/annotate-md` command in a Vibe session:
+Please have a look at [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-```
-/annotate-md README.md
-/annotate-md docs/api.md docs/guide.md
-```
+## 💎 Credits
 
-## 💻 Standalone CLI
+Heavily inspired by [plannotator](https://plannotator.ai/), which pioneered
+this general browser-markup-and-feedback approach for reviewing planning
+documents; annotaitr applies it to images, captured web pages, and
+Markdown/plain-text files.
 
-*md-annotator* also works as a standalone CLI tool without an AI coding agent:
+## ⭐ License
 
-```bash
-# Single file
-md-annotator README.md
-
-# Multiple files (opens with tab bar)
-md-annotator docs/api.md docs/guide.md
-
-# Show help
-md-annotator --help
-```
-
-The server starts on an available port (default 3000) and opens your browser automatically. When reviewing multiple files, a tab bar appears for switching between them. Clicking relative `.md` links inside a document opens the linked file as a new tab.
-
-### Environment Variables
-
-| Variable               | Description                                                  |
-|------------------------|--------------------------------------------------------------|
-| `MD_ANNOTATOR_PORT`    | Port or inclusive range (`3000` or `3000-3010`); the first free port in the range wins |
-| `MD_ANNOTATOR_BROWSER` | Custom browser application                                   |
-| `PLANTUML_SERVER_URL`  | PlantUML render server (default: `https://www.plantuml.com/plantuml`) |
-| `KROKI_SERVER_URL`     | Kroki render server (default: `https://kroki.io`)                    |
-
-> [!NOTE]
-> **Privacy**: When rendering PlantUML or Kroki diagrams, the diagram source is encoded and sent to the configured server. The defaults are the public servers at `plantuml.com` and `kroki.io`. If your documents contain sensitive diagrams, self-host a [PlantUML server](https://hub.docker.com/r/plantuml/plantuml-server) or [Kroki server](https://docs.kroki.io/kroki/setup/install/) and set `PLANTUML_SERVER_URL` / `KROKI_SERVER_URL` accordingly.
-
-## 📝 How It Works
-
-Once a file is opened in the browser, you can:
-
-- **Select text** to see the annotation toolbar
-- **Delete** -- marks text as struck-through (red)
-- **Comment** -- highlights text (yellow) and adds a comment
-- **Quick Label** -- click the tag icon or press `Alt+1`--`0` to instantly categorize a selection (Unclear, Rephrase, Factual Error, etc.)
-- **Insert** -- place the cursor to add new text at that position
-- **Global Comment** -- add general feedback via the "+" button in the annotation panel
-- **Annotate images & diagrams** -- click on images, Mermaid, PlantUML, or Kroki diagrams to comment or delete them
-- **View annotations** in the sidebar panel on the right
-- **Export** annotations as Markdown or JSON
-- **Approve** or **Submit Feedback** when done -- with annotations present, Approve becomes **Approve with Notes** and passes them along as context instead of discarding them
-
-When used with an AI agent (Claude Code or OpenCode), submitting feedback triggers the agent to apply your changes to the file. The agent then re-opens the annotator for another review round, so you can verify the edits and provide further feedback if needed. This review loop continues until you approve the result.
-
-## 🛠️ Development
-
-See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for setup, build commands, and local plugin testing.
-
-## 📄 License
-
-MIT
+This project is licensed under [MIT](LICENSE).

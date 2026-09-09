@@ -1,6 +1,8 @@
-# md-annotator-opencode
+# annotaitr-opencode
 
-OpenCode plugin for interactive markdown annotation.
+OpenCode plugin for interactive markdown annotation. Image mode is not
+exposed here yet — this plugin covers markdown only, see the `annotaitr`
+CLI directly for images and captured web pages.
 
 ## Installation
 
@@ -8,7 +10,7 @@ Add to your `opencode.json`:
 
 ```json
 {
-  "plugins": ["md-annotator-opencode"]
+  "plugins": ["annotaitr-opencode"]
 }
 ```
 
@@ -36,8 +38,10 @@ Use `/annotate:md <file>` in the chat to trigger annotation.
 ## Environment Variables
 | Variable | Description |
 |----------|-------------|
-| `MD_ANNOTATOR_PORT` | Port or inclusive range (`3000` or `3000-3010`); the first free port in the range wins |
-| `MD_ANNOTATOR_BROWSER` | Custom browser application |
+| `ANNOTAITR_PORT` | Port or inclusive range (`3000` or `3000-3010`); the first free port in the range wins |
+| `ANNOTAITR_BROWSER` | Custom browser application |
+
+(`MD_ANNOTATOR_*` still works as a deprecated fallback.)
 
 ## Output
 

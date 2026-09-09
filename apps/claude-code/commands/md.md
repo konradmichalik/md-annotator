@@ -1,12 +1,12 @@
 ---
 description: Open a Markdown file in the browser-based annotator for review
-allowed-tools: Bash(md-annotator *), Read, Edit
+allowed-tools: Bash(annotaitr *), Read, Edit
 args: files
 ---
 
 ## Markdown Annotations
 
-!`md-annotator --origin claude-code $ARGUMENTS`
+!`annotaitr --origin claude-code $ARGUMENTS`
 
 ## Your task
 
@@ -28,11 +28,11 @@ After applying all changes:
 
 2. **Re-open the annotator** with inline notes:
    ```bash
-   md-annotator --origin claude-code --feedback-notes '<JSON_ARRAY>' <file1.md> [file2.md ...]
+   annotaitr --origin claude-code --feedback-notes '<JSON_ARRAY>' <file1.md> [file2.md ...]
    ```
    Example:
    ```bash
-   md-annotator --origin claude-code --feedback-notes '[{"text":"Rewrote intro for clarity","line":5},{"text":"Removed redundant section"}]' README.md
+   annotaitr --origin claude-code --feedback-notes '[{"text":"Rewrote intro for clarity","line":5},{"text":"Removed redundant section"}]' README.md
    ```
 
 3. **Evaluate the result:**

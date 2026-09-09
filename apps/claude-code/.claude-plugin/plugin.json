@@ -1,6 +1,6 @@
 {
-  "name": "annotate",
-  "description": "Open Markdown files in a browser-based annotator for AI-assisted review",
-  "version": "0.13.1",
+  "name": "annotaitr",
+  "description": "Open images, captured web pages, or Markdown files in a browser-based annotator for AI-assisted review",
+  "version": "1.0.0",
   "commands": "./commands/"
 }

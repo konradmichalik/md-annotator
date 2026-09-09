@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 
-REPO="konradmichalik/md-annotator"
-PACKAGE_NAME="md-annotator-opencode"
+REPO="konradmichalik/annotaitr"
+PACKAGE_NAME="annotaitr-opencode"
 
-echo "md-annotator — OpenCode Plugin Installer"
+echo "annotaitr — OpenCode Plugin Installer"
 echo ""
 
 # Install OpenCode slash command
@@ -52,9 +52,13 @@ COMMAND_EOF
 
 echo "Installed /annotate:md command to ${OPENCODE_COMMANDS_DIR}/annotate:md.md"
 
-# Clear cached OpenCode plugin to force fresh download on next run
+# Clear cached OpenCode plugin to force fresh download on next run. Both the
+# pre-rename (md-annotator-opencode) and current (annotaitr-opencode) package
+# names are cleared, so an existing install upgrades cleanly.
 rm -rf "$HOME/.cache/opencode/node_modules/@md-annotator" "$HOME/.cache/opencode/node_modules/md-annotator-opencode" 2>/dev/null || true
+rm -rf "$HOME/.cache/opencode/node_modules/@annotaitr" "$HOME/.cache/opencode/node_modules/annotaitr-opencode" 2>/dev/null || true
 rm -rf "$HOME/.bun/install/cache/@md-annotator" "$HOME/.bun/install/cache/md-annotator-opencode" 2>/dev/null || true
+rm -rf "$HOME/.bun/install/cache/@annotaitr" "$HOME/.bun/install/cache/annotaitr-opencode" 2>/dev/null || true
 echo "Cleared OpenCode plugin cache"
 
 echo ""
@@ -66,6 +70,9 @@ echo "Add the plugin to your opencode.json:"
 echo ""
 echo "  \"plugin\": [\"${PACKAGE_NAME}@latest\"]"
 echo ""
+echo "(Remove any previous \"md-annotator-opencode\" entry — it's superseded"
+echo "by ${PACKAGE_NAME}.)"
+echo ""
 echo "Then restart OpenCode. The /annotate:md command is ready!"
 echo ""
 echo "=========================================="
@@ -73,25 +80,35 @@ echo "  CLAUDE CODE SETUP"
 echo "=========================================="
 echo ""
 
-npm install -g md-annotator@latest
-echo "Installed md-annotator CLI globally"
+npm install -g annotaitr@latest
+echo "Installed annotaitr CLI globally (md-annotator still works as an alias)"
 
 if command -v claude &> /dev/null; then
-  if claude plugin marketplace update md-annotator 2>/dev/null; then
-    echo "Updated md-annotator marketplace"
+  # The marketplace was renamed from md-annotator to annotaitr. Drop the old
+  # registration first so `claude plugin marketplace add` below doesn't just
+  # find it already present under the old name and skip re-adding.
+  claude plugin marketplace remove md-annotator 2>/dev/null || true
+
+  if claude plugin marketplace update annotaitr 2>/dev/null; then
+    echo "Updated annotaitr marketplace"
   else
-    if claude plugin marketplace add konradmichalik/md-annotator; then
-      echo "Added md-annotator marketplace"
+    if claude plugin marketplace add "$REPO"; then
+      echo "Added annotaitr marketplace"
     else
-      echo "Failed to add md-annotator marketplace" >&2
+      echo "Failed to add annotaitr marketplace" >&2
       exit 1
     fi
   fi
 
-  if claude plugin update annotate@md-annotator 2>/dev/null; then
+  # Both the plugin and the marketplace it's published under were renamed
+  # (annotate -> annotaitr), so an install under the old md-annotator
+  # marketplace needs replacing rather than updating in place.
+  claude plugin uninstall annotate@md-annotator 2>/dev/null || true
+
+  if claude plugin update annotaitr@annotaitr 2>/dev/null; then
     echo "Updated Claude Code plugin"
   else
-    if claude plugin install annotate@md-annotator; then
+    if claude plugin install annotaitr@annotaitr; then
       echo "Installed Claude Code plugin"
     else
       echo "Failed to install Claude Code plugin" >&2
@@ -100,6 +117,6 @@ if command -v claude &> /dev/null; then
   fi
 else
   echo "Claude Code CLI not found. Install it first, then run:"
-  echo "  claude plugin marketplace add konradmichalik/md-annotator"
-  echo "  claude plugin install annotate@md-annotator"
+  echo "  claude plugin marketplace add $REPO"
+  echo "  claude plugin install annotaitr@annotaitr"
 fi
