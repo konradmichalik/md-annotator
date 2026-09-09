@@ -234,12 +234,22 @@ export default function App() {
           )}
         </div>
         <div className="app-sidebar">
-          <div className="sidebar-header">
-            <div className="sidebar-header-title">
-              <span>Annotations</span>
-              {annotationCount > 0 && <span className="panel-badge">{annotationCount}</span>}
-            </div>
-            <button type="button" className="btn" onClick={() => setShowExport(true)}>Export / Import</button>
+          <div className="panel-header">
+            <h2>Annotations</h2>
+            <span className="panel-badge">{annotationCount}</span>
+            <button
+              type="button"
+              className="panel-icon-btn"
+              onClick={() => setShowExport(true)}
+              title="Export / Import"
+              aria-label="Export / Import"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </button>
           </div>
           <AnnotationPanel annotations={state.annotations} onRemove={removeAnnotation} onEdit={setEditingAnnotationId} />
         </div>
