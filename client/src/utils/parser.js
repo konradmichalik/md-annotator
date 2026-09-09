@@ -47,13 +47,24 @@ export function parseMarkdownToBlocks(markdown, { allowFrontmatter = true } = {}
       const fmLines = lines.slice(1, closeIndex)
       const entries = []
       for (const fmLine of fmLines) {
-        const colonIdx = fmLine.indexOf(':')
-        if (colonIdx > 0) {
-          entries.push({
-            key: fmLine.slice(0, colonIdx).trim(),
-            value: fmLine.slice(colonIdx + 1).trim()
-          })
+        // Indented lines are YAML continuations (block scalars, list items) —
+        // fold them into the preceding key rather than treating them as new entries.
+        if (/^\s/.test(fmLine) && fmLine.trim() !== '' && entries.length > 0) {
+          const last = entries[entries.length - 1]
+          const trimmed = fmLine.trim()
+          const isListItem = trimmed.startsWith('- ')
+          const item = isListItem ? trimmed.slice(2).trim() : trimmed
+          const sep = isListItem ? ', ' : ' '
+          last.value = last.value ? `${last.value}${sep}${item}` : item
+          continue
         }
+        const colonIdx = fmLine.indexOf(':')
+        if (colonIdx <= 0) {continue}
+        let value = fmLine.slice(colonIdx + 1).trim()
+        // Strip bare YAML block scalar indicators (|, >, |-, >+, ...) —
+        // the actual text follows on continuation lines.
+        if (/^[|>][+-]?$/.test(value)) {value = ''}
+        entries.push({ key: fmLine.slice(0, colonIdx).trim(), value })
       }
       if (entries.length > 0) {
         blocks.push({
