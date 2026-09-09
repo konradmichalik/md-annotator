@@ -1,4 +1,4 @@
-import { TOOL_ICONS, ZOOM_ICONS } from '../utils/icons.jsx'
+import { TOOL_ICONS } from '../utils/icons.jsx'
 import ColorModePicker from './ColorModePicker.jsx'
 
 const TOOLS = [
@@ -11,8 +11,7 @@ const TOOLS = [
 ]
 
 export default function Toolbar({
-  activeTool, onSelectTool, zoom, onZoomBy, onZoomReset, onZoomFit,
-  colorMode, fixedColor, onChangeColorMode, onChangeFixedColor
+  activeTool, onSelectTool, colorMode, fixedColor, onChangeColorMode, onChangeFixedColor
 }) {
   return (
     <div className="toolbar" role="toolbar" aria-label="Annotation tools">
@@ -35,19 +34,6 @@ export default function Toolbar({
         onChangeMode={onChangeColorMode}
         onChangeColor={onChangeFixedColor}
       />
-      <div className="toolbar-divider" />
-      <button type="button" onClick={() => onZoomBy(-0.1)} title="Zoom out" aria-label="Zoom out">
-        {ZOOM_ICONS.out}
-      </button>
-      <button type="button" className="toolbar-zoom-level" onClick={onZoomReset} title="Reset zoom to 100%">
-        {Math.round(zoom * 100)}%
-      </button>
-      <button type="button" onClick={() => onZoomBy(0.1)} title="Zoom in" aria-label="Zoom in">
-        {ZOOM_ICONS.in}
-      </button>
-      <button type="button" onClick={onZoomFit} title="Fit whole image in view" aria-label="Fit whole image in view">
-        {ZOOM_ICONS.fit}
-      </button>
     </div>
   )
 }

@@ -175,10 +175,21 @@ body {
   overflow-y: auto;
 }
 
-.toolbar {
+.canvas-topbar {
   position: sticky;
   top: 0;
+  z-index: 10;
+  align-self: stretch;
   margin-bottom: 12px;
+  padding: 0 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.toolbar,
+.zoom-controls {
   display: flex;
   gap: 4px;
   background: var(--bg-card);
@@ -186,10 +197,10 @@ body {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow);
   padding: 4px;
-  z-index: 10;
 }
 
-.toolbar button {
+.toolbar button,
+.zoom-controls button {
   display: flex;
   align-items: center;
   gap: 6px;
