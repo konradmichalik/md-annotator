@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { resolve as resolvePath } from 'node:path'
-import { readFileSync } from 'node:fs'
+import { readFileSync, realpathSync } from 'node:fs'
 import { access, constants } from 'node:fs/promises'
 import { readEnvWithFallback } from './server/core/config.js'
 import { openBrowser } from './server/core/browser.js'
@@ -431,8 +431,17 @@ async function main() {
 
 // Only run main() when this file is executed directly (`node index.js` or
 // the `annotaitr`/`md-annotator` bin). Importing it for tests must not
-// trigger it.
-if (import.meta.url === `file://${process.argv[1]}`) {
+// trigger it. import.meta.url is resolved through symlinks, but a globally
+// npm-installed bin is invoked through one (e.g. /opt/homebrew/bin/annotaitr
+// -> .../lib/node_modules/annotaitr/index.js), so process.argv[1] needs the
+// same resolution or this check never matches and the CLI silently no-ops.
+let entryPath
+try {
+  entryPath = realpathSync(process.argv[1])
+} catch {
+  entryPath = process.argv[1]
+}
+if (import.meta.url === `file://${entryPath}`) {
   main().catch((error) => {
     process.stderr.write(`Fatal: ${error.message}\n`)
     process.exit(1)

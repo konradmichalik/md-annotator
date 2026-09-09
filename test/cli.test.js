@@ -1,6 +1,7 @@
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { mkdtemp, writeFile, rm } from 'node:fs/promises'
+import { join, resolve as resolvePath } from 'node:path'
+import { mkdtemp, writeFile, rm, symlink } from 'node:fs/promises'
+import { spawnSync } from 'node:child_process'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { parseArgs, detectMode } from '../index.js'
 
@@ -131,5 +132,29 @@ describe('detectMode', () => {
     await writeFile(otherPngPath, Buffer.from('also-not-a-png'))
     const result = await detectMode([pngPath, otherPngPath])
     expect(result.error).toMatch(/Could not determine a single mode/)
+  })
+})
+
+describe('bin invocation through a symlink', () => {
+  // Mirrors how npm sets up a global install: bin/annotaitr is a symlink to
+  // this file. import.meta.url resolves through it, so process.argv[1] must
+  // be resolved the same way or the "run only when executed directly" guard
+  // never matches and the CLI silently does nothing.
+  let dir, linkPath
+
+  beforeAll(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'annotaitr-bin-'))
+    linkPath = join(dir, 'annotaitr')
+    await symlink(resolvePath('index.js'), linkPath)
+  })
+
+  afterAll(async () => {
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  it('runs main() and prints help when invoked via a symlinked bin', () => {
+    const result = spawnSync('node', [linkPath, '--help'])
+    expect(result.stderr.toString()).toMatch(/Usage:/)
+    expect(result.status).toBe(0)
   })
 })
