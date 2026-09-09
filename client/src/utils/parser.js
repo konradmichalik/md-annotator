@@ -61,9 +61,9 @@ export function parseMarkdownToBlocks(markdown, { allowFrontmatter = true } = {}
         const colonIdx = fmLine.indexOf(':')
         if (colonIdx <= 0) {continue}
         let value = fmLine.slice(colonIdx + 1).trim()
-        // Strip bare YAML block scalar indicators (|, >, |-, >+, ...) —
+        // Strip bare YAML block scalar indicators (|, >, |-, >+, |2, >2-, ...) —
         // the actual text follows on continuation lines.
-        if (/^[|>][+-]?$/.test(value)) {value = ''}
+        if (/^[|>](?:[+-][1-9]?|[1-9][+-]?)?$/.test(value)) {value = ''}
         entries.push({ key: fmLine.slice(0, colonIdx).trim(), value })
       }
       if (entries.length > 0) {
