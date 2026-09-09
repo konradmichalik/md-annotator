@@ -459,10 +459,19 @@ body {
 
 /* === Done Screen === */
 .done-screen {
+  position: relative;
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.done-logo {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0.5;
 }
 
 .done-card {

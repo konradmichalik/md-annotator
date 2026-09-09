@@ -736,6 +736,7 @@ export default function App() {
               )}
             </div>
           </div>
+          <Logo className="app-logo done-logo" />
         </div>
       </div>
     )
