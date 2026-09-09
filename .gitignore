@@ -9,4 +9,5 @@ apps/opencode/annotator.html
 package-lock.json
 IDEAS.md
 plans/
-opencode.json/.import/
+opencode.json
+.import/

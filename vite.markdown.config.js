@@ -24,13 +24,13 @@ const katexWoff2Only = {
 }
 
 export default defineConfig({
-  root: './client',
+  root: './client/markdown',
   plugins: [react(), viteSingleFile(), katexWoff2Only],
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version)
   },
   build: {
-    outDir: './dist',
+    outDir: '../dist/markdown',
     emptyOutDir: true,
     // KaTeX ships 20 woff2 faces; the single-file build has to inline them as
     // data URIs or math would silently fall back to system fonts offline.

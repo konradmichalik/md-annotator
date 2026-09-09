@@ -1,34 +1,40 @@
 {
-  "name": "md-annotator",
-  "version": "0.13.1",
-  "description": "Browser-based Markdown annotator for AI-assisted review",
+  "name": "annotaitr",
+  "version": "1.0.0",
+  "description": "Browser-based image and Markdown annotator for AI-assisted review, with built-in web page capture",
   "type": "module",
   "bin": {
+    "annotaitr": "./index.js",
     "md-annotator": "./index.js"
   },
   "files": [
     "index.js",
     "server",
     "client/dist",
-    "client/src/utils"
+    "client/markdown/src/utils"
   ],
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "build": "vite build",
+    "build": "vite build --config vite.markdown.config.js && vite build --config vite.image.config.js",
     "prepack": "npm run build",
-    "dev:client": "vite dev",
+    "dev:client": "vite dev --config vite.markdown.config.js",
+    "dev:client:image": "vite dev --config vite.image.config.js",
     "lint": "eslint . && stylelint '**/*.css'",
     "lint:js": "eslint .",
     "lint:css": "stylelint '**/*.css'",
     "lint:fix": "eslint . --fix && stylelint '**/*.css' --fix",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test test/e2e"
   },
   "keywords": [
+    "image",
+    "screenshot",
     "markdown",
     "annotator",
+    "visual-review",
     "editor",
     "ai",
     "claude"
@@ -36,30 +42,35 @@
   "license": "MIT",
   "dependencies": {
     "cors": "^2.8.5",
-    "dompurify": "^3.3.1",
     "express": "^4.21.0",
-    "highlight.js": "^11.11.0",
-    "katex": "^0.18.1",
-    "mermaid": "^11.12.3",
     "open": "^10.1.0",
-    "pako": "^2.1.0",
-    "plantuml-encoder": "^1.4.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "web-highlighter": "^0.7.4"
+    "react-dom": "^19.0.0"
+  },
+  "optionalDependencies": {
+    "@napi-rs/canvas": "^1.0.8",
+    "playwright": "^1.63.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "@playwright/test": "^1.63.0",
     "@vitejs/plugin-react": "^4.3.0",
+    "dompurify": "^3.3.1",
     "eslint": "^9.39.2",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "globals": "^17.2.0",
+    "highlight.js": "^11.11.0",
     "jsdom": "^29.0.1",
+    "katex": "^0.18.1",
+    "mermaid": "^11.12.3",
+    "pako": "^2.1.0",
+    "plantuml-encoder": "^1.4.0",
     "stylelint": "^17.0.0",
     "stylelint-config-standard": "^40.0.0",
     "vite": "^6.0.0",
     "vite-plugin-singlefile": "^2.0.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "web-highlighter": "^0.7.4"
   }
 }
