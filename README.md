@@ -1,8 +1,8 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/images/logo-light.png">
-    <img alt="annotaitr" src="docs/images/logo-light.png" width="400">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/logo.svg">
+    <img alt="annotaitr" src="docs/images/logo.svg" width="300">
   </picture>
 </p>
 

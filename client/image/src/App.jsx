@@ -8,7 +8,7 @@ import ExportModal from './components/ExportModal.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
 import { useSettings } from './hooks/useSettings.js'
 import { useAutoClose } from './hooks/useAutoClose.js'
-import appIcon from './assets/icon-img-annotator.svg?inline'
+import appIcon from './assets/icon-annotaitr.svg?inline'
 
 const ORIGIN_LABELS = {
   'claude-code': 'Claude Code',
@@ -157,7 +157,7 @@ export default function App() {
       <header className="app-header">
         <div className="header-left">
           <img src={appIcon} alt="" className="app-icon" width="20" height="20" />
-          <span className="app-name">web&middot;annotator</span>
+          <span className="app-name">annotaitr</span>
           <span className="version-badge">v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '?'}</span>
           {ORIGIN_LABELS[origin] && (
             <span className="origin-badge">{ORIGIN_LABELS[origin]}</span>
