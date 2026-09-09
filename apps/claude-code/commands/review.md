@@ -8,6 +8,15 @@ args: target
 
 !`annotaitr --origin claude-code $ARGUMENTS`
 
+If no target is given, this reads the current image from the macOS clipboard,
+so `/annotaitr:review` alone works right after copying a screenshot, no need
+to save it to a file first (a pasted chat image is not the same thing and
+does not work as a target here).
+
+`$ARGUMENTS` is passed to the shell as typed, unquoted. A path containing
+spaces (macOS screenshots are named that way by default) needs quotes typed
+around it: `/annotaitr:review "~/Desktop/Screenshot 2026-01-01 at 12.00.00.png"`.
+
 Use this command when you don't know in advance whether `$ARGUMENTS` is an
 image target or a markdown target — `annotaitr` auto-detects it (see `--help`
 for the exact rules) and the output above will be in one of two shapes:

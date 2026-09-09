@@ -10,7 +10,13 @@ args: target
 
 If no target is given, this reads the current image from the macOS clipboard
 (the same source a pasted screenshot would use), so `/annotaitr:image` alone
-works after copying a screenshot without needing to save it to a file first.
+works after copying a screenshot without needing to save it to a file first
+(a pasted chat image is not the same thing and does not work as a target
+here).
+
+`$ARGUMENTS` is passed to the shell as typed, unquoted. A path containing
+spaces (macOS screenshots are named that way by default) needs quotes typed
+around it: `/annotaitr:image "~/Desktop/Screenshot 2026-01-01 at 12.00.00.png"`.
 
 ## Your task
 
