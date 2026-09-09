@@ -100,15 +100,15 @@ if command -v claude &> /dev/null; then
     fi
   fi
 
-  # The plugin itself keeps its name (annotate); only the marketplace it's
-  # published under changed, so an install under the old md-annotator
+  # Both the plugin and the marketplace it's published under were renamed
+  # (annotate -> annotaitr), so an install under the old md-annotator
   # marketplace needs replacing rather than updating in place.
   claude plugin uninstall annotate@md-annotator 2>/dev/null || true
 
-  if claude plugin update annotate@annotaitr 2>/dev/null; then
+  if claude plugin update annotaitr@annotaitr 2>/dev/null; then
     echo "Updated Claude Code plugin"
   else
-    if claude plugin install annotate@annotaitr; then
+    if claude plugin install annotaitr@annotaitr; then
       echo "Installed Claude Code plugin"
     else
       echo "Failed to install Claude Code plugin" >&2
@@ -118,5 +118,5 @@ if command -v claude &> /dev/null; then
 else
   echo "Claude Code CLI not found. Install it first, then run:"
   echo "  claude plugin marketplace add $REPO"
-  echo "  claude plugin install annotate@annotaitr"
+  echo "  claude plugin install annotaitr@annotaitr"
 fi

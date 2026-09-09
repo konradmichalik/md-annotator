@@ -9,7 +9,7 @@ args: target
 !`annotaitr --origin claude-code $ARGUMENTS`
 
 If no target is given, this reads the current image from the macOS clipboard
-(the same source a pasted screenshot would use), so `/annotate:image` alone
+(the same source a pasted screenshot would use), so `/annotaitr:image` alone
 works after copying a screenshot without needing to save it to a file first.
 
 ## Your task

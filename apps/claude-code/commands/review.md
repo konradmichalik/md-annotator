@@ -36,5 +36,5 @@ notes as context, and stop.
 
 After applying all changes, re-open the annotator on the same target (for
 markdown, add `--feedback-notes` describing what changed, as in
-`/annotate:md`; for an image or URL, just re-run) and repeat until
+`/annotaitr:md`; for an image or URL, just re-run) and repeat until
 `APPROVED:` or `APPROVED WITH NOTES:`.
