@@ -1,0 +1,86 @@
+// Icons from Tabler Icons (https://tabler.io/icons), MIT licensed.
+const ICON_PROPS = {
+  width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none',
+  stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round'
+}
+
+export const TOOL_ICONS = {
+  select: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M7.904 17.563a1.2 1.2 0 0 0 2.228 .308l2.09 -3.093l4.907 4.907a1.067 1.067 0 0 0 1.509 0l1.047 -1.047a1.067 1.067 0 0 0 0 -1.509l-4.907 -4.907l3.113 -2.09a1.2 1.2 0 0 0 -.309 -2.228l-13.582 -3.904l3.904 13.563" />
+    </svg>
+  ),
+  box: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M3 5a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-14" />
+    </svg>
+  ),
+  arrow: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M17 7l-10 10" />
+      <path d="M8 7l9 0l0 9" />
+    </svg>
+  ),
+  freehand: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M3 15c2 3 4 4 7 4s7 -3 7 -7s-3 -7 -6 -7s-5 1.5 -5 4s2 5 6 5s8.408 -2.453 10 -5" />
+    </svg>
+  ),
+  pin: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+      <path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0" />
+    </svg>
+  )
+}
+
+export const ACTION_ICONS = {
+  remove: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1 -1.995 -1.858L5 7m5 4v6m4 -6v6m1 -10V4a1 1 0 0 0 -1 -1h-4a1 1 0 0 0 -1 1v3M4 7h16" />
+    </svg>
+  ),
+  edit: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+    </svg>
+  ),
+  close: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M18 6l-12 12" /><path d="M6 6l12 12" />
+    </svg>
+  )
+}
+
+export const ZOOM_ICONS = {
+  in: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
+      <path d="M7 10l6 0" />
+      <path d="M10 7l0 6" />
+      <path d="M21 21l-6 -6" />
+    </svg>
+  ),
+  out: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
+      <path d="M7 10l6 0" />
+      <path d="M21 21l-6 -6" />
+    </svg>
+  ),
+  reset: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M21 21l-6 -6" />
+      <path d="M3.268 12.043a7.017 7.017 0 0 0 6.634 4.957a7.012 7.012 0 0 0 7.043 -6.131a7 7 0 0 0 -5.314 -7.672a7.021 7.021 0 0 0 -8.241 4.403" />
+      <path d="M3 4v4h4" />
+    </svg>
+  ),
+  fit: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M4 8v-2a2 2 0 0 1 2 -2h2" />
+      <path d="M4 16v2a2 2 0 0 0 2 2h2" />
+      <path d="M16 4h2a2 2 0 0 1 2 2v2" />
+      <path d="M16 20h2a2 2 0 0 0 2 -2v-2" />
+    </svg>
+  )
+}
