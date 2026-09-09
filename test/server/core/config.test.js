@@ -76,6 +76,26 @@ describe('parsePortSpec', () => {
   })
 })
 
+describe('malformed ANNOTAITR_PORT', () => {
+  afterEach(() => {
+    delete process.env.ANNOTAITR_PORT
+    vi.restoreAllMocks()
+    vi.resetModules()
+  })
+
+  it('warns on stderr and falls back to the default port', async () => {
+    process.env.ANNOTAITR_PORT = 'not-a-port'
+    const warnSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+
+    vi.resetModules()
+    const { config: freshConfig } = await import('../../../server/core/config.js')
+
+    expect(freshConfig.port).toBe(3000)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('not-a-port'))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('malformed'))
+  })
+})
+
 describe('config.ports', () => {
   it('always exposes a non-empty candidate list starting with config.port', () => {
     expect(Array.isArray(config.ports)).toBe(true)

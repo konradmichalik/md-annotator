@@ -83,7 +83,13 @@ function getHeartbeatTimeoutMs() {
   return DEFAULT_HEARTBEAT_TIMEOUT_MS
 }
 
-const portCandidates = parsePortSpec(readEnvWithFallback('ANNOTAITR_PORT', ['MD_ANNOTATOR_PORT']))
+const rawPortSpec = readEnvWithFallback('ANNOTAITR_PORT', ['MD_ANNOTATOR_PORT'])
+const portCandidates = parsePortSpec(rawPortSpec)
+if (rawPortSpec !== undefined && portCandidates === null) {
+  process.stderr.write(
+    `Warning: ignoring malformed port spec "${rawPortSpec}", falling back to ${DEFAULT_PORT}.\n`
+  )
+}
 
 export const config = {
   // First candidate; `ports` carries the full range when one was configured

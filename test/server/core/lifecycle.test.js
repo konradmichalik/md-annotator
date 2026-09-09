@@ -69,4 +69,28 @@ describe('withLifecycle', () => {
 
     expect(exitSpy).toHaveBeenCalledWith(1)
   })
+
+  it('only stops the inner server once when SIGINT and SIGTERM both fire', () => {
+    const inner = fakeServer()
+    withLifecycle(inner)
+
+    process.emit('SIGINT')
+    process.emit('SIGTERM')
+
+    expect(inner.stop).toHaveBeenCalledOnce()
+
+    vi.advanceTimersByTime(5000)
+    expect(exitSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('unrefs the force-exit timer, so it alone cannot keep the process alive', () => {
+    const inner = fakeServer()
+    const unrefSpy = vi.fn()
+    vi.spyOn(globalThis, 'setTimeout').mockReturnValue({ unref: unrefSpy })
+
+    const wrapped = withLifecycle(inner)
+    wrapped.shutdown()
+
+    expect(unrefSpy).toHaveBeenCalledOnce()
+  })
 })

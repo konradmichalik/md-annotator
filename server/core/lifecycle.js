@@ -18,9 +18,12 @@ export function withLifecycle(server) {
     server.waitForDecision().then(resolve)
   })
 
+  let shuttingDown = false
   function shutdown() {
+    if (shuttingDown) { return }
+    shuttingDown = true
     server.stop()
-    setTimeout(() => process.exit(1), config.forceExitTimeoutMs)
+    setTimeout(() => process.exit(1), config.forceExitTimeoutMs).unref()
   }
 
   function onSignal() {
