@@ -1,4 +1,4 @@
-# How annotaitr works
+# How it works
 
 Both modes follow the same shape: open a target in the browser, let a human
 mark it up, and turn the markup into feedback text an agent can act on

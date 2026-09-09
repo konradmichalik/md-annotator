@@ -1,12 +1,6 @@
 <div align="center">
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="docs/images/logo.svg">
-  <img alt="annotaitr" src="docs/images/logo.svg" width="300">
-</picture>
-
-# annotaitr
+# <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg"><source media="(prefers-color-scheme: light)" srcset="docs/images/logo.svg"><img alt="annotaitr" src="docs/images/logo.svg" width="300"></picture>
 
 An AI coding agent plugin that opens images, captured web pages, or Markdown files in a browser-based annotator.
 
@@ -27,8 +21,8 @@ numbers by hand.
 
 ## ✨ Features
 
-Which mode runs is auto-detected from the target — see Usage below and
-[How annotaitr works](docs/how-it-works.md) for the mechanism behind both.
+Which mode runs is auto-detected from the target: see Usage below and
+[How it works](docs/how-it-works.md) for the mechanism behind both.
 
 **Image and web page review:**
 
@@ -58,9 +52,12 @@ Which mode runs is auto-detected from the target — see Usage below and
 
 > [!IMPORTANT]
 > Requires Node.js 22+ and npm. Image mode additionally needs `playwright`
-> and `@napi-rs/canvas`, both `optionalDependencies` installed by default —
-> a markdown-only install can skip them and gets an actionable error if
-> image mode is ever invoked without them.
+> and `@napi-rs/canvas`, both `optionalDependencies` installed by default. A
+> markdown-only install can skip them and gets an actionable error if image
+> mode is ever invoked without them.
+
+Upgrading from `md-annotator` or `img-annotator`? See
+[docs/migration.md](docs/migration.md).
 
 ### Claude Code plugin
 
@@ -114,10 +111,10 @@ Opens `README.md` in the browser; approve it or leave annotations, and
 **Claude Code:**
 
 ```text
-/annotate:md README.md
-/annotate:image ./mockup.png
 /annotate:review ./anything      # auto-detects image vs. markdown
 ```
+
+Or force a mode directly: `/annotate:md README.md`, `/annotate:image ./mockup.png`.
 
 **OpenCode:**
 
@@ -143,32 +140,13 @@ annotaitr http://localhost:3000   # image, capture
 
 Full flag and environment variable reference: [docs/usage.md](docs/usage.md).
 
-## 🏗️ Architecture
-
-```text
-index.js                # CLI entry: parse argv, detect mode, dispatch
-server/
-├── core/                 # shared Express bootstrap, config, browser, lifecycle
-├── image/                # image mode: capture, render, feedback
-└── markdown/              # markdown mode: file/notes handling, feedback
-client/
-├── image/                # image client, its own single-file build
-└── markdown/               # markdown client, its own single-file build
-apps/
-├── claude-code/           # plugin: /annotate:md, /annotate:image, /annotate:review
-├── opencode/              # OpenCode plugin (markdown only)
-└── vibe/                  # Mistral Vibe skill (markdown only)
-```
-
 ## 📚 Documentation
 
 | Topic | What's inside |
 |-------|----------------|
 | [Usage](docs/usage.md) | Every flag, environment variable, exit code, and the mode-detection rules |
-| [How annotaitr works](docs/how-it-works.md) | The annotation and review-loop mechanism behind each mode |
-| [Migration](docs/migration.md) | Upgrading from `md-annotator` or `img-annotator` |
+| [How it works](docs/how-it-works.md) | The annotation and review-loop mechanism behind each mode |
 | [Development](docs/development.md) | Local setup, build commands, plugin testing |
-| [Release process](docs/release.md) | Version bump and tag checklist (maintainers) |
 
 ## 🧑‍💻 Contributing
 
