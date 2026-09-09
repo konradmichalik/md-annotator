@@ -10,9 +10,9 @@ Releases follow a manual version bump + tag push workflow. A GitHub Actions work
 
 Follow [Semantic Versioning](https://semver.org/):
 
-- **patch** (0.x.Y) — bug fixes only
-- **minor** (0.Y.0) — new features, non-breaking changes
-- **major** (Y.0.0) — breaking changes
+- **patch** (0.x.Y): bug fixes only
+- **minor** (0.Y.0): new features, non-breaking changes
+- **major** (Y.0.0): breaking changes
 
 ### 2. Bump version in all three files
 

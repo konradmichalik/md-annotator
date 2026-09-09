@@ -17,8 +17,7 @@ const warnedEnvNames = new Set()
  * Read `newName`, falling back to the first of `oldNames` that is set. Each
  * old name triggers a one-time deprecation warning on stderr. The fallback
  * exists so the ANNOTAITR_* rename doesn't silently break existing
- * MD_ANNOTATOR_* and IMG_ANNOTATOR_* setups; it is removed in a future major
- * version.
+ * MD_ANNOTATOR_* setups; it is removed in a future major version.
  */
 export function readEnvWithFallback(newName, oldNames = []) {
   if (process.env[newName] !== undefined) {
@@ -66,7 +65,7 @@ export function parsePortSpec(spec) {
 }
 
 function getServerHost() {
-  const envHost = readEnvWithFallback('ANNOTAITR_HOST', ['MD_ANNOTATOR_HOST', 'IMG_ANNOTATOR_HOST'])
+  const envHost = readEnvWithFallback('ANNOTAITR_HOST', ['MD_ANNOTATOR_HOST'])
   if (envHost && envHost.trim()) {
     return envHost.trim()
   }
@@ -74,7 +73,7 @@ function getServerHost() {
 }
 
 function getHeartbeatTimeoutMs() {
-  const envTimeout = readEnvWithFallback('ANNOTAITR_TIMEOUT', ['MD_ANNOTATOR_TIMEOUT', 'IMG_ANNOTATOR_TIMEOUT'])
+  const envTimeout = readEnvWithFallback('ANNOTAITR_TIMEOUT', ['MD_ANNOTATOR_TIMEOUT'])
   if (envTimeout) {
     const parsed = parseInt(envTimeout, 10)
     if (!isNaN(parsed) && parsed >= 5000 && parsed <= 300_000) {
@@ -84,7 +83,7 @@ function getHeartbeatTimeoutMs() {
   return DEFAULT_HEARTBEAT_TIMEOUT_MS
 }
 
-const portCandidates = parsePortSpec(readEnvWithFallback('ANNOTAITR_PORT', ['MD_ANNOTATOR_PORT', 'IMG_ANNOTATOR_PORT']))
+const portCandidates = parsePortSpec(readEnvWithFallback('ANNOTAITR_PORT', ['MD_ANNOTATOR_PORT']))
 
 export const config = {
   // First candidate; `ports` carries the full range when one was configured
@@ -92,7 +91,7 @@ export const config = {
   ports: portCandidates ?? [DEFAULT_PORT],
   portExplicit: !!portCandidates,
   host: getServerHost(),
-  browser: readEnvWithFallback('ANNOTAITR_BROWSER', ['MD_ANNOTATOR_BROWSER', 'IMG_ANNOTATOR_BROWSER']) || null,
+  browser: readEnvWithFallback('ANNOTAITR_BROWSER', ['MD_ANNOTATOR_BROWSER']) || null,
   heartbeatTimeoutMs: getHeartbeatTimeoutMs(),
   forceExitTimeoutMs: 5000,
   jsonLimit: '10mb',

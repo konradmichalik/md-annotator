@@ -11,8 +11,8 @@ numbered comment pin; add an optional comment to each.
 
 On submit, the annotations are baked into a copy of the image (with a
 numbered legend) and written to a fresh temp file. The feedback text sent to
-the agent lists, per annotation, a plain-language position — "top right,
-~15% from top" — derived from the annotation's bounding point as a
+the agent lists, per annotation, a plain-language position (e.g. "top
+right, ~15% from top") derived from the annotation's bounding point as a
 percentage of image width/height, and calls out other annotations
 positioned close enough that the coarse label alone might not tell them
 apart. The path to the annotated screenshot is included, so the agent reads
@@ -44,7 +44,7 @@ them.
 ## The review loop
 
 Both modes block the CLI process until a decision is made in the browser,
-then print that decision to stdout and exit — see [exit
+then print that decision to stdout and exit: see [exit
 codes](usage.md#output-and-exit-codes). An agent applies the requested
 changes and re-opens the annotator on the same target to confirm the fix and
 collect further feedback; markdown mode's `--feedback-notes` lets that
@@ -54,9 +54,9 @@ isn't looking at a blank slate.
 A heartbeat request from the browser tab, polled every few seconds, detects
 a closed tab and resolves the decision as disconnected rather than hanging
 the CLI forever. Interrupting the process (`Ctrl+C`) resolves it as
-aborted — never as an implicit approval.
+aborted, never as an implicit approval.
 
 ## See also
 
-- [The `annotaitr` CLI](usage.md) — flags, environment variables, and the
+- [The `annotaitr` CLI](usage.md): flags, environment variables, and the
   mode-detection rules referenced above

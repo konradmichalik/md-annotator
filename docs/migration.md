@@ -1,24 +1,27 @@
-# Migrating from md-annotator or img-annotator
+# Migrating from md-annotator
 
-`annotaitr` is the merge of `img-annotator` and `md-annotator` (this repo,
-formerly `konradmichalik/md-annotator`) into one package and one plugin,
-auto-detecting which mode to run from the target. Nothing below is required
-to keep working today — the old names and variables still function, with a
-deprecation warning — but plan to move off them before the next major
-version.
+`annotaitr` is the successor to `md-annotator` (this repo, formerly
+`konradmichalik/md-annotator`), extended with image and captured-web-page
+review alongside the existing Markdown/plain-text review, and
+auto-detecting which mode to run from the target. Nothing below is
+required to keep working today (the old names and variables still
+function, with a deprecation warning), but plan to move off them before
+the next major version.
 
 ## Claude Code
 
-The marketplace was renamed. Remove the old one and add the new one:
+The marketplace and the plugin were both renamed. Remove the old
+installation and add the new one:
 
 ```bash
-claude plugin marketplace remove md-annotator   # or img-annotator
+claude plugin marketplace remove md-annotator
+claude plugin uninstall annotate@md-annotator
 claude plugin marketplace add konradmichalik/annotaitr
-claude plugin install annotate@annotaitr
+claude plugin install annotaitr@annotaitr
 ```
 
-The plugin itself is still named `annotate`, so `/annotate:md` keeps
-working unchanged. `/annotate:image` and `/annotate:review` are new.
+The commands themselves are renamed too: `/annotate:md` is now
+`/annotaitr:md`. `/annotaitr:image` and `/annotaitr:review` are new.
 
 ## CLI
 
@@ -27,14 +30,13 @@ npm install -g annotaitr
 ```
 
 `md-annotator` keeps working as a `bin` alias for existing scripts and
-shell aliases; `img-annotator` was never published, so there's no alias for
-it.
+shell aliases.
 
 ## Environment variables
 
-`MD_ANNOTATOR_*` and `IMG_ANNOTATOR_*` still work, with a one-time
-deprecation warning on stderr, under the merged `ANNOTAITR_*` prefix. See
-the full list in [Usage](usage.md#environment-variables).
+`MD_ANNOTATOR_*` still works, with a one-time deprecation warning on
+stderr, under the merged `ANNOTAITR_*` prefix. See the full list in
+[Usage](usage.md#environment-variables).
 
 ## Signal handling
 
@@ -46,4 +48,4 @@ interrupt is no longer indistinguishable from a real approval.
 
 `md-annotator-opencode` is now `annotaitr-opencode`; the Vibe skill
 directory is now `apps/vibe/skills/annotate`. Both stay markdown-only for
-now — image support in either is tracked as a follow-up, not yet available.
+now: image support in either is tracked as a follow-up, not yet available.

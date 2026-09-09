@@ -14,7 +14,7 @@ import { config, readEnvWithFallback } from './config.js'
  * it at runtime instead of only at process start.
  */
 export async function openBrowser(url) {
-  if (readEnvWithFallback('ANNOTAITR_NO_OPEN', ['IMG_ANNOTATOR_NO_OPEN'])) { return }
+  if (readEnvWithFallback('ANNOTAITR_NO_OPEN')) { return }
   const options = config.browser ? { app: { name: config.browser } } : {}
   try {
     await open(url, options)

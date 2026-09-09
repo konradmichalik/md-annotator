@@ -21,7 +21,7 @@ describe('config', () => {
   })
 
   it('browser defaults to null when env not set', () => {
-    if (!process.env.ANNOTAITR_BROWSER && !process.env.MD_ANNOTATOR_BROWSER && !process.env.IMG_ANNOTATOR_BROWSER) {
+    if (!process.env.ANNOTAITR_BROWSER && !process.env.MD_ANNOTATOR_BROWSER) {
       expect(config.browser).toBeNull()
     }
   })

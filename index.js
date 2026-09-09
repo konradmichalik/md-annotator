@@ -77,7 +77,7 @@ Environment:
   ANNOTAITR_NO_OPEN          Skip opening a browser tab automatically
   ANNOTAITR_CAPTURE_TIMEOUT  Image mode: page-load timeout in ms for URL capture
   ANNOTAITR_FEEDBACK_NOTES   Markdown mode: JSON string or file path for feedback notes
-  (MD_ANNOTATOR_* and IMG_ANNOTATOR_* still work as deprecated fallbacks)
+  (MD_ANNOTATOR_* still works as a deprecated fallback)
 
 Examples:
   annotaitr README.md

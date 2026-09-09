@@ -36,7 +36,7 @@ All three run in CI on every pull request; a failing check blocks merge.
 ## Pull requests
 
 Target `main`. Describe what changed and why, not just what files moved.
-Once CI is green, a maintainer reviews and merges — expect follow-up
+Once CI is green, a maintainer reviews and merges: expect follow-up
 questions on anything that changes the public CLI surface (flags,
 environment variables, plugin commands), since those are covered by
 [docs/usage.md](docs/usage.md) and need to stay in sync.

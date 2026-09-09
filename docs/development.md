@@ -88,4 +88,4 @@ npm run build && cd apps/opencode && npm run build && cd ../..
 
 ## Environment Variables
 
-See the README's [Environment Variables](../README.md#environment-variables) table for the full `ANNOTAITR_*` list (`MD_ANNOTATOR_*`/`IMG_ANNOTATOR_*` still work as deprecated fallbacks).
+See [Usage](usage.md#environment-variables) for the full `ANNOTAITR_*` list (`MD_ANNOTATOR_*` still works as a deprecated fallback).

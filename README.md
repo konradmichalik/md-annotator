@@ -56,14 +56,13 @@ Which mode runs is auto-detected from the target: see Usage below and
 > markdown-only install can skip them and gets an actionable error if image
 > mode is ever invoked without them.
 
-Upgrading from `md-annotator` or `img-annotator`? See
-[docs/migration.md](docs/migration.md).
+Upgrading from `md-annotator`? See [docs/migration.md](docs/migration.md).
 
 ### Claude Code plugin
 
 ```bash
 claude plugin marketplace add konradmichalik/annotaitr
-claude plugin install annotate@annotaitr
+claude plugin install annotaitr@annotaitr
 ```
 
 Or via the installer script, which also installs the standalone CLI:
@@ -111,10 +110,10 @@ Opens `README.md` in the browser; approve it or leave annotations, and
 **Claude Code:**
 
 ```text
-/annotate:review ./anything      # auto-detects image vs. markdown
+/annotaitr:review ./anything      # auto-detects image vs. markdown
 ```
 
-Or force a mode directly: `/annotate:md README.md`, `/annotate:image ./mockup.png`.
+Or force a mode directly: `/annotaitr:md README.md`, `/annotaitr:image ./mockup.png`.
 
 **OpenCode:**
 

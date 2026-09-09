@@ -36,7 +36,7 @@ export function parseViewportSpec(spec) {
 }
 
 function getCaptureTimeoutMs() {
-  const envTimeout = readEnvWithFallback('ANNOTAITR_CAPTURE_TIMEOUT', ['IMG_ANNOTATOR_CAPTURE_TIMEOUT'])
+  const envTimeout = readEnvWithFallback('ANNOTAITR_CAPTURE_TIMEOUT')
   if (envTimeout) {
     const parsed = parseInt(envTimeout, 10)
     if (!isNaN(parsed) && parsed >= 1000 && parsed <= 120_000) {

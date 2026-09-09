@@ -30,7 +30,7 @@ annotaitr --as image ./diagram.svg   # skip detection, force a mode
 ## `--as`
 
 Forces `image` or `markdown`, skipping detection entirely. Use it when a
-target's extension doesn't say what it is — an `.svg` diagram meant for image
+target's extension doesn't say what it is: an `.svg` diagram meant for image
 review, for instance.
 
 ```bash
@@ -47,7 +47,7 @@ terminal invocation never needs it.
 ## `--viewport`
 
 Image mode only, and only meaningful when the target is a URL. A preset
-(`desktop` — the default, `laptop`, `tablet`, `mobile`) or an explicit
+(the default `desktop`, or `laptop`, `tablet`, `mobile`) or an explicit
 `<width>x<height>`.
 
 ```bash
@@ -92,15 +92,15 @@ ANNOTAITR_FEEDBACK_NOTES='[{"text":"Rewrote intro","line":5}]' annotaitr README.
 | `KROKI_SERVER_URL` | markdown | Kroki render server (default `https://kroki.io`) |
 
 > [!NOTE]
-> `MD_ANNOTATOR_*` and `IMG_ANNOTATOR_*` still work as deprecated fallbacks
-> for the corresponding `ANNOTAITR_*` variable, with a one-time warning on
-> stderr. See [Migration](migration.md).
+> `MD_ANNOTATOR_*` still works as a deprecated fallback for the
+> corresponding `ANNOTAITR_*` variable, with a one-time warning on stderr.
+> See [Migration](migration.md).
 
 <!-- -->
 
 > [!IMPORTANT]
 > When rendering PlantUML or Kroki diagrams, the diagram source is encoded
-> and sent to the configured server — the public `plantuml.com` and
+> and sent to the configured server: the public `plantuml.com` and
 > `kroki.io` by default. Self-host a [PlantUML
 > server](https://hub.docker.com/r/plantuml/plantuml-server) or [Kroki
 > server](https://docs.kroki.io/kroki/setup/install/) and set
@@ -113,7 +113,7 @@ goes to stderr, the decision goes to stdout on exit:
 
 | Exit code | Meaning |
 |-----------|---------|
-| `0` | Approved, or feedback submitted — stdout carries the formatted decision |
+| `0` | Approved, or feedback submitted: stdout carries the formatted decision |
 | `1` | An error (bad arguments, unsupported target), the browser tab was closed with no decision, or the process was interrupted (`Ctrl+C`) |
 
 `md-annotator` works as an alias for the same binary, for existing scripts
@@ -121,6 +121,6 @@ and shell aliases.
 
 ## See also
 
-- [How annotaitr works](how-it-works.md) — the annotation and review-loop
-  mechanism behind each mode
-- [Migrating from md-annotator or img-annotator](migration.md)
+- [How it works](how-it-works.md): the annotation and review-loop mechanism
+  behind each mode
+- [Migrating from md-annotator](migration.md)
