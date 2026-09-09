@@ -47,6 +47,48 @@ describe('parseMarkdownToBlocks', () => {
       const blocks = parseMarkdownToBlocks(md)
       expect(blocks[0].type).not.toBe('frontmatter')
     })
+
+    it('folds a YAML block scalar into its key value', () => {
+      const md = '---\ndescription: |\n  Line one\n  Line two\ntitle: Test\n---'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks[0].entries).toEqual([
+        { key: 'description', value: 'Line one Line two' },
+        { key: 'title', value: 'Test' }
+      ])
+    })
+
+    it('folds a YAML list into its key value', () => {
+      const md = '---\ntags:\n  - foo\n  - bar\n---'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks[0].entries).toEqual([{ key: 'tags', value: 'foo, bar' }])
+    })
+
+    it('does not misparse a colon inside an indented continuation line', () => {
+      const md = '---\ndescription: >\n  See https://example.com for details\n---'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks[0].entries).toEqual([
+        { key: 'description', value: 'See https://example.com for details' }
+      ])
+    })
+
+    it('folds a block scalar using a chomping indicator (|-)', () => {
+      const md = '---\ndescription: |-\n  Trimmed text\n---'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks[0].entries).toEqual([{ key: 'description', value: 'Trimmed text' }])
+    })
+
+    it('folds a block scalar using an explicit indentation indicator (|2)', () => {
+      const md = '---\ndescription: |2\n  Indented text\n---'
+      const blocks = parseMarkdownToBlocks(md)
+      expect(blocks[0].entries).toEqual([{ key: 'description', value: 'Indented text' }])
+    })
+
+    it('folds a block scalar combining indentation and chomping indicators (|-2, |2-)', () => {
+      const md1 = '---\na: |-2\n  x\n---'
+      const md2 = '---\na: |2-\n  x\n---'
+      expect(parseMarkdownToBlocks(md1)[0].entries).toEqual([{ key: 'a', value: 'x' }])
+      expect(parseMarkdownToBlocks(md2)[0].entries).toEqual([{ key: 'a', value: 'x' }])
+    })
   })
 
   describe('headings', () => {
