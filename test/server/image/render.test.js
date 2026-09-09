@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { loadImage } from '@napi-rs/canvas'
+import { loadImage, createCanvas } from '@napi-rs/canvas'
 import { flattenAnnotations } from '../../../server/image/render.js'
 import { makeFixturePng } from '../../helpers/fixtureImage.js'
 
@@ -45,6 +45,35 @@ describe('flattenAnnotations', () => {
     const source = makeFixturePng(40, 30)
     const freehand = { type: 'freehand', geometry: { points: [{ x: 2, y: 2 }] } }
     await expect(flattenAnnotations(source, [freehand])).resolves.toBeInstanceOf(Buffer)
+  })
+
+  it('handles a highlighter annotation without throwing', async () => {
+    const source = makeFixturePng(40, 30)
+    const highlighter = {
+      type: 'highlighter',
+      color: '#ffff00',
+      geometry: { points: [{ x: 2, y: 2 }, { x: 10, y: 8 }, { x: 20, y: 4 }] }
+    }
+    await expect(flattenAnnotations(source, [highlighter])).resolves.toBeInstanceOf(Buffer)
+  })
+
+  it('ignores a degenerate highlighter mark with fewer than 2 points', async () => {
+    const source = makeFixturePng(40, 30)
+    const highlighter = { type: 'highlighter', geometry: { points: [{ x: 2, y: 2 }] } }
+    await expect(flattenAnnotations(source, [highlighter])).resolves.toBeInstanceOf(Buffer)
+  })
+
+  it('does not leak the highlighter\'s translucency into annotations drawn after it', async () => {
+    const source = makeFixturePng(40, 30, '#000000')
+    const highlighter = { type: 'highlighter', color: '#ffff00', geometry: { points: [{ x: 2, y: 2 }, { x: 30, y: 2 }] } }
+    const box = { type: 'box', color: '#00ff00', geometry: { x: 20, y: 10, width: 10, height: 10 } }
+    const result = await flattenAnnotations(source, [highlighter, box])
+    const decoded = await loadImage(result)
+    const canvas = createCanvas(decoded.width, decoded.height)
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(decoded, 0, 0)
+    const [, , , alpha] = ctx.getImageData(20, 10, 1, 1).data
+    expect(alpha).toBe(255)
   })
 
   it('appends a legend below the image listing each annotation\'s comment', async () => {

@@ -6,6 +6,7 @@ const TOOLS = [
   { id: 'box', label: 'Box' },
   { id: 'arrow', label: 'Arrow' },
   { id: 'freehand', label: 'Freehand' },
+  { id: 'highlighter', label: 'Highlighter' },
   { id: 'pin', label: 'Pin' }
 ]
 

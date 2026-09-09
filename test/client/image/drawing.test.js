@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   clampPoint, distance, boxFromPoints,
   annotationCentroid, annotationBottomAnchor, annotationTopAnchor, translateGeometry, hitTestAnnotation, findAnnotationAt,
-  resizeGeometry, freehandBounds
+  resizeGeometry, freehandBounds, isPointsGeometry
 } from '../../../client/image/src/utils/drawing.js'
 
 describe('clampPoint', () => {
@@ -51,6 +51,11 @@ describe('annotationCentroid', () => {
   it('uses the point average for a freehand mark', () => {
     const geometry = { points: [{ x: 0, y: 0 }, { x: 10, y: 10 }, { x: 20, y: 20 }] }
     expect(annotationCentroid({ type: 'freehand', geometry })).toEqual({ x: 10, y: 10 })
+  })
+
+  it('uses the point average for a highlighter mark, like a freehand mark', () => {
+    const geometry = { points: [{ x: 0, y: 0 }, { x: 10, y: 10 }, { x: 20, y: 20 }] }
+    expect(annotationCentroid({ type: 'highlighter', geometry })).toEqual({ x: 10, y: 10 })
   })
 })
 
@@ -115,6 +120,21 @@ describe('translateGeometry', () => {
     const geometry = { points: [{ x: 0, y: 0 }, { x: 10, y: 10 }] }
     expect(translateGeometry('freehand', geometry, 2, 3)).toEqual({ points: [{ x: 2, y: 3 }, { x: 12, y: 13 }] })
   })
+
+  it('shifts every point of a highlighter mark, like a freehand mark', () => {
+    const geometry = { points: [{ x: 0, y: 0 }, { x: 10, y: 10 }] }
+    expect(translateGeometry('highlighter', geometry, 2, 3)).toEqual({ points: [{ x: 2, y: 3 }, { x: 12, y: 13 }] })
+  })
+})
+
+describe('isPointsGeometry', () => {
+  it('is true for freehand and highlighter, false for everything else', () => {
+    expect(isPointsGeometry('freehand')).toBe(true)
+    expect(isPointsGeometry('highlighter')).toBe(true)
+    expect(isPointsGeometry('box')).toBe(false)
+    expect(isPointsGeometry('arrow')).toBe(false)
+    expect(isPointsGeometry('pin')).toBe(false)
+  })
 })
 
 describe('hitTestAnnotation', () => {
@@ -140,6 +160,13 @@ describe('hitTestAnnotation', () => {
     const freehand = { type: 'freehand', geometry: { points: [{ x: 0, y: 0 }, { x: 50, y: 0 }, { x: 50, y: 50 }] } }
     expect(hitTestAnnotation({ x: 50, y: 25 }, freehand)).toBe(true)
     expect(hitTestAnnotation({ x: 25, y: 25 }, freehand)).toBe(false)
+  })
+
+  it('gives a highlighter a wider hit tolerance than a freehand mark, to match its fat stroke', () => {
+    const geometry = { points: [{ x: 0, y: 0 }, { x: 100, y: 0 }] }
+    const point = { x: 50, y: 9 }
+    expect(hitTestAnnotation(point, { type: 'freehand', geometry })).toBe(false)
+    expect(hitTestAnnotation(point, { type: 'highlighter', geometry })).toBe(true)
   })
 })
 
@@ -205,6 +232,12 @@ describe('resizeGeometry', () => {
     const result = resizeGeometry('freehand', vertical, 'se', { x: 5, y: 20 })
     expect(result.points[0].x).toBe(5)
     expect(result.points[1].y).toBe(20)
+  })
+
+  it('scales a highlighter mark exactly like a freehand mark', () => {
+    const highlighter = { points: [{ x: 0, y: 0 }, { x: 10, y: 10 }, { x: 5, y: 0 }] }
+    const result = resizeGeometry('highlighter', highlighter, 'se', { x: 20, y: 20 })
+    expect(result.points).toEqual([{ x: 0, y: 0 }, { x: 20, y: 20 }, { x: 10, y: 0 }])
   })
 })
 

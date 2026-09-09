@@ -36,6 +36,12 @@ describe('exportFeedback', () => {
     expect(output).toContain('(no comment text)')
   })
 
+  it('labels a highlighter mark', () => {
+    const highlighter = { type: 'highlighter', color: '#e11d48', text: '', geometry: { points: [{ x: 0, y: 0 }, { x: 10, y: 10 }] } }
+    const output = exportFeedback([highlighter], 100, 100, '/tmp/annotated.png')
+    expect(output).toContain('1. Highlighted area')
+  })
+
   it('calls out annotations positioned close together', () => {
     const a = { type: 'box', color: '#e11d48', text: '', geometry: { x: 85, y: 15, width: 4, height: 4 } }
     const b = { type: 'box', color: '#e11d48', text: '', geometry: { x: 90, y: 18, width: 4, height: 4 } }

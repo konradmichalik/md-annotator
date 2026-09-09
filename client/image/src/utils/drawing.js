@@ -72,7 +72,12 @@ export function translateGeometry(type, geometry, dx, dy) {
   return { points: geometry.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) }
 }
 
-/** The axis-aligned bounding box of a freehand mark's points, for its resize handles. */
+/** Whether a type's geometry is `{points: [...]}`, shared by freehand and highlighter marks. */
+export function isPointsGeometry(type) {
+  return type === 'freehand' || type === 'highlighter'
+}
+
+/** The axis-aligned bounding box of a freehand/highlighter mark's points, for its resize handles. */
 export function freehandBounds(points) {
   const xs = points.map((p) => p.x)
   const ys = points.map((p) => p.y)
@@ -91,8 +96,16 @@ function distanceToSegment(p, a, b) {
   return distance(p, { x: a.x + t * dx, y: a.y + t * dy })
 }
 
+export const HIGHLIGHTER_STROKE_WIDTH = 16
+export const HIGHLIGHTER_OPACITY = 0.4
+
 const LINE_HIT_TOLERANCE = 8
 const PIN_HIT_RADIUS = 16
+
+/** Click-to-select tolerance for a line-like shape: wider for a highlighter's fat stroke than for a thin line. */
+function hitTolerance(type) {
+  return type === 'highlighter' ? HIGHLIGHTER_STROKE_WIDTH / 2 + 2 : LINE_HIT_TOLERANCE
+}
 
 /** Whether `point` falls on/inside `annotation`, for click-to-select hit-testing. */
 export function hitTestAnnotation(point, annotation) {
@@ -102,14 +115,15 @@ export function hitTestAnnotation(point, annotation) {
       && point.y >= geometry.y && point.y <= geometry.y + geometry.height
   }
   if (type === 'arrow') {
-    return distanceToSegment(point, { x: geometry.x1, y: geometry.y1 }, { x: geometry.x2, y: geometry.y2 }) <= LINE_HIT_TOLERANCE
+    return distanceToSegment(point, { x: geometry.x1, y: geometry.y1 }, { x: geometry.x2, y: geometry.y2 }) <= hitTolerance(type)
   }
   if (type === 'pin') {
     return distance(point, geometry) <= PIN_HIT_RADIUS
   }
   const points = geometry.points
+  const tolerance = hitTolerance(type)
   for (let i = 0; i < points.length - 1; i++) {
-    if (distanceToSegment(point, points[i], points[i + 1]) <= LINE_HIT_TOLERANCE) { return true }
+    if (distanceToSegment(point, points[i], points[i + 1]) <= tolerance) { return true }
   }
   return false
 }
@@ -123,10 +137,10 @@ export function findAnnotationAt(point, annotations) {
 }
 
 /**
- * Recompute a box/arrow/freehand's geometry when one of its resize handles
- * is dragged to `point`. `handle` is one of 'nw'/'ne'/'sw'/'se' for a box or
- * a freehand mark's bounding box (the opposite corner stays anchored), or
- * 'start'/'end' for an arrow (the other endpoint stays anchored).
+ * Recompute a box/arrow/freehand/highlighter's geometry when one of its
+ * resize handles is dragged to `point`. `handle` is one of 'nw'/'ne'/'sw'/'se'
+ * for a box or a points-based mark's bounding box (the opposite corner stays
+ * anchored), or 'start'/'end' for an arrow (the other endpoint stays anchored).
  */
 export function resizeGeometry(type, geometry, handle, point) {
   if (type === 'box') {
@@ -143,7 +157,7 @@ export function resizeGeometry(type, geometry, handle, point) {
       ? { x1: point.x, y1: point.y, x2: geometry.x2, y2: geometry.y2 }
       : { x1: geometry.x1, y1: geometry.y1, x2: point.x, y2: point.y }
   }
-  if (type === 'freehand') {
+  if (isPointsGeometry(type)) {
     const bounds = freehandBounds(geometry.points)
     const minX = bounds.x
     const minY = bounds.y

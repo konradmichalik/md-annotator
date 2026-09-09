@@ -4,6 +4,7 @@ const TYPE_LABELS = {
   box: 'Boxed area',
   arrow: 'Arrow pointing to',
   freehand: 'Freehand mark',
+  highlighter: 'Highlighted area',
   pin: 'Comment pin'
 }
 
