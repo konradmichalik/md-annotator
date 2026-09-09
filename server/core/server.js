@@ -50,10 +50,11 @@ async function listenOnFirstFreePort(app, candidates, host) {
  * @param {Function} [options.onReady] - (url, port) => void
  */
 export async function startAnnotatorServer({ bundleDir, htmlContent = null, staticDirs = [], mountRoutes, onReady = null }) {
-  const preloadedHtml = htmlContent ?? (() => {
+  let preloadedHtml = htmlContent
+  if (!preloadedHtml) {
     const distIndex = join(bundleDir, 'index.html')
-    return existsSync(distIndex) ? readFileSync(distIndex, 'utf-8') : null
-  })()
+    preloadedHtml = existsSync(distIndex) ? readFileSync(distIndex, 'utf-8') : null
+  }
 
   const app = express()
   app.use(cors())
