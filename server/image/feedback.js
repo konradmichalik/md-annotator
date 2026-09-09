@@ -8,6 +8,14 @@ const TYPE_LABELS = {
   pin: 'Comment pin'
 }
 
+/** An arrow drawn in dimension-line style marks a span, not a target, so it needs its own wording. */
+function annotationLabel(annotation) {
+  if (annotation.type === 'arrow' && annotation.arrowStyle === 'dimension') {
+    return 'Distance/spacing between two points near'
+  }
+  return TYPE_LABELS[annotation.type] || annotation.type
+}
+
 /**
  * Format a decision that had no annotations at all.
  */
@@ -19,7 +27,7 @@ function formatAnnotationList(annotations, imageWidth, imageHeight) {
   const nearbyByIndex = findNearbyAnnotationNumbers(annotations, imageWidth, imageHeight)
 
   return annotations.map((annotation, index) => {
-    const label = TYPE_LABELS[annotation.type] || annotation.type
+    const label = annotationLabel(annotation)
     const position = describePosition(annotation, imageWidth, imageHeight)
     const nearby = nearbyByIndex[index]
     const nearbyNote = nearby.length > 0

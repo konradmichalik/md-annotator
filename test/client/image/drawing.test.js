@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   clampPoint, distance, boxFromPoints,
   annotationCentroid, annotationBottomAnchor, annotationTopAnchor, translateGeometry, hitTestAnnotation, findAnnotationAt,
-  resizeGeometry, freehandBounds, isPointsGeometry
+  resizeGeometry, freehandBounds, isPointsGeometry, dimensionCapLines
 } from '../../../client/image/src/utils/drawing.js'
 
 describe('clampPoint', () => {
@@ -238,6 +238,35 @@ describe('resizeGeometry', () => {
     const highlighter = { points: [{ x: 0, y: 0 }, { x: 10, y: 10 }, { x: 5, y: 0 }] }
     const result = resizeGeometry('highlighter', highlighter, 'se', { x: 20, y: 20 })
     expect(result.points).toEqual([{ x: 0, y: 0 }, { x: 20, y: 20 }, { x: 10, y: 0 }])
+  })
+})
+
+describe('dimensionCapLines', () => {
+  it('returns vertical ticks for a horizontal shaft', () => {
+    const ticks = dimensionCapLines({ x1: 0, y1: 0, x2: 100, y2: 0 }, 10)
+    expect(ticks).toEqual([
+      { x1: 0, y1: -5, x2: 0, y2: 5 },
+      { x1: 100, y1: -5, x2: 100, y2: 5 }
+    ])
+  })
+
+  it('returns horizontal ticks for a vertical shaft', () => {
+    const ticks = dimensionCapLines({ x1: 0, y1: 0, x2: 0, y2: 100 }, 10)
+    expect(ticks).toEqual([
+      { x1: 5, y1: 0, x2: -5, y2: 0 },
+      { x1: 5, y1: 100, x2: -5, y2: 100 }
+    ])
+  })
+
+  it('centers each tick on its endpoint for a diagonal shaft', () => {
+    const ticks = dimensionCapLines({ x1: 0, y1: 0, x2: 10, y2: 10 }, 10)
+    const midpointOf = (t) => ({ x: (t.x1 + t.x2) / 2, y: (t.y1 + t.y2) / 2 })
+    expect(midpointOf(ticks[0])).toEqual({ x: 0, y: 0 })
+    expect(midpointOf(ticks[1])).toEqual({ x: 10, y: 10 })
+  })
+
+  it('returns null for a zero-length arrow', () => {
+    expect(dimensionCapLines({ x1: 5, y1: 5, x2: 5, y2: 5 })).toBeNull()
   })
 })
 

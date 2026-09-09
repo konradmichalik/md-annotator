@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { ANNOTATION_COLORS } from '../utils/annotationColors.js'
+import { ARROW_STYLE_ICONS } from '../utils/icons.jsx'
+
+const ARROW_STYLES = [
+  { id: 'head', label: 'Arrowhead' },
+  { id: 'dimension', label: 'Dimension ticks' }
+]
 
 const POPOVER_WIDTH = 280
 const POPOVER_HEIGHT_ESTIMATE = 160
@@ -28,9 +34,12 @@ function computePosition(anchorPoint) {
  * drawn, or an existing one being edited), so the human never leaves the
  * annotator UI to type a comment (no window.prompt) or pick a color.
  */
-export default function CommentPopover({ anchorPoint, initialText = '', initialColor, isEditing = false, onSubmit, onClose }) {
+export default function CommentPopover({
+  anchorPoint, initialText = '', initialColor, annotationType, initialArrowStyle, isEditing = false, onSubmit, onClose
+}) {
   const [text, setText] = useState(initialText)
   const [color, setColor] = useState(initialColor || ANNOTATION_COLORS[0].hex)
+  const [arrowStyle, setArrowStyle] = useState(initialArrowStyle || 'head')
   const textareaRef = useRef(null)
   const position = computePosition(anchorPoint)
 
@@ -40,8 +49,8 @@ export default function CommentPopover({ anchorPoint, initialText = '', initialC
   }, [])
 
   const handleSubmit = useCallback(() => {
-    onSubmit(text.trim(), color)
-  }, [text, color, onSubmit])
+    onSubmit({ text: text.trim(), color, arrowStyle })
+  }, [text, color, arrowStyle, onSubmit])
 
   const handleKeyDown = (event) => {
     if (event.key === 'Escape') {
@@ -74,6 +83,24 @@ export default function CommentPopover({ anchorPoint, initialText = '', initialC
           />
         ))}
       </div>
+      {annotationType === 'arrow' && (
+        <div className="arrow-style-toggle" role="radiogroup" aria-label="Arrow end style">
+          {ARROW_STYLES.map((style) => (
+            <button
+              key={style.id}
+              type="button"
+              role="radio"
+              aria-checked={arrowStyle === style.id}
+              aria-label={style.label}
+              title={style.label}
+              className={`arrow-style-swatch${arrowStyle === style.id ? ' arrow-style-swatch--active' : ''}`}
+              onClick={() => setArrowStyle(style.id)}
+            >
+              {ARROW_STYLE_ICONS[style.id]}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="comment-popover-body">
         <textarea
           ref={textareaRef}

@@ -23,7 +23,9 @@ for the exact rules) and the output above will be in one of two shapes:
 
 **Image feedback** — recognizable by an `Annotated screenshot:` path near the
 top. The user marked up an image or captured web page: boxes, arrows,
-freehand marks, and numbered comment pins, each with an optional comment.
+freehand marks, highlighter marks, and numbered comment pins, each with an
+optional comment. An arrow in dimension-line style (ticks, no arrowhead)
+marks a distance or spacing rather than pointing at a single target.
 Read the annotated image directly to see exactly what was marked and where;
 combine that with each annotation's coarse position and comment text to find
 the relevant source and apply the requested change.

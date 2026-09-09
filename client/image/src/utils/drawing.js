@@ -185,3 +185,26 @@ export function resizeGeometry(type, geometry, handle, point) {
   }
   return geometry
 }
+
+/** Length, in image-space units, of each perpendicular tick on a dimension-style arrow. */
+export const DIMENSION_TICK_LENGTH = 14
+
+/**
+ * The two perpendicular tick segments for a dimension-line-style arrow, one
+ * centered at each endpoint of `geometry`. Returns null for a zero-length
+ * arrow (a click with no drag), which has no direction to be perpendicular to.
+ */
+export function dimensionCapLines(geometry, tickLength = DIMENSION_TICK_LENGTH) {
+  const { x1, y1, x2, y2 } = geometry
+  const len = Math.hypot(x2 - x1, y2 - y1)
+  if (len === 0) { return null }
+  const ux = (x2 - x1) / len
+  const uy = (y2 - y1) / len
+  const px = -uy
+  const py = ux
+  const half = tickLength / 2
+  return [
+    { x1: x1 - px * half, y1: y1 - py * half, x2: x1 + px * half, y2: y1 + py * half },
+    { x1: x2 - px * half, y1: y2 - py * half, x2: x2 + px * half, y2: y2 + py * half }
+  ]
+}

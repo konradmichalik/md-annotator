@@ -6,8 +6,10 @@ directly, without the human writing out coordinates or line numbers by hand.
 
 ## Image mode
 
-Click and drag to draw a box, arrow, or freehand mark, or click to drop a
-numbered comment pin; add an optional comment to each.
+Click and drag to draw a box, arrow, freehand mark, or highlighter mark, or
+click to drop a numbered comment pin; add an optional comment to each. An
+arrow can also be switched to a dimension-line style (perpendicular ticks
+instead of an arrowhead) for marking distance or spacing between two points.
 
 On submit, the annotations are baked into a copy of the image (with a
 numbered legend) and written to a fresh temp file. The feedback text sent to

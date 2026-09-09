@@ -866,6 +866,36 @@ body {
   border-color: var(--text);
 }
 
+.arrow-style-toggle {
+  display: flex;
+  gap: 6px;
+  padding: 0.5rem 0.5rem 0;
+}
+
+.arrow-style-swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+}
+
+.arrow-style-swatch svg {
+  width: 14px;
+  height: 14px;
+}
+
+.arrow-style-swatch--active {
+  border-color: var(--text);
+  color: var(--text);
+}
+
 .comment-popover-body {
   padding: 0.5rem;
 }

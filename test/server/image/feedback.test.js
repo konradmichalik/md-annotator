@@ -36,6 +36,14 @@ describe('exportFeedback', () => {
     expect(output).toContain('(no comment text)')
   })
 
+  it('labels a plain arrow as pointing to something, and a dimension-style arrow as a span', () => {
+    const headArrow = { type: 'arrow', color: '#e11d48', text: '', geometry: { x1: 0, y1: 0, x2: 10, y2: 10 } }
+    const dimensionArrow = { type: 'arrow', arrowStyle: 'dimension', color: '#e11d48', text: '', geometry: { x1: 0, y1: 0, x2: 10, y2: 10 } }
+    const output = exportFeedback([headArrow, dimensionArrow], 100, 100, '/tmp/annotated.png')
+    expect(output).toContain('1. Arrow pointing to')
+    expect(output).toContain('2. Distance/spacing between two points near')
+  })
+
   it('labels a highlighter mark', () => {
     const highlighter = { type: 'highlighter', color: '#e11d48', text: '', geometry: { points: [{ x: 0, y: 0 }, { x: 10, y: 10 }] } }
     const output = exportFeedback([highlighter], 100, 100, '/tmp/annotated.png')

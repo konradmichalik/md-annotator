@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 import {
   clampPoint, boxFromPoints, findAnnotationAt, translateGeometry,
   annotationCentroid, annotationBottomAnchor, annotationTopAnchor, resizeGeometry, freehandBounds,
-  isPointsGeometry, HIGHLIGHTER_STROKE_WIDTH, HIGHLIGHTER_OPACITY
+  isPointsGeometry, HIGHLIGHTER_STROKE_WIDTH, HIGHLIGHTER_OPACITY, dimensionCapLines
 } from '../utils/drawing.js'
 import { ANNOTATION_COLORS } from '../utils/annotationColors.js'
 import { ACTION_ICONS } from '../utils/icons.jsx'
@@ -41,14 +41,24 @@ function BoxShape({ geometry, color, dash, selectionProps }) {
 
 function ArrowShape({ annotation, color, dash, markerId, selectionProps }) {
   const { x1, y1, x2, y2 } = annotation.geometry
+  const isDimension = annotation.arrowStyle === 'dimension'
+  const ticks = isDimension ? dimensionCapLines(annotation.geometry) : null
   return (
     <>
-      {selectionProps && <line x1={x1} y1={y1} x2={x2} y2={y2} {...selectionProps} />}
+      {selectionProps && (
+        <>
+          <line x1={x1} y1={y1} x2={x2} y2={y2} {...selectionProps} />
+          {ticks && ticks.map((tick, i) => <line key={i} {...tick} {...selectionProps} />)}
+        </>
+      )}
       <line
         x1={x1} y1={y1} x2={x2} y2={y2}
         stroke={color} strokeWidth={STROKE_WIDTH} strokeDasharray={dash}
-        markerEnd={`url(#${markerId})`}
+        markerEnd={isDimension ? undefined : `url(#${markerId})`}
       />
+      {ticks && ticks.map((tick, i) => (
+        <line key={i} {...tick} stroke={color} strokeWidth={STROKE_WIDTH} />
+      ))}
     </>
   )
 }
@@ -242,6 +252,7 @@ export default function ImageCanvas({
       geometry: annotation.geometry,
       color: annotation.color,
       text: annotation.text,
+      arrowStyle: annotation.arrowStyle,
       anchor: toClientPoint(wrapperRef, annotationBottomAnchor(annotation), zoom)
     })
   }, [zoom])
@@ -389,7 +400,7 @@ export default function ImageCanvas({
       setDragPoint(null)
       const geometry = { x1: dragStart.x, y1: dragStart.y, x2: point.x, y2: point.y }
       setPending({
-        type: 'arrow', geometry, color: nextColor,
+        type: 'arrow', geometry, color: nextColor, arrowStyle: 'head',
         anchor: toClientPoint(wrapperRef, annotationBottomAnchor({ type: 'arrow', geometry }), zoom)
       })
     } else if (isPointCollectingTool(activeTool) && strokePoints.length > 1) {
@@ -402,12 +413,15 @@ export default function ImageCanvas({
     }
   }, [activeTool, dragStart, strokePoints, imageWidth, imageHeight, zoom, annotations, openEditPopover, nextColor])
 
-  const handleCommentSubmit = useCallback((text, color) => {
+  const handleCommentSubmit = useCallback(({ text, color, arrowStyle }) => {
     if (pending) {
       if (pending.id) {
-        onUpdateAnnotation(pending.id, { text, color })
+        onUpdateAnnotation(pending.id, { text, color, ...(pending.type === 'arrow' ? { arrowStyle } : {}) })
       } else {
-        onAddAnnotation({ type: pending.type, geometry: pending.geometry, text, color })
+        onAddAnnotation({
+          type: pending.type, geometry: pending.geometry, text, color,
+          ...(pending.type === 'arrow' ? { arrowStyle } : {})
+        })
       }
     }
     setPending(null)
@@ -423,7 +437,7 @@ export default function ImageCanvas({
   if (activeTool === 'box' && dragStart && dragPoint) {
     livePreview = { type: 'box', geometry: boxFromPoints(dragStart, dragPoint), color: nextColor }
   } else if (activeTool === 'arrow' && dragStart && dragPoint) {
-    livePreview = { type: 'arrow', geometry: { x1: dragStart.x, y1: dragStart.y, x2: dragPoint.x, y2: dragPoint.y }, color: nextColor }
+    livePreview = { type: 'arrow', geometry: { x1: dragStart.x, y1: dragStart.y, x2: dragPoint.x, y2: dragPoint.y }, color: nextColor, arrowStyle: 'head' }
   } else if (isPointCollectingTool(activeTool) && strokePoints.length > 1) {
     livePreview = { type: activeTool, geometry: { points: strokePoints }, color: nextColor }
   }
@@ -451,7 +465,7 @@ export default function ImageCanvas({
           <marker id="arrowhead-preview" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
             <path d="M0,0 L10,5 L0,10 Z" fill={nextColor} />
           </marker>
-          {annotations.map((annotation) => annotation.type === 'arrow' && (
+          {annotations.map((annotation) => annotation.type === 'arrow' && annotation.arrowStyle !== 'dimension' && (
             <marker
               key={`marker-${annotation.id}`}
               id={`arrowhead-${annotation.id}`}
@@ -486,6 +500,8 @@ export default function ImageCanvas({
           anchorPoint={pending.anchor}
           initialText={pending.text || ''}
           initialColor={pending.color}
+          annotationType={pending.type}
+          initialArrowStyle={pending.arrowStyle}
           isEditing={!!pending.id}
           onSubmit={handleCommentSubmit}
           onClose={handleCommentClose}

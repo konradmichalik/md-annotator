@@ -76,6 +76,18 @@ describe('flattenAnnotations', () => {
     expect(alpha).toBe(255)
   })
 
+  it('handles a dimension-style arrow without throwing', async () => {
+    const source = makeFixturePng(40, 30)
+    const arrow = { type: 'arrow', arrowStyle: 'dimension', color: '#ff0000', geometry: { x1: 0, y1: 0, x2: 39, y2: 29 } }
+    await expect(flattenAnnotations(source, [arrow])).resolves.toBeInstanceOf(Buffer)
+  })
+
+  it('handles a zero-length dimension-style arrow without throwing', async () => {
+    const source = makeFixturePng(40, 30)
+    const arrow = { type: 'arrow', arrowStyle: 'dimension', color: '#ff0000', geometry: { x1: 5, y1: 5, x2: 5, y2: 5 } }
+    await expect(flattenAnnotations(source, [arrow])).resolves.toBeInstanceOf(Buffer)
+  })
+
   it('appends a legend below the image listing each annotation\'s comment', async () => {
     const source = makeFixturePng(200, 100)
     const box = { type: 'box', color: '#ff0000', text: 'Move this up', geometry: { x: 5, y: 5, width: 20, height: 15 } }

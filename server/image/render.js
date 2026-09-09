@@ -6,6 +6,7 @@ const BADGE_RADIUS = 11
 const DEFAULT_COLOR = '#e11d48'
 const HIGHLIGHTER_STROKE_WIDTH = 18
 const HIGHLIGHTER_OPACITY = 0.4
+const DIMENSION_TICK_LENGTH = 18
 
 const LEGEND_PADDING = 14
 const LEGEND_LINE_HEIGHT = 18
@@ -36,6 +37,25 @@ function drawArrowhead(ctx, x1, y1, x2, y2, color) {
   ctx.stroke()
 }
 
+/** Perpendicular tick marks at both ends of a dimension-style arrow, the canvas twin of client drawing.js's dimensionCapLines. */
+function drawDimensionCaps(ctx, x1, y1, x2, y2, color) {
+  const len = Math.hypot(x2 - x1, y2 - y1)
+  if (len === 0) { return }
+  const ux = (x2 - x1) / len
+  const uy = (y2 - y1) / len
+  const px = -uy
+  const py = ux
+  const half = DIMENSION_TICK_LENGTH / 2
+  ctx.beginPath()
+  ctx.moveTo(x1 - px * half, y1 - py * half)
+  ctx.lineTo(x1 + px * half, y1 + py * half)
+  ctx.moveTo(x2 - px * half, y2 - py * half)
+  ctx.lineTo(x2 + px * half, y2 + py * half)
+  ctx.strokeStyle = color
+  ctx.lineWidth = STROKE_WIDTH
+  ctx.stroke()
+}
+
 function drawBadge(ctx, x, y, index, color) {
   ctx.beginPath()
   ctx.arc(x, y, BADGE_RADIUS, 0, Math.PI * 2)
@@ -60,7 +80,11 @@ function drawArrow(ctx, annotation, index, color) {
   ctx.moveTo(x1, y1)
   ctx.lineTo(x2, y2)
   ctx.stroke()
-  drawArrowhead(ctx, x1, y1, x2, y2, color)
+  if (annotation.arrowStyle === 'dimension') {
+    drawDimensionCaps(ctx, x1, y1, x2, y2, color)
+  } else {
+    drawArrowhead(ctx, x1, y1, x2, y2, color)
+  }
   drawBadge(ctx, x1, y1, index, color)
 }
 

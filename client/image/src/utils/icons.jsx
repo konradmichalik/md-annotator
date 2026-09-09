@@ -40,6 +40,20 @@ export const TOOL_ICONS = {
   )
 }
 
+// Icons for the arrow end-cap style toggle in CommentPopover. Keyed by
+// `arrowStyle` value, not by annotation type, so they don't belong in
+// TOOL_ICONS (which AnnotationPanel looks up by annotation.type).
+export const ARROW_STYLE_ICONS = {
+  head: TOOL_ICONS.arrow,
+  dimension: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M6 18l12 -12" />
+      <path d="M3 15l6 6" />
+      <path d="M15 3l6 6" />
+    </svg>
+  )
+}
+
 export const ACTION_ICONS = {
   remove: (
     <svg {...ICON_PROPS} aria-hidden="true">
