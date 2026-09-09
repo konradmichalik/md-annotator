@@ -289,13 +289,19 @@ function fail(message) {
   process.exit(1)
 }
 
+function printHelpAndExit(code) {
+  process.stderr.write(HELP_TEXT + '\n')
+  process.exit(code)
+}
+
 async function runMarkdown({ targets, origin, feedbackNotes }) {
   if (targets.length === 0) {
     fail('No file specified.')
+    return
   }
 
   const { absolutePaths, error } = await resolveMarkdownTargets(targets)
-  if (error) { fail(error) }
+  if (error) { fail(error); return }
 
   const server = withLifecycle(await buildMarkdownServer({ filePaths: absolutePaths, origin, feedbackNotes }))
   const url = `http://localhost:${server.port}`
@@ -315,7 +321,7 @@ async function runMarkdown({ targets, origin, feedbackNotes }) {
 async function runImage({ targets, origin, viewportSpec, clipboardPath }) {
   const { loadImageFromFile, captureUrl, buildImageServer } = await loadImageRuntime()
   const { capture, targetLabel, error } = await resolveImageCapture(targets, viewportSpec, { clipboardPath, loadImageFromFile, captureUrl })
-  if (error) { fail(error) }
+  if (error) { fail(error); return }
 
   const server = withLifecycle(await buildImageServer({
     imageBuffer: capture.buffer,
@@ -337,12 +343,14 @@ async function handleOutcome(server, decision, buildOutput) {
     process.stderr.write('Interrupted. No decision made.\n')
     server.shutdown()
     process.exit(1)
+    return
   }
 
   if (decision.disconnected) {
     process.stderr.write('Browser tab closed. No decision made.\n')
     server.shutdown()
     process.exit(1)
+    return
   }
 
   // Give the browser time to receive the response before the server closes
@@ -362,48 +370,54 @@ async function handleOutcome(server, decision, buildOutput) {
   })
 }
 
+/**
+ * Bare invocation (no target, no --as): read an image from the macOS
+ * clipboard, or print help. Unlike an explicit `--as image` with no target,
+ * a missing/unreadable clipboard here is not an error — it's the same "tell
+ * me what to do" signal a bare invocation on any other platform gets.
+ */
+async function runBareInvocation({ origin, viewportSpec }) {
+  if (process.platform !== 'darwin') {
+    printHelpAndExit(0)
+    return
+  }
+
+  let clipboardPath
+  try {
+    clipboardPath = await saveClipboardImage()
+  } catch {
+    printHelpAndExit(0)
+    return
+  }
+
+  await runImage({ targets: [], origin, viewportSpec, clipboardPath })
+}
+
 async function main() {
   const { help, targets, origin, viewportSpec, feedbackNotes, modeOverride, viewportFlagGiven, feedbackNotesFlagGiven, error } = parseArgs(process.argv)
 
-  if (error) { fail(error) }
-  if (help) {
-    process.stderr.write(HELP_TEXT + '\n')
-    process.exit(0)
-  }
+  if (error) { fail(error); return }
+  if (help) { printHelpAndExit(0); return }
 
   if (targets.length === 0 && !modeOverride) {
-    // Bare invocation, no forced mode: read an image from the macOS
-    // clipboard, or print help. Unlike an explicit `--as image` with no
-    // target, a missing/unreadable clipboard here is not an error — it's
-    // the same "tell me what to do" signal a bare invocation on any other
-    // platform gets.
-    if (process.platform !== 'darwin') {
-      process.stderr.write(HELP_TEXT + '\n')
-      process.exit(0)
-    }
-    let clipboardPath
-    try {
-      clipboardPath = await saveClipboardImage()
-    } catch {
-      process.stderr.write(HELP_TEXT + '\n')
-      process.exit(0)
-    }
-    await runImage({ targets, origin, viewportSpec, clipboardPath })
+    await runBareInvocation({ origin, viewportSpec })
     return
   }
 
   let mode = modeOverride
   if (!mode) {
     const detected = await detectMode(targets)
-    if (detected.error) { fail(detected.error) }
+    if (detected.error) { fail(detected.error); return }
     mode = detected.mode
   }
 
   if (mode === 'markdown' && viewportFlagGiven) {
     fail('--viewport only applies to image targets, not markdown files.')
+    return
   }
   if (mode === 'image' && feedbackNotesFlagGiven) {
     fail('--feedback-notes only applies to markdown targets, not images.')
+    return
   }
 
   if (mode === 'markdown') {
