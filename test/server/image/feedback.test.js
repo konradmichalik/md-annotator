@@ -36,12 +36,19 @@ describe('exportFeedback', () => {
     expect(output).toContain('(no comment text)')
   })
 
-  it('labels a plain arrow as pointing to something, and a dimension-style arrow as a span', () => {
-    const headArrow = { type: 'arrow', color: '#e11d48', text: '', geometry: { x1: 0, y1: 0, x2: 10, y2: 10 } }
-    const dimensionArrow = { type: 'arrow', arrowStyle: 'dimension', color: '#e11d48', text: '', geometry: { x1: 0, y1: 0, x2: 10, y2: 10 } }
-    const output = exportFeedback([headArrow, dimensionArrow], 100, 100, '/tmp/annotated.png')
+  it('labels each arrow style with wording matching what it actually depicts', () => {
+    const geometry = { x1: 0, y1: 0, x2: 10, y2: 10 }
+    const headArrow = { type: 'arrow', color: '#e11d48', text: '', geometry }
+    const dimensionArrow = { type: 'arrow', arrowStyle: 'dimension', color: '#e11d48', text: '', geometry }
+    const noneArrow = { type: 'arrow', arrowStyle: 'none', color: '#e11d48', text: '', geometry }
+    const doubleArrow = { type: 'arrow', arrowStyle: 'double', color: '#e11d48', text: '', geometry }
+    const unknownArrow = { type: 'arrow', arrowStyle: 'triangle', color: '#e11d48', text: '', geometry }
+    const output = exportFeedback([headArrow, dimensionArrow, noneArrow, doubleArrow, unknownArrow], 100, 100, '/tmp/annotated.png')
     expect(output).toContain('1. Arrow pointing to')
     expect(output).toContain('2. Distance/spacing between two points near')
+    expect(output).toContain('3. Line connecting')
+    expect(output).toContain('4. Two-way connection between')
+    expect(output).toContain('5. Arrow pointing to')
   })
 
   it('labels a highlighter mark', () => {

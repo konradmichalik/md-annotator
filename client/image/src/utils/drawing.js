@@ -1,3 +1,5 @@
+import { strokeWidthOf } from './annotationStyles.js'
+
 export function clampPoint(point, width, height) {
   return {
     x: Math.min(Math.max(point.x, 0), width),
@@ -96,15 +98,18 @@ function distanceToSegment(p, a, b) {
   return distance(p, { x: a.x + t * dx, y: a.y + t * dy })
 }
 
-export const HIGHLIGHTER_STROKE_WIDTH = 16
 export const HIGHLIGHTER_OPACITY = 0.4
 
 const LINE_HIT_TOLERANCE = 8
 const PIN_HIT_RADIUS = 16
 
-/** Click-to-select tolerance for a line-like shape: wider for a highlighter's fat stroke than for a thin line. */
-function hitTolerance(type) {
-  return type === 'highlighter' ? HIGHLIGHTER_STROKE_WIDTH / 2 + 2 : LINE_HIT_TOLERANCE
+/**
+ * Click-to-select tolerance for a line-like shape: never narrower than the
+ * global minimum (so a thin stroke is never harder to hit than any other
+ * annotation), wider for a thick stroke so the whole visible band selects.
+ */
+function hitTolerance(annotation) {
+  return Math.max(LINE_HIT_TOLERANCE, strokeWidthOf(annotation) / 2 + 2)
 }
 
 /** Whether `point` falls on/inside `annotation`, for click-to-select hit-testing. */
@@ -115,13 +120,13 @@ export function hitTestAnnotation(point, annotation) {
       && point.y >= geometry.y && point.y <= geometry.y + geometry.height
   }
   if (type === 'arrow') {
-    return distanceToSegment(point, { x: geometry.x1, y: geometry.y1 }, { x: geometry.x2, y: geometry.y2 }) <= hitTolerance(type)
+    return distanceToSegment(point, { x: geometry.x1, y: geometry.y1 }, { x: geometry.x2, y: geometry.y2 }) <= hitTolerance(annotation)
   }
   if (type === 'pin') {
     return distance(point, geometry) <= PIN_HIT_RADIUS
   }
   const points = geometry.points
-  const tolerance = hitTolerance(type)
+  const tolerance = hitTolerance(annotation)
   for (let i = 0; i < points.length - 1; i++) {
     if (distanceToSegment(point, points[i], points[i + 1]) <= tolerance) { return true }
   }

@@ -51,6 +51,18 @@ export const ARROW_STYLE_ICONS = {
       <path d="M3 15l6 6" />
       <path d="M15 3l6 6" />
     </svg>
+  ),
+  none: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M7 17l10 -10" />
+    </svg>
+  ),
+  double: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M7 17l10 -10" />
+      <path d="M8 7l9 0l0 9" />
+      <path d="M16 17l-9 0l0 -9" />
+    </svg>
   )
 }
 

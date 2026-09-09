@@ -168,6 +168,19 @@ describe('hitTestAnnotation', () => {
     expect(hitTestAnnotation(point, { type: 'freehand', geometry })).toBe(false)
     expect(hitTestAnnotation(point, { type: 'highlighter', geometry })).toBe(true)
   })
+
+  it('widens hit tolerance for a thick freehand mark beyond the default', () => {
+    const geometry = { points: [{ x: 0, y: 0 }, { x: 100, y: 0 }] }
+    const point = { x: 50, y: 10 }
+    expect(hitTestAnnotation(point, { type: 'freehand', geometry })).toBe(false)
+    expect(hitTestAnnotation(point, { type: 'freehand', geometry, strokeWidth: 20 })).toBe(true)
+  })
+
+  it('floors a thin highlighter\'s hit tolerance at the global minimum, never narrower than any other line', () => {
+    const geometry = { points: [{ x: 0, y: 0 }, { x: 100, y: 0 }] }
+    const point = { x: 50, y: 8 }
+    expect(hitTestAnnotation(point, { type: 'highlighter', geometry, strokeWidth: 10 })).toBe(true)
+  })
 })
 
 describe('findAnnotationAt', () => {

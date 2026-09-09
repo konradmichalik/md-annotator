@@ -858,10 +858,14 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.comment-popover-colors {
+.popover-controls {
   display: flex;
   gap: 6px;
   padding: 0.5rem 0.5rem 0;
+}
+
+.popover-picker {
+  position: relative;
 }
 
 .color-swatch {
@@ -877,13 +881,7 @@ body {
   border-color: var(--text);
 }
 
-.arrow-style-toggle {
-  display: flex;
-  gap: 6px;
-  padding: 0.5rem 0.5rem 0;
-}
-
-.arrow-style-swatch {
+.popover-picker-trigger {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -897,14 +895,18 @@ body {
   padding: 0;
 }
 
-.arrow-style-swatch svg {
+.popover-picker-trigger:hover {
+  border-color: var(--border);
+}
+
+.popover-picker-trigger svg {
   width: 14px;
   height: 14px;
 }
 
-.arrow-style-swatch--active {
-  border-color: var(--text);
-  color: var(--text);
+.popover-picker-option-icon {
+  display: flex;
+  color: var(--text-muted);
 }
 
 .comment-popover-body {

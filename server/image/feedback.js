@@ -1,4 +1,5 @@
 import { describePosition, findNearbyAnnotationNumbers } from './geometry.js'
+import { resolveArrowStyle } from './annotationStyles.js'
 
 const TYPE_LABELS = {
   box: 'Boxed area',
@@ -8,10 +9,17 @@ const TYPE_LABELS = {
   pin: 'Comment pin'
 }
 
-/** An arrow drawn in dimension-line style marks a span, not a target, so it needs its own wording. */
+const ARROW_STYLE_LABELS = {
+  dimension: 'Distance/spacing between two points near',
+  none: 'Line connecting',
+  double: 'Two-way connection between'
+}
+
+/** An arrow's end style changes what it means (a target, a span, a plain connection, a two-way link), so it needs its own wording per style. */
 function annotationLabel(annotation) {
-  if (annotation.type === 'arrow' && annotation.arrowStyle === 'dimension') {
-    return 'Distance/spacing between two points near'
+  if (annotation.type === 'arrow') {
+    const label = ARROW_STYLE_LABELS[resolveArrowStyle(annotation.arrowStyle)]
+    if (label) { return label }
   }
   return TYPE_LABELS[annotation.type] || annotation.type
 }

@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
 import { ANNOTATION_COLORS } from '../utils/annotationColors.js'
+import { useDropdown } from '../hooks/useDropdown.js'
 
 const ROTATE_GRADIENT = `conic-gradient(${ANNOTATION_COLORS.map((c) => c.hex).join(', ')}, ${ANNOTATION_COLORS[0].hex})`
 
@@ -11,24 +11,7 @@ const ROTATE_GRADIENT = `conic-gradient(${ANNOTATION_COLORS.map((c) => c.hex).jo
  * annotation afterwards.
  */
 export default function ColorModePicker({ colorMode, fixedColor, onChangeMode, onChangeColor }) {
-  const [open, setOpen] = useState(false)
-  const wrapperRef = useRef(null)
-
-  useEffect(() => {
-    if (!open) { return }
-    const handleClickOutside = (event) => {
-      if (!wrapperRef.current?.contains(event.target)) { setOpen(false) }
-    }
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') { setOpen(false) }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    document.addEventListener('keydown', handleEscape)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-      document.removeEventListener('keydown', handleEscape)
-    }
-  }, [open])
+  const { open, setOpen, toggle, wrapperRef } = useDropdown()
 
   const triggerStyle = colorMode === 'rotate' ? { background: ROTATE_GRADIENT } : { backgroundColor: fixedColor }
 
@@ -37,7 +20,7 @@ export default function ColorModePicker({ colorMode, fixedColor, onChangeMode, o
       <button
         type="button"
         className="color-mode-trigger"
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
         title="New annotation color"
         aria-label="New annotation color"
         aria-haspopup="true"
