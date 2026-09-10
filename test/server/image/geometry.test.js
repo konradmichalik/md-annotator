@@ -31,6 +31,11 @@ describe('describePosition', () => {
     const freehand = { type: 'freehand', geometry: { points: [{ x: 0, y: 0 }, { x: 20, y: 20 }] } }
     expect(describePosition(freehand, 100, 100)).toBe('top left (~10% from top, ~10% from left)')
   })
+
+  it('uses the highlighter centroid, like a freehand mark', () => {
+    const highlighter = { type: 'highlighter', geometry: { points: [{ x: 0, y: 0 }, { x: 20, y: 20 }] } }
+    expect(describePosition(highlighter, 100, 100)).toBe('top left (~10% from top, ~10% from left)')
+  })
 })
 
 describe('findNearbyAnnotationNumbers', () => {

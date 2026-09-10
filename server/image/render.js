@@ -1,9 +1,12 @@
 import { createCanvas, loadImage } from '@napi-rs/canvas'
+import {
+  resolveArrowStyle, serverStrokeWidth, serverDashArray, serverHeadLength, serverDimensionTickLength
+} from './annotationStyles.js'
 
-const STROKE_WIDTH = 4
 const PIN_RADIUS = 14
 const BADGE_RADIUS = 11
 const DEFAULT_COLOR = '#e11d48'
+const HIGHLIGHTER_OPACITY = 0.4
 
 const LEGEND_PADDING = 14
 const LEGEND_LINE_HEIGHT = 18
@@ -13,11 +16,10 @@ const LEGEND_BG = '#20242c'
 const LEGEND_HEADER_COLOR = '#f5f6fa'
 const LEGEND_TEXT_COLOR = '#b8bfcc'
 
-const TYPE_LABELS = { box: 'Box', arrow: 'Arrow', freehand: 'Freehand', pin: 'Pin' }
+const TYPE_LABELS = { box: 'Box', arrow: 'Arrow', freehand: 'Freehand', highlighter: 'Highlight', pin: 'Pin' }
 
-function drawArrowhead(ctx, x1, y1, x2, y2, color) {
+function drawArrowhead(ctx, x1, y1, x2, y2, color, headLength, lineWidth) {
   const angle = Math.atan2(y2 - y1, x2 - x1)
-  const headLength = 16
   ctx.beginPath()
   ctx.moveTo(x2, y2)
   ctx.lineTo(
@@ -30,7 +32,30 @@ function drawArrowhead(ctx, x1, y1, x2, y2, color) {
     y2 - headLength * Math.sin(angle + Math.PI / 6)
   )
   ctx.strokeStyle = color
-  ctx.lineWidth = STROKE_WIDTH
+  ctx.lineWidth = lineWidth
+  // A head must stay solid even when the shaft it's attached to is dashed.
+  ctx.setLineDash([])
+  ctx.stroke()
+}
+
+/** Perpendicular tick marks at both ends of a dimension-style arrow, the canvas twin of client drawing.js's dimensionCapLines. */
+function drawDimensionCaps(ctx, x1, y1, x2, y2, color, tickLength, lineWidth) {
+  const len = Math.hypot(x2 - x1, y2 - y1)
+  if (len === 0) { return }
+  const ux = (x2 - x1) / len
+  const uy = (y2 - y1) / len
+  const px = -uy
+  const py = ux
+  const half = tickLength / 2
+  ctx.beginPath()
+  ctx.moveTo(x1 - px * half, y1 - py * half)
+  ctx.lineTo(x1 + px * half, y1 + py * half)
+  ctx.moveTo(x2 - px * half, y2 - py * half)
+  ctx.lineTo(x2 + px * half, y2 + py * half)
+  ctx.strokeStyle = color
+  ctx.lineWidth = lineWidth
+  // Ticks must stay solid even when the shaft they're attached to is dashed.
+  ctx.setLineDash([])
   ctx.stroke()
 }
 
@@ -46,45 +71,91 @@ function drawBadge(ctx, x, y, index, color) {
   ctx.fillText(String(index + 1), x, y)
 }
 
+function drawBox(ctx, geometry, index, color) {
+  const { x, y, width, height } = geometry
+  ctx.strokeRect(x, y, width, height)
+  drawBadge(ctx, x, y, index, color)
+}
+
+function drawArrow(ctx, annotation, index, color) {
+  const { x1, y1, x2, y2 } = annotation.geometry
+  const style = resolveArrowStyle(annotation.arrowStyle)
+  const lineWidth = serverStrokeWidth(annotation)
+  ctx.beginPath()
+  ctx.moveTo(x1, y1)
+  ctx.lineTo(x2, y2)
+  ctx.stroke()
+  if (style === 'dimension') {
+    drawDimensionCaps(ctx, x1, y1, x2, y2, color, serverDimensionTickLength(annotation), lineWidth)
+  } else if (style === 'double') {
+    const headLength = serverHeadLength(annotation)
+    drawArrowhead(ctx, x1, y1, x2, y2, color, headLength, lineWidth)
+    drawArrowhead(ctx, x2, y2, x1, y1, color, headLength, lineWidth)
+  } else if (style === 'head') {
+    drawArrowhead(ctx, x1, y1, x2, y2, color, serverHeadLength(annotation), lineWidth)
+  }
+  drawBadge(ctx, x1, y1, index, color)
+}
+
+function strokePoints(ctx, points) {
+  ctx.beginPath()
+  ctx.moveTo(points[0].x, points[0].y)
+  for (const point of points.slice(1)) {
+    ctx.lineTo(point.x, point.y)
+  }
+  ctx.stroke()
+}
+
+function drawFreehand(ctx, geometry, index, color) {
+  const points = geometry.points
+  if (points.length < 2) { return }
+  strokePoints(ctx, points)
+  drawBadge(ctx, points[0].x, points[0].y, index, color)
+}
+
+function drawHighlighter(ctx, geometry, index, color) {
+  const points = geometry.points
+  if (points.length < 2) { return }
+  ctx.save()
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.globalAlpha = HIGHLIGHTER_OPACITY
+  // ctx.lineWidth is already the (highlighter-scaled) resolved width, set
+  // unconditionally by drawAnnotation's dispatch before this runs.
+  strokePoints(ctx, points)
+  ctx.restore()
+  drawBadge(ctx, points[0].x, points[0].y, index, color)
+}
+
+function drawPin(ctx, geometry, index) {
+  const { x, y } = geometry
+  ctx.beginPath()
+  ctx.arc(x, y, PIN_RADIUS, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = '#fff'
+  ctx.font = 'bold 16px sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(String(index + 1), x, y)
+}
+
 function drawAnnotation(ctx, annotation, index) {
   const color = annotation.color || DEFAULT_COLOR
   ctx.strokeStyle = color
   ctx.fillStyle = color
-  ctx.lineWidth = STROKE_WIDTH
+  // Set unconditionally (never only inside a branch) so neither value can
+  // leak from one annotation into the next: each call starts from a clean,
+  // fully-specified state instead of relying on a previous iteration having
+  // reset it, which is the same class of bug the highlighter's
+  // save()/restore() around globalAlpha already guards against.
+  ctx.lineWidth = serverStrokeWidth(annotation)
+  ctx.setLineDash(serverDashArray(annotation))
 
-  if (annotation.type === 'box') {
-    const { x, y, width, height } = annotation.geometry
-    ctx.strokeRect(x, y, width, height)
-    drawBadge(ctx, x, y, index, color)
-  } else if (annotation.type === 'arrow') {
-    const { x1, y1, x2, y2 } = annotation.geometry
-    ctx.beginPath()
-    ctx.moveTo(x1, y1)
-    ctx.lineTo(x2, y2)
-    ctx.stroke()
-    drawArrowhead(ctx, x1, y1, x2, y2, color)
-    drawBadge(ctx, x1, y1, index, color)
-  } else if (annotation.type === 'freehand') {
-    const points = annotation.geometry.points
-    if (points.length < 2) { return }
-    ctx.beginPath()
-    ctx.moveTo(points[0].x, points[0].y)
-    for (const point of points.slice(1)) {
-      ctx.lineTo(point.x, point.y)
-    }
-    ctx.stroke()
-    drawBadge(ctx, points[0].x, points[0].y, index, color)
-  } else if (annotation.type === 'pin') {
-    const { x, y } = annotation.geometry
-    ctx.beginPath()
-    ctx.arc(x, y, PIN_RADIUS, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.fillStyle = '#fff'
-    ctx.font = 'bold 16px sans-serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(String(index + 1), x, y)
-  }
+  if (annotation.type === 'box') { drawBox(ctx, annotation.geometry, index, color) }
+  else if (annotation.type === 'arrow') { drawArrow(ctx, annotation, index, color) }
+  else if (annotation.type === 'freehand') { drawFreehand(ctx, annotation.geometry, index, color) }
+  else if (annotation.type === 'highlighter') { drawHighlighter(ctx, annotation.geometry, index, color) }
+  else if (annotation.type === 'pin') { drawPin(ctx, annotation.geometry, index) }
 }
 
 /** Greedy word-wrap of `text` to fit within `maxWidth`, using `ctx`'s current font. */

@@ -36,6 +36,27 @@ describe('exportFeedback', () => {
     expect(output).toContain('(no comment text)')
   })
 
+  it('labels each arrow style with wording matching what it actually depicts', () => {
+    const geometry = { x1: 0, y1: 0, x2: 10, y2: 10 }
+    const headArrow = { type: 'arrow', color: '#e11d48', text: '', geometry }
+    const dimensionArrow = { type: 'arrow', arrowStyle: 'dimension', color: '#e11d48', text: '', geometry }
+    const noneArrow = { type: 'arrow', arrowStyle: 'none', color: '#e11d48', text: '', geometry }
+    const doubleArrow = { type: 'arrow', arrowStyle: 'double', color: '#e11d48', text: '', geometry }
+    const unknownArrow = { type: 'arrow', arrowStyle: 'triangle', color: '#e11d48', text: '', geometry }
+    const output = exportFeedback([headArrow, dimensionArrow, noneArrow, doubleArrow, unknownArrow], 100, 100, '/tmp/annotated.png')
+    expect(output).toContain('1. Arrow pointing to')
+    expect(output).toContain('2. Distance/spacing between two points near')
+    expect(output).toContain('3. Line connecting')
+    expect(output).toContain('4. Two-way connection between')
+    expect(output).toContain('5. Arrow pointing to')
+  })
+
+  it('labels a highlighter mark', () => {
+    const highlighter = { type: 'highlighter', color: '#e11d48', text: '', geometry: { points: [{ x: 0, y: 0 }, { x: 10, y: 10 }] } }
+    const output = exportFeedback([highlighter], 100, 100, '/tmp/annotated.png')
+    expect(output).toContain('1. Highlighted area')
+  })
+
   it('calls out annotations positioned close together', () => {
     const a = { type: 'box', color: '#e11d48', text: '', geometry: { x: 85, y: 15, width: 4, height: 4 } }
     const b = { type: 'box', color: '#e11d48', text: '', geometry: { x: 90, y: 18, width: 4, height: 4 } }

@@ -21,8 +21,10 @@ around it: `/annotaitr:image "~/Desktop/Screenshot 2026-01-01 at 12.00.00.png"`.
 ## Your task
 
 Address the annotation feedback above. The user marked up an image in the
-browser UI: boxes, arrows, freehand marks, and numbered comment pins, each
-with an optional text comment.
+browser UI: boxes, arrows, freehand marks, highlighter marks, and numbered
+comment pins, each with an optional text comment. An arrow drawn in
+dimension-line style (perpendicular ticks, no arrowhead) marks a distance or
+spacing between two points rather than pointing at a single target.
 
 - The output includes a path to an **annotated image** (the original
   image with the markup baked in as pixels). Read that image directly to

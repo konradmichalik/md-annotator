@@ -28,7 +28,7 @@ Which mode runs is auto-detected from the target: see Usage below and
 
 - **Web page capture**: full-page screenshot of any `http(s)` URL via Playwright, at a chosen viewport
 - **Clipboard support**: run with no target to annotate whatever screenshot is on the (macOS) clipboard
-- **Drawing tools**: boxes, arrows, freehand marks, and numbered comment pins, each with an optional comment and color
+- **Drawing tools**: boxes, arrows (with an optional dimension-line style for marking distance/spacing), freehand marks, highlighter marks, and numbered comment pins, each with an optional comment and color
 - **Coarse position descriptions**: feedback names each annotation's plain-language position, and flags annotations positioned close together
 - **Annotated screenshot export**: submitting bakes the markup into a copy of the image and passes its path to the agent
 

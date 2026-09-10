@@ -9,6 +9,16 @@ describe('serializeAnnotations / parseAnnotationsJson', () => {
     expect(parseAnnotationsJson(json)).toEqual(sample)
   })
 
+  it('round-trips an annotation carrying the newer arrowStyle/strokeWidth/dashStyle fields untouched', () => {
+    const withStyleFields = [{
+      id: 'ann-2', type: 'arrow', geometry: { x1: 0, y1: 0, x2: 10, y2: 10 },
+      text: '', color: '#e11d48', createdAt: 0,
+      arrowStyle: 'double', strokeWidth: 5, dashStyle: 'dashed'
+    }]
+    const json = serializeAnnotations(withStyleFields)
+    expect(parseAnnotationsJson(json)).toEqual(withStyleFields)
+  })
+
   it('produces indented, readable JSON', () => {
     expect(serializeAnnotations(sample)).toContain('\n  ')
   })

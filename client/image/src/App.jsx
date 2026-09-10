@@ -2,6 +2,7 @@
 import { useEffect, useReducer, useState, useCallback } from 'react'
 import { annotationReducer, initialAnnotationState, createAnnotationId } from './state/annotationReducer.js'
 import Toolbar from './components/Toolbar.jsx'
+import ZoomControls from './components/ZoomControls.jsx'
 import ImageCanvas from './components/ImageCanvas.jsx'
 import AnnotationPanel from './components/AnnotationPanel.jsx'
 import ExportModal from './components/ExportModal.jsx'
@@ -202,18 +203,17 @@ export default function App() {
 
       <div className="app-body">
         <div className="app-main">
-          <Toolbar
-            activeTool={activeTool}
-            onSelectTool={setActiveTool}
-            zoom={zoom}
-            onZoomBy={zoomBy}
-            onZoomReset={zoomReset}
-            onZoomFit={zoomFit}
-            colorMode={settings.colorMode}
-            fixedColor={settings.fixedColor}
-            onChangeColorMode={(mode) => updateSetting('colorMode', mode)}
-            onChangeFixedColor={(color) => updateSetting('fixedColor', color)}
-          />
+          <div className="canvas-topbar">
+            <Toolbar
+              activeTool={activeTool}
+              onSelectTool={setActiveTool}
+              colorMode={settings.colorMode}
+              fixedColor={settings.fixedColor}
+              onChangeColorMode={(mode) => updateSetting('colorMode', mode)}
+              onChangeFixedColor={(color) => updateSetting('fixedColor', color)}
+            />
+            <ZoomControls zoom={zoom} onZoomBy={zoomBy} onZoomReset={zoomReset} onZoomFit={zoomFit} />
+          </div>
           {imageUrl && meta && (
             <ImageCanvas
               imageUrl={imageUrl}

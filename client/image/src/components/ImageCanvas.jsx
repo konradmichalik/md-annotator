@@ -1,15 +1,22 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import {
   clampPoint, boxFromPoints, findAnnotationAt, translateGeometry,
-  annotationCentroid, annotationBottomAnchor, annotationTopAnchor, resizeGeometry, freehandBounds
+  annotationCentroid, annotationBottomAnchor, annotationTopAnchor, resizeGeometry, freehandBounds,
+  isPointsGeometry, HIGHLIGHTER_OPACITY, dimensionCapLines, dimensionTickLengthFor
 } from '../utils/drawing.js'
+import { resolveArrowStyle, strokeWidthOf, dashArrayFor, pickStyleFields } from '../utils/annotationStyles.js'
+import { cursorForTool } from '../utils/cursors.js'
 import { ANNOTATION_COLORS } from '../utils/annotationColors.js'
 import { ACTION_ICONS } from '../utils/icons.jsx'
 import CommentPopover from './CommentPopover.jsx'
 
 const DEFAULT_COLOR = ANNOTATION_COLORS[0].hex
-const STROKE_WIDTH = 3
 const MOVE_THRESHOLD = 4
+
+/** Tools that draw by capturing a continuous stream of points while dragging. */
+function isPointCollectingTool(tool) {
+  return tool === 'freehand' || tool === 'highlighter'
+}
 
 function pointFromEvent(event, wrapperRef, imageWidth, imageHeight, zoom) {
   const rect = wrapperRef.current.getBoundingClientRect()
@@ -23,57 +30,102 @@ function toClientPoint(wrapperRef, point, zoom) {
   return { x: rect.left + point.x * zoom, y: rect.top + point.y * zoom }
 }
 
+function BoxShape({ geometry, color, strokeWidth, dash, selectionProps }) {
+  const { x, y, width, height } = geometry
+  return (
+    <>
+      {selectionProps && <rect x={x - 3} y={y - 3} width={width + 6} height={height + 6} fill="none" {...selectionProps} />}
+      <rect x={x} y={y} width={width} height={height} fill="none" stroke={color} strokeWidth={strokeWidth} strokeDasharray={dash} />
+    </>
+  )
+}
+
+function ArrowShape({ annotation, color, strokeWidth, dash, markerId, selectionProps }) {
+  const { x1, y1, x2, y2 } = annotation.geometry
+  const style = resolveArrowStyle(annotation.arrowStyle)
+  const ticks = style === 'dimension' ? dimensionCapLines(annotation.geometry, dimensionTickLengthFor(annotation)) : null
+  const markerUrl = `url(#${markerId})`
+  const markerEnd = style === 'head' || style === 'double' ? markerUrl : undefined
+  const markerStart = style === 'double' ? markerUrl : undefined
+  return (
+    <>
+      {selectionProps && (
+        <>
+          <line x1={x1} y1={y1} x2={x2} y2={y2} {...selectionProps} />
+          {ticks && ticks.map((tick, i) => <line key={i} {...tick} {...selectionProps} />)}
+        </>
+      )}
+      <line
+        x1={x1} y1={y1} x2={x2} y2={y2}
+        stroke={color} strokeWidth={strokeWidth} strokeDasharray={dash}
+        markerEnd={markerEnd} markerStart={markerStart}
+      />
+      {ticks && ticks.map((tick, i) => (
+        <line key={i} {...tick} stroke={color} strokeWidth={strokeWidth} />
+      ))}
+    </>
+  )
+}
+
+function FreehandShape({ geometry, color, strokeWidth, dash, selectionProps }) {
+  const points = geometry.points.map((p) => `${p.x},${p.y}`).join(' ')
+  return (
+    <>
+      {selectionProps && <polyline points={points} fill="none" {...selectionProps} strokeLinecap="round" strokeLinejoin="round" />}
+      <polyline
+        points={points} fill="none" stroke={color} strokeWidth={strokeWidth} strokeDasharray={dash}
+        strokeLinecap="round" strokeLinejoin="round"
+      />
+    </>
+  )
+}
+
+function HighlighterShape({ geometry, color, strokeWidth, dash, selectionProps }) {
+  const points = geometry.points.map((p) => `${p.x},${p.y}`).join(' ')
+  return (
+    <>
+      {selectionProps && (
+        <polyline
+          points={points} fill="none" stroke="var(--primary)" strokeWidth={strokeWidth + 4}
+          strokeOpacity={0.35} strokeLinecap="round" strokeLinejoin="round"
+        />
+      )}
+      <polyline
+        points={points} fill="none" stroke={color} strokeWidth={strokeWidth} strokeDasharray={dash}
+        strokeOpacity={HIGHLIGHTER_OPACITY} strokeLinecap="round" strokeLinejoin="round"
+      />
+    </>
+  )
+}
+
+function PinShape({ geometry, color, index, selectionProps }) {
+  const { x, y } = geometry
+  return (
+    <>
+      {selectionProps && <circle cx={x} cy={y} r="18" fill="none" {...selectionProps} />}
+      <circle cx={x} cy={y} r="14" fill={color} />
+      <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fill="#fff" fontSize="13" fontWeight="700">
+        {index + 1}
+      </text>
+    </>
+  )
+}
+
 function AnnotationShape({ annotation, index, markerId, dashed = false, selected = false }) {
   const color = annotation.color || DEFAULT_COLOR
-  const dash = dashed ? '6 4' : undefined
-  const selectionProps = selected ? { stroke: 'var(--primary)', strokeWidth: STROKE_WIDTH + 3, strokeOpacity: 0.35 } : null
+  const strokeWidth = strokeWidthOf(annotation)
+  // The live "uncommitted preview" dash always wins over a stored dashStyle:
+  // a not-yet-drawn annotation has no dashStyle chosen yet, and this is the
+  // only path where `dashed` is ever true (see the `dashed` prop's call sites).
+  const dash = dashed ? '6 4' : dashArrayFor(annotation.dashStyle, strokeWidth)
+  const selectionProps = selected ? { stroke: 'var(--primary)', strokeWidth: strokeWidth + 3, strokeOpacity: 0.35 } : null
+  const { type, geometry } = annotation
 
-  if (annotation.type === 'box') {
-    const { x, y, width, height } = annotation.geometry
-    return (
-      <>
-        {selectionProps && <rect x={x - 3} y={y - 3} width={width + 6} height={height + 6} fill="none" {...selectionProps} />}
-        <rect x={x} y={y} width={width} height={height} fill="none" stroke={color} strokeWidth={STROKE_WIDTH} strokeDasharray={dash} />
-      </>
-    )
-  }
-  if (annotation.type === 'arrow') {
-    const { x1, y1, x2, y2 } = annotation.geometry
-    return (
-      <>
-        {selectionProps && <line x1={x1} y1={y1} x2={x2} y2={y2} {...selectionProps} />}
-        <line
-          x1={x1} y1={y1} x2={x2} y2={y2}
-          stroke={color} strokeWidth={STROKE_WIDTH} strokeDasharray={dash}
-          markerEnd={`url(#${markerId})`}
-        />
-      </>
-    )
-  }
-  if (annotation.type === 'freehand') {
-    const points = annotation.geometry.points.map((p) => `${p.x},${p.y}`).join(' ')
-    return (
-      <>
-        {selectionProps && <polyline points={points} fill="none" {...selectionProps} strokeLinecap="round" strokeLinejoin="round" />}
-        <polyline
-          points={points} fill="none" stroke={color} strokeWidth={STROKE_WIDTH} strokeDasharray={dash}
-          strokeLinecap="round" strokeLinejoin="round"
-        />
-      </>
-    )
-  }
-  if (annotation.type === 'pin') {
-    const { x, y } = annotation.geometry
-    return (
-      <>
-        {selectionProps && <circle cx={x} cy={y} r="18" fill="none" {...selectionProps} />}
-        <circle cx={x} cy={y} r="14" fill={color} />
-        <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fill="#fff" fontSize="13" fontWeight="700">
-          {index + 1}
-        </text>
-      </>
-    )
-  }
+  if (type === 'box') { return <BoxShape geometry={geometry} color={color} strokeWidth={strokeWidth} dash={dash} selectionProps={selectionProps} /> }
+  if (type === 'arrow') { return <ArrowShape annotation={annotation} color={color} strokeWidth={strokeWidth} dash={dash} markerId={markerId} selectionProps={selectionProps} /> }
+  if (type === 'freehand') { return <FreehandShape geometry={geometry} color={color} strokeWidth={strokeWidth} dash={dash} selectionProps={selectionProps} /> }
+  if (type === 'highlighter') { return <HighlighterShape geometry={geometry} color={color} strokeWidth={strokeWidth} dash={dash} selectionProps={selectionProps} /> }
+  if (type === 'pin') { return <PinShape geometry={geometry} color={color} index={index} selectionProps={selectionProps} /> }
   return null
 }
 
@@ -100,7 +152,7 @@ function SelectionHandles({ annotation, zoom, onHandleMouseDown }) {
     const { x, y, width, height } = annotation.geometry
     return <BoxCorners x={x} y={y} width={width} height={height} r={r} strokeWidth={strokeWidth} onHandleMouseDown={onHandleMouseDown} />
   }
-  if (annotation.type === 'freehand') {
+  if (isPointsGeometry(annotation.type)) {
     const { x, y, width, height } = freehandBounds(annotation.geometry.points)
     return <BoxCorners x={x} y={y} width={width} height={height} r={r} strokeWidth={strokeWidth} onHandleMouseDown={onHandleMouseDown} />
   }
@@ -166,7 +218,7 @@ export default function ImageCanvas({
 
   const [dragStart, setDragStart] = useState(null)
   const [dragPoint, setDragPoint] = useState(null)
-  const [freehandPoints, setFreehandPoints] = useState([])
+  const [strokePoints, setStrokePoints] = useState([])
   const [pending, setPending] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
   const [hoveringAnnotation, setHoveringAnnotation] = useState(false)
@@ -208,6 +260,7 @@ export default function ImageCanvas({
       geometry: annotation.geometry,
       color: annotation.color,
       text: annotation.text,
+      ...pickStyleFields(annotation.type, annotation),
       anchor: toClientPoint(wrapperRef, annotationBottomAnchor(annotation), zoom)
     })
   }, [zoom])
@@ -241,6 +294,13 @@ export default function ImageCanvas({
     : ANNOTATION_COLORS[annotations.length % ANNOTATION_COLORS.length].hex
 
   const handleMouseDown = useCallback((event) => {
+    // A mousedown that closes the open popover (see CommentPopover's own
+    // outside-click handler) reaches this handler too, since the popover's
+    // dismissal doesn't stop propagation to the canvas. This early return is
+    // what keeps that same click from also starting a new draw underneath
+    // the popover - it works because `pending` is state (not a ref), so this
+    // closure still sees it as truthy even though CommentPopover's listener
+    // already called setPending(null) via onClose in the same event.
     if (pending) { return }
     event.preventDefault()
     const point = pointFromEvent(event, wrapperRef, imageWidth, imageHeight, zoom)
@@ -270,8 +330,8 @@ export default function ImageCanvas({
       return
     }
 
-    if (activeTool === 'freehand') {
-      setFreehandPoints([point])
+    if (isPointCollectingTool(activeTool)) {
+      setStrokePoints([point])
       return
     }
 
@@ -299,9 +359,9 @@ export default function ImageCanvas({
       return
     }
 
-    if (activeTool === 'freehand' && freehandPoints.length > 0) {
+    if (isPointCollectingTool(activeTool) && strokePoints.length > 0) {
       const point = pointFromEvent(event, wrapperRef, imageWidth, imageHeight, zoom)
-      setFreehandPoints((prev) => [...prev, point])
+      setStrokePoints((prev) => [...prev, point])
       return
     }
 
@@ -314,9 +374,10 @@ export default function ImageCanvas({
       const point = pointFromEvent(event, wrapperRef, imageWidth, imageHeight, zoom)
       setHoveringAnnotation(!!findAnnotationAt(point, annotations))
     }
-  }, [activeTool, freehandPoints.length, dragStart, imageWidth, imageHeight, zoom, onUpdateAnnotation, pending, annotations])
+  }, [activeTool, strokePoints.length, dragStart, imageWidth, imageHeight, zoom, onUpdateAnnotation, pending, annotations])
 
   const handleMouseUp = useCallback((event) => {
+    if (pending) { return }
     if (resizeState.current) {
       resizeState.current = null
       setIsGrabbing(false)
@@ -355,25 +416,33 @@ export default function ImageCanvas({
       setDragPoint(null)
       const geometry = { x1: dragStart.x, y1: dragStart.y, x2: point.x, y2: point.y }
       setPending({
-        type: 'arrow', geometry, color: nextColor,
+        type: 'arrow', geometry, color: nextColor, arrowStyle: 'head',
         anchor: toClientPoint(wrapperRef, annotationBottomAnchor({ type: 'arrow', geometry }), zoom)
       })
-    } else if (activeTool === 'freehand' && freehandPoints.length > 1) {
-      const geometry = { points: freehandPoints }
-      setPending({
-        type: 'freehand', geometry, color: nextColor,
-        anchor: toClientPoint(wrapperRef, annotationBottomAnchor({ type: 'freehand', geometry }), zoom)
-      })
-      setFreehandPoints([])
+    } else if (isPointCollectingTool(activeTool) && strokePoints.length > 0) {
+      if (strokePoints.length > 1) {
+        const geometry = { points: strokePoints }
+        setPending({
+          type: activeTool, geometry, color: nextColor,
+          anchor: toClientPoint(wrapperRef, annotationBottomAnchor({ type: activeTool, geometry }), zoom)
+        })
+      }
+      // Always clear, even for a single-point "click, no drag": otherwise
+      // handleMouseMove's `strokePoints.length > 0` check keeps matching and
+      // a stray stroke follows the cursor with no button held, until the
+      // next mousedown happens to reset it.
+      setStrokePoints([])
     }
-  }, [activeTool, dragStart, freehandPoints, imageWidth, imageHeight, zoom, annotations, openEditPopover, nextColor])
+  }, [activeTool, dragStart, strokePoints, imageWidth, imageHeight, zoom, annotations, openEditPopover, nextColor, pending])
 
-  const handleCommentSubmit = useCallback((text, color) => {
+  const handleCommentSubmit = useCallback((fields) => {
     if (pending) {
+      const { text, color } = fields
+      const styleFields = pickStyleFields(pending.type, fields)
       if (pending.id) {
-        onUpdateAnnotation(pending.id, { text, color })
+        onUpdateAnnotation(pending.id, { text, color, ...styleFields })
       } else {
-        onAddAnnotation({ type: pending.type, geometry: pending.geometry, text, color })
+        onAddAnnotation({ type: pending.type, geometry: pending.geometry, text, color, ...styleFields })
       }
     }
     setPending(null)
@@ -389,12 +458,12 @@ export default function ImageCanvas({
   if (activeTool === 'box' && dragStart && dragPoint) {
     livePreview = { type: 'box', geometry: boxFromPoints(dragStart, dragPoint), color: nextColor }
   } else if (activeTool === 'arrow' && dragStart && dragPoint) {
-    livePreview = { type: 'arrow', geometry: { x1: dragStart.x, y1: dragStart.y, x2: dragPoint.x, y2: dragPoint.y }, color: nextColor }
-  } else if (activeTool === 'freehand' && freehandPoints.length > 1) {
-    livePreview = { type: 'freehand', geometry: { points: freehandPoints }, color: nextColor }
+    livePreview = { type: 'arrow', geometry: { x1: dragStart.x, y1: dragStart.y, x2: dragPoint.x, y2: dragPoint.y }, color: nextColor, arrowStyle: 'head' }
+  } else if (isPointCollectingTool(activeTool) && strokePoints.length > 1) {
+    livePreview = { type: activeTool, geometry: { points: strokePoints }, color: nextColor }
   }
 
-  let cursor = activeTool === 'select' ? 'grab' : 'crosshair'
+  let cursor = cursorForTool(activeTool)
   if (hoveringAnnotation) { cursor = 'grab' }
   if (isGrabbing) { cursor = 'grabbing' }
 
@@ -414,14 +483,15 @@ export default function ImageCanvas({
         viewBox={`0 0 ${imageWidth} ${imageHeight}`}
       >
         <defs>
-          <marker id="arrowhead-preview" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+          <marker id="arrowhead-preview" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto-start-reverse">
             <path d="M0,0 L10,5 L0,10 Z" fill={nextColor} />
           </marker>
-          {annotations.map((annotation) => annotation.type === 'arrow' && (
+          {annotations.map((annotation) => annotation.type === 'arrow'
+            && ['head', 'double'].includes(resolveArrowStyle(annotation.arrowStyle)) && (
             <marker
               key={`marker-${annotation.id}`}
               id={`arrowhead-${annotation.id}`}
-              markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"
+              markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto-start-reverse"
             >
               <path d="M0,0 L10,5 L0,10 Z" fill={annotation.color || DEFAULT_COLOR} />
             </marker>
@@ -452,6 +522,10 @@ export default function ImageCanvas({
           anchorPoint={pending.anchor}
           initialText={pending.text || ''}
           initialColor={pending.color}
+          annotationType={pending.type}
+          initialArrowStyle={pending.arrowStyle}
+          initialStrokeWidth={pending.strokeWidth}
+          initialDashStyle={pending.dashStyle}
           isEditing={!!pending.id}
           onSubmit={handleCommentSubmit}
           onClose={handleCommentClose}

@@ -1,3 +1,5 @@
+import { strokeWidthOf, resolveArrowStyle, DEFAULT_STROKE_WIDTH } from './annotationStyles.js'
+
 export function clampPoint(point, width, height) {
   return {
     x: Math.min(Math.max(point.x, 0), width),
@@ -72,7 +74,12 @@ export function translateGeometry(type, geometry, dx, dy) {
   return { points: geometry.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) }
 }
 
-/** The axis-aligned bounding box of a freehand mark's points, for its resize handles. */
+/** Whether a type's geometry is `{points: [...]}`, shared by freehand and highlighter marks. */
+export function isPointsGeometry(type) {
+  return type === 'freehand' || type === 'highlighter'
+}
+
+/** The axis-aligned bounding box of a freehand/highlighter mark's points, for its resize handles. */
 export function freehandBounds(points) {
   const xs = points.map((p) => p.x)
   const ys = points.map((p) => p.y)
@@ -91,8 +98,19 @@ function distanceToSegment(p, a, b) {
   return distance(p, { x: a.x + t * dx, y: a.y + t * dy })
 }
 
+export const HIGHLIGHTER_OPACITY = 0.4
+
 const LINE_HIT_TOLERANCE = 8
 const PIN_HIT_RADIUS = 16
+
+/**
+ * Click-to-select tolerance for a line-like shape: never narrower than the
+ * global minimum (so a thin stroke is never harder to hit than any other
+ * annotation), wider for a thick stroke so the whole visible band selects.
+ */
+function hitTolerance(annotation) {
+  return Math.max(LINE_HIT_TOLERANCE, strokeWidthOf(annotation) / 2 + 2)
+}
 
 /** Whether `point` falls on/inside `annotation`, for click-to-select hit-testing. */
 export function hitTestAnnotation(point, annotation) {
@@ -102,14 +120,23 @@ export function hitTestAnnotation(point, annotation) {
       && point.y >= geometry.y && point.y <= geometry.y + geometry.height
   }
   if (type === 'arrow') {
-    return distanceToSegment(point, { x: geometry.x1, y: geometry.y1 }, { x: geometry.x2, y: geometry.y2 }) <= LINE_HIT_TOLERANCE
+    const tolerance = hitTolerance(annotation)
+    const onShaft = distanceToSegment(point, { x: geometry.x1, y: geometry.y1 }, { x: geometry.x2, y: geometry.y2 }) <= tolerance
+    if (onShaft || resolveArrowStyle(annotation.arrowStyle) !== 'dimension') { return onShaft }
+    // A dimension-style arrow also renders two perpendicular ticks, which
+    // can extend past the shaft's own tolerance for a thick arrow.
+    const ticks = dimensionCapLines(geometry, dimensionTickLengthFor(annotation))
+    return !!ticks && ticks.some((tick) =>
+      distanceToSegment(point, { x: tick.x1, y: tick.y1 }, { x: tick.x2, y: tick.y2 }) <= tolerance
+    )
   }
   if (type === 'pin') {
     return distance(point, geometry) <= PIN_HIT_RADIUS
   }
   const points = geometry.points
+  const tolerance = hitTolerance(annotation)
   for (let i = 0; i < points.length - 1; i++) {
-    if (distanceToSegment(point, points[i], points[i + 1]) <= LINE_HIT_TOLERANCE) { return true }
+    if (distanceToSegment(point, points[i], points[i + 1]) <= tolerance) { return true }
   }
   return false
 }
@@ -123,10 +150,10 @@ export function findAnnotationAt(point, annotations) {
 }
 
 /**
- * Recompute a box/arrow/freehand's geometry when one of its resize handles
- * is dragged to `point`. `handle` is one of 'nw'/'ne'/'sw'/'se' for a box or
- * a freehand mark's bounding box (the opposite corner stays anchored), or
- * 'start'/'end' for an arrow (the other endpoint stays anchored).
+ * Recompute a box/arrow/freehand/highlighter's geometry when one of its
+ * resize handles is dragged to `point`. `handle` is one of 'nw'/'ne'/'sw'/'se'
+ * for a box or a points-based mark's bounding box (the opposite corner stays
+ * anchored), or 'start'/'end' for an arrow (the other endpoint stays anchored).
  */
 export function resizeGeometry(type, geometry, handle, point) {
   if (type === 'box') {
@@ -143,7 +170,7 @@ export function resizeGeometry(type, geometry, handle, point) {
       ? { x1: point.x, y1: point.y, x2: geometry.x2, y2: geometry.y2 }
       : { x1: geometry.x1, y1: geometry.y1, x2: point.x, y2: point.y }
   }
-  if (type === 'freehand') {
+  if (isPointsGeometry(type)) {
     const bounds = freehandBounds(geometry.points)
     const minX = bounds.x
     const minY = bounds.y
@@ -170,4 +197,37 @@ export function resizeGeometry(type, geometry, handle, point) {
     }
   }
   return geometry
+}
+
+/** Length, in image-space units, of each perpendicular tick on a dimension-style arrow. */
+export const DIMENSION_TICK_LENGTH = 14
+
+/**
+ * The two perpendicular tick segments for a dimension-line-style arrow, one
+ * centered at each endpoint of `geometry`. Returns null for a zero-length
+ * arrow (a click with no drag), which has no direction to be perpendicular to.
+ */
+export function dimensionCapLines(geometry, tickLength = DIMENSION_TICK_LENGTH) {
+  const { x1, y1, x2, y2 } = geometry
+  const len = Math.hypot(x2 - x1, y2 - y1)
+  if (len === 0) { return null }
+  const ux = (x2 - x1) / len
+  const uy = (y2 - y1) / len
+  const px = -uy
+  const py = ux
+  const half = tickLength / 2
+  return [
+    { x1: x1 - px * half, y1: y1 - py * half, x2: x1 + px * half, y2: y1 + py * half },
+    { x1: x2 - px * half, y1: y2 - py * half, x2: x2 + px * half, y2: y2 + py * half }
+  ]
+}
+
+/**
+ * A dimension-style arrow's tick length, scaled from its own stroke width
+ * (preserving DIMENSION_TICK_LENGTH at the default width). Shared by
+ * ArrowShape's rendering and hitTestAnnotation's hit-testing, so the visible
+ * tick length and the clickable tick length can never drift apart.
+ */
+export function dimensionTickLengthFor(annotation) {
+  return (strokeWidthOf(annotation) / DEFAULT_STROKE_WIDTH) * DIMENSION_TICK_LENGTH
 }

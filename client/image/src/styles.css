@@ -175,10 +175,21 @@ body {
   overflow-y: auto;
 }
 
-.toolbar {
+.canvas-topbar {
   position: sticky;
   top: 0;
+  z-index: 10;
+  align-self: stretch;
   margin-bottom: 12px;
+  padding: 0 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.toolbar,
+.zoom-controls {
   display: flex;
   gap: 4px;
   background: var(--bg-card);
@@ -186,10 +197,10 @@ body {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow);
   padding: 4px;
-  z-index: 10;
 }
 
-.toolbar button {
+.toolbar button,
+.zoom-controls button {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -847,10 +858,14 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.comment-popover-colors {
+.popover-controls {
   display: flex;
   gap: 6px;
   padding: 0.5rem 0.5rem 0;
+}
+
+.popover-picker {
+  position: relative;
 }
 
 .color-swatch {
@@ -864,6 +879,34 @@ body {
 
 .color-swatch--active {
   border-color: var(--text);
+}
+
+.popover-picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+}
+
+.popover-picker-trigger:hover {
+  border-color: var(--border);
+}
+
+.popover-picker-trigger svg {
+  width: 14px;
+  height: 14px;
+}
+
+.popover-picker-option-icon {
+  display: flex;
+  color: var(--text-muted);
 }
 
 .comment-popover-body {

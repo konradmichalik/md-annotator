@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { loadImage } from '@napi-rs/canvas'
+import { loadImage, createCanvas } from '@napi-rs/canvas'
 import { flattenAnnotations } from '../../../server/image/render.js'
 import { makeFixturePng } from '../../helpers/fixtureImage.js'
 
@@ -45,6 +45,111 @@ describe('flattenAnnotations', () => {
     const source = makeFixturePng(40, 30)
     const freehand = { type: 'freehand', geometry: { points: [{ x: 2, y: 2 }] } }
     await expect(flattenAnnotations(source, [freehand])).resolves.toBeInstanceOf(Buffer)
+  })
+
+  it('handles a highlighter annotation without throwing', async () => {
+    const source = makeFixturePng(40, 30)
+    const highlighter = {
+      type: 'highlighter',
+      color: '#ffff00',
+      geometry: { points: [{ x: 2, y: 2 }, { x: 10, y: 8 }, { x: 20, y: 4 }] }
+    }
+    await expect(flattenAnnotations(source, [highlighter])).resolves.toBeInstanceOf(Buffer)
+  })
+
+  it('ignores a degenerate highlighter mark with fewer than 2 points', async () => {
+    const source = makeFixturePng(40, 30)
+    const highlighter = { type: 'highlighter', geometry: { points: [{ x: 2, y: 2 }] } }
+    await expect(flattenAnnotations(source, [highlighter])).resolves.toBeInstanceOf(Buffer)
+  })
+
+  it('does not leak the highlighter\'s translucency into annotations drawn after it', async () => {
+    const source = makeFixturePng(40, 30, '#000000')
+    const highlighter = { type: 'highlighter', color: '#ffff00', geometry: { points: [{ x: 2, y: 2 }, { x: 30, y: 2 }] } }
+    const box = { type: 'box', color: '#00ff00', geometry: { x: 20, y: 10, width: 10, height: 10 } }
+    const result = await flattenAnnotations(source, [highlighter, box])
+    const decoded = await loadImage(result)
+    const canvas = createCanvas(decoded.width, decoded.height)
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(decoded, 0, 0)
+    const [, , , alpha] = ctx.getImageData(20, 10, 1, 1).data
+    expect(alpha).toBe(255)
+  })
+
+  it('handles a dimension-style arrow without throwing', async () => {
+    const source = makeFixturePng(40, 30)
+    const arrow = { type: 'arrow', arrowStyle: 'dimension', color: '#ff0000', geometry: { x1: 0, y1: 0, x2: 39, y2: 29 } }
+    await expect(flattenAnnotations(source, [arrow])).resolves.toBeInstanceOf(Buffer)
+  })
+
+  it('handles a zero-length dimension-style arrow without throwing', async () => {
+    const source = makeFixturePng(40, 30)
+    const arrow = { type: 'arrow', arrowStyle: 'dimension', color: '#ff0000', geometry: { x1: 5, y1: 5, x2: 5, y2: 5 } }
+    await expect(flattenAnnotations(source, [arrow])).resolves.toBeInstanceOf(Buffer)
+  })
+
+  it('handles a headless (\'none\') arrow without throwing', async () => {
+    const source = makeFixturePng(40, 30)
+    const arrow = { type: 'arrow', arrowStyle: 'none', color: '#ff0000', geometry: { x1: 0, y1: 0, x2: 39, y2: 29 } }
+    await expect(flattenAnnotations(source, [arrow])).resolves.toBeInstanceOf(Buffer)
+  })
+
+  it('handles a double-headed arrow without throwing', async () => {
+    const source = makeFixturePng(40, 30)
+    const arrow = { type: 'arrow', arrowStyle: 'double', color: '#ff0000', geometry: { x1: 0, y1: 0, x2: 39, y2: 29 } }
+    await expect(flattenAnnotations(source, [arrow])).resolves.toBeInstanceOf(Buffer)
+  })
+
+  it('handles a zero-length double-headed arrow without throwing', async () => {
+    const source = makeFixturePng(40, 30)
+    const arrow = { type: 'arrow', arrowStyle: 'double', color: '#ff0000', geometry: { x1: 5, y1: 5, x2: 5, y2: 5 } }
+    await expect(flattenAnnotations(source, [arrow])).resolves.toBeInstanceOf(Buffer)
+  })
+
+  it('falls back to a single arrowhead for an unknown arrowStyle', async () => {
+    const source = makeFixturePng(40, 30)
+    const arrow = { type: 'arrow', arrowStyle: 'triangle', color: '#ff0000', geometry: { x1: 0, y1: 0, x2: 39, y2: 29 } }
+    await expect(flattenAnnotations(source, [arrow])).resolves.toBeInstanceOf(Buffer)
+  })
+
+  it('treats an absent strokeWidth as exactly the same as the client default (3)', async () => {
+    const source = makeFixturePng(40, 30, '#000000')
+    const implicit = { type: 'box', color: '#ff0000', geometry: { x: 5, y: 5, width: 20, height: 15 } }
+    const explicit = { type: 'box', color: '#ff0000', strokeWidth: 3, geometry: { x: 5, y: 5, width: 20, height: 15 } }
+    const implicitResult = await flattenAnnotations(source, [implicit])
+    const explicitResult = await flattenAnnotations(source, [explicit])
+    expect(Buffer.compare(implicitResult, explicitResult)).toBe(0)
+  })
+
+  it('draws a visibly thicker stroke for a box with a larger configured strokeWidth', async () => {
+    const source = makeFixturePng(40, 30, '#000000')
+    const thin = { type: 'box', color: '#ff0000', geometry: { x: 5, y: 5, width: 20, height: 15 } }
+    const thick = { type: 'box', color: '#ff0000', strokeWidth: 20, geometry: { x: 5, y: 5, width: 20, height: 15 } }
+    const thinResult = await flattenAnnotations(source, [thin])
+    const thickResult = await flattenAnnotations(source, [thick])
+    expect(Buffer.compare(thinResult, thickResult)).not.toBe(0)
+  })
+
+  it('does not leak a dashed line style into annotations drawn after it', async () => {
+    const source = makeFixturePng(60, 40, '#000000')
+    const dashedBox = { type: 'box', color: '#ff0000', dashStyle: 'dashed', geometry: { x: 2, y: 2, width: 10, height: 10 } }
+    // A thick stroke on the second box so sampling deep inside its band
+    // (well clear of both antialiased edges and the numbered badge, which
+    // sits at the box's top-left corner) is unambiguous.
+    const solidBox = { type: 'box', color: '#00ff00', strokeWidth: 20, geometry: { x: 20, y: 5, width: 20, height: 15 } }
+    const result = await flattenAnnotations(source, [dashedBox, solidBox])
+    const decoded = await loadImage(result)
+    const canvas = createCanvas(decoded.width, decoded.height)
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(decoded, 0, 0)
+    // Sample along the bottom edge (y = 5 + 15 = 20, the center of the
+    // 20-wide stroke band there): every point should be solid green. A
+    // leaked dash pattern from the earlier dashed annotation would punch
+    // gaps showing the background instead.
+    for (let x = 22; x <= 38; x += 2) {
+      const [r, g, b] = ctx.getImageData(x, 20, 1, 1).data
+      expect([r, g, b]).toEqual([0, 255, 0])
+    }
   })
 
   it('appends a legend below the image listing each annotation\'s comment', async () => {

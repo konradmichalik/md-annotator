@@ -1,6 +1,6 @@
 import { TOOL_ICONS } from '../utils/icons.jsx'
 
-const TYPE_LABELS = { box: 'Box', arrow: 'Arrow', freehand: 'Freehand', pin: 'Pin' }
+const TYPE_LABELS = { box: 'Box', arrow: 'Arrow', freehand: 'Freehand', highlighter: 'Highlight', pin: 'Pin' }
 
 export default function AnnotationPanel({ annotations, onRemove, onEdit }) {
   if (annotations.length === 0) {

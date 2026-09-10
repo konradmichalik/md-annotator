@@ -1,10 +1,27 @@
 import { describePosition, findNearbyAnnotationNumbers } from './geometry.js'
+import { resolveArrowStyle } from './annotationStyles.js'
 
 const TYPE_LABELS = {
   box: 'Boxed area',
   arrow: 'Arrow pointing to',
   freehand: 'Freehand mark',
+  highlighter: 'Highlighted area',
   pin: 'Comment pin'
+}
+
+const ARROW_STYLE_LABELS = {
+  dimension: 'Distance/spacing between two points near',
+  none: 'Line connecting',
+  double: 'Two-way connection between'
+}
+
+/** An arrow's end style changes what it means (a target, a span, a plain connection, a two-way link), so it needs its own wording per style. */
+function annotationLabel(annotation) {
+  if (annotation.type === 'arrow') {
+    const label = ARROW_STYLE_LABELS[resolveArrowStyle(annotation.arrowStyle)]
+    if (label) { return label }
+  }
+  return TYPE_LABELS[annotation.type] || annotation.type
 }
 
 /**
@@ -18,7 +35,7 @@ function formatAnnotationList(annotations, imageWidth, imageHeight) {
   const nearbyByIndex = findNearbyAnnotationNumbers(annotations, imageWidth, imageHeight)
 
   return annotations.map((annotation, index) => {
-    const label = TYPE_LABELS[annotation.type] || annotation.type
+    const label = annotationLabel(annotation)
     const position = describePosition(annotation, imageWidth, imageHeight)
     const nearby = nearbyByIndex[index]
     const nearbyNote = nearby.length > 0

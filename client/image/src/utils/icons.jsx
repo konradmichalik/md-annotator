@@ -26,10 +26,42 @@ export const TOOL_ICONS = {
       <path d="M3 15c2 3 4 4 7 4s7 -3 7 -7s-3 -7 -6 -7s-5 1.5 -5 4s2 5 6 5s8.408 -2.453 10 -5" />
     </svg>
   ),
+  highlighter: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L11 17l-4 1l1 -4L17 3z" />
+      <path d="M3 21h6" />
+    </svg>
+  ),
   pin: (
     <svg {...ICON_PROPS} aria-hidden="true">
       <path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
       <path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0" />
+    </svg>
+  )
+}
+
+// Icons for the arrow end-cap style toggle in CommentPopover. Keyed by
+// `arrowStyle` value, not by annotation type, so they don't belong in
+// TOOL_ICONS (which AnnotationPanel looks up by annotation.type).
+export const ARROW_STYLE_ICONS = {
+  head: TOOL_ICONS.arrow,
+  dimension: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M6 18l12 -12" />
+      <path d="M3 15l6 6" />
+      <path d="M15 3l6 6" />
+    </svg>
+  ),
+  none: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M7 17l10 -10" />
+    </svg>
+  ),
+  double: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <path d="M7 17l10 -10" />
+      <path d="M8 7l9 0l0 9" />
+      <path d="M16 17l-9 0l0 -9" />
     </svg>
   )
 }
