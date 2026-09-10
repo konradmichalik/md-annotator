@@ -1,10 +1,13 @@
+/* global __APP_VERSION__ */
 import { useState, useEffect, useRef } from 'react'
 import { CloseIcon } from './Icons.jsx'
+import { Logo } from './Logo.jsx'
 
 const TABS = [
   { id: 'appearance', label: 'Appearance' },
   { id: 'behavior', label: 'Behavior' },
   { id: 'shortcuts', label: 'Shortcuts' },
+  { id: 'about', label: 'About' },
 ]
 
 function SegmentedControl({ options, value, onChange }) {
@@ -221,10 +224,26 @@ function ShortcutsTab() {
   )
 }
 
+function AboutTab() {
+  return (
+    <div className="settings-tab-content about-tab">
+      <Logo className="app-logo about-logo" />
+      <span className="about-version">v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '?'}</span>
+      <p className="about-description">
+        Browser-based image and Markdown annotator for AI-assisted review, with built-in web page capture.
+      </p>
+      <a className="about-link" href="https://github.com/konradmichalik/annotaitr" target="_blank" rel="noreferrer">
+        GitHub repository
+      </a>
+    </div>
+  )
+}
+
 const TAB_COMPONENTS = {
   appearance: AppearanceTab,
   behavior: BehaviorTab,
   shortcuts: ShortcutsTab,
+  about: AboutTab,
 }
 
 export function SettingsModal({ isOpen, onClose, settings, updateSetting, resetSettings }) {
@@ -292,7 +311,7 @@ export function SettingsModal({ isOpen, onClose, settings, updateSetting, resetS
         </div>
 
         <div className="modal-footer settings-footer">
-          {activeTab !== 'shortcuts' && (
+          {activeTab !== 'shortcuts' && activeTab !== 'about' && (
             <button className="btn settings-reset-btn" onClick={resetSettings} type="button">
               Reset to defaults
             </button>
