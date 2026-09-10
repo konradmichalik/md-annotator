@@ -51,9 +51,20 @@ describe('serializeAnnotations / parseAnnotationsJson', () => {
     expect(parseAnnotationsJson(json)).toEqual([{ id: 'x', type: 'comment', geometry: null, text: 'hi' }])
   })
 
+  it('accepts a null color, since a general comment is created with color: null', () => {
+    const json = JSON.stringify([{ id: 'x', type: 'comment', geometry: null, text: 'hi', color: null }])
+    expect(() => parseAnnotationsJson(json)).not.toThrow()
+  })
+
   it('rejects a freehand/highlighter mark with an empty points array', () => {
     const json = JSON.stringify([{ id: 'x', type: 'freehand', geometry: { points: [] } }])
     expect(() => parseAnnotationsJson(json)).toThrow(/points array/)
+  })
+
+  it('rejects a freehand/highlighter mark with an excessive points array', () => {
+    const points = Array.from({ length: 5001 }, (_, i) => ({ x: i, y: i }))
+    const json = JSON.stringify([{ id: 'x', type: 'freehand', geometry: { points } }])
+    expect(() => parseAnnotationsJson(json)).toThrow(/too many points/)
   })
 
   it('rejects a non-numeric strokeWidth, which would otherwise throw a DOMException from setLineDash at render time', () => {

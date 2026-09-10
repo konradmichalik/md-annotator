@@ -171,4 +171,37 @@ describe('image annotator server', () => {
     expect(res.status).toBe(500)
     expect(await isStillPending(server)).toBe(true)
   })
+
+  it('rejects a POST /api/annotations payload carrying more than 10000 annotations', async () => {
+    await start()
+    const annotations = Array.from({ length: 10001 }, (_, i) => ({ id: `a${i}`, type: 'pin', geometry: { x: 1, y: 1 } }))
+    const res = await fetch(`${server.url}/api/annotations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ annotations })
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects a POST /api/annotations payload whose geometry.points exceeds the per-annotation limit - this endpoint is reachable directly, bypassing the client\'s own import validator', async () => {
+    await start()
+    const points = Array.from({ length: 5001 }, (_, i) => ({ x: i, y: i }))
+    const res = await fetch(`${server.url}/api/annotations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ annotations: [{ id: 'a1', type: 'freehand', geometry: { points } }] })
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('accepts a POST /api/annotations payload within both limits', async () => {
+    await start()
+    const points = Array.from({ length: 5000 }, (_, i) => ({ x: i, y: i }))
+    const res = await fetch(`${server.url}/api/annotations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ annotations: [{ id: 'a1', type: 'freehand', geometry: { points } }] })
+    })
+    expect(res.status).toBe(200)
+  })
 })

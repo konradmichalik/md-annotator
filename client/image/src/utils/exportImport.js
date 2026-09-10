@@ -1,4 +1,4 @@
-import { isPointsGeometry } from './drawing.js'
+import { isPointsGeometry, MAX_POINTS_PER_ANNOTATION } from './drawing.js'
 
 const VALID_TYPES = new Set(['box', 'arrow', 'freehand', 'highlighter', 'pin', 'comment'])
 const MAX_ANNOTATIONS = 10000
@@ -43,6 +43,9 @@ function validateGeometry(type, geometry, index) {
     if (!Array.isArray(geometry.points) || geometry.points.length === 0 || !geometry.points.every(isValidPoint)) {
       throw new Error(`Annotation ${index + 1}: ${type} geometry must have a non-empty points array of {x, y}.`)
     }
+    if (geometry.points.length > MAX_POINTS_PER_ANNOTATION) {
+      throw new Error(`Annotation ${index + 1}: ${type} has too many points (max ${MAX_POINTS_PER_ANNOTATION}).`)
+    }
   }
 }
 
@@ -61,8 +64,8 @@ function validateAnnotation(ann, index) {
   if (ann.text !== null && ann.text !== undefined && typeof ann.text !== 'string') {
     throw new Error(`Annotation ${index + 1}: text must be a string or null.`)
   }
-  if (ann.color !== undefined && typeof ann.color !== 'string') {
-    throw new Error(`Annotation ${index + 1}: color must be a string.`)
+  if (ann.color !== null && ann.color !== undefined && typeof ann.color !== 'string') {
+    throw new Error(`Annotation ${index + 1}: color must be a string or null.`)
   }
   if (ann.createdAt !== undefined && !isFiniteNumber(ann.createdAt)) {
     throw new Error(`Annotation ${index + 1}: createdAt must be a number.`)

@@ -6,6 +6,22 @@ import { formatApprovalOutput, formatApprovalWithNotesOutput, exportFeedback } f
 function success(data) { return { success: true, data } }
 function failure(error) { return { success: false, error } }
 
+// Mirrors client/image/src/utils/exportImport.js's own limits (client and
+// server share no modules, so this is duplicated deliberately) - POST
+// /api/annotations is reachable directly, bypassing the client's own import
+// validator entirely, so it needs its own copy of the same bound.
+const MAX_ANNOTATIONS = 10000
+const MAX_POINTS_PER_ANNOTATION = 5000
+
+/** Reject a payload carrying more annotations, or a points-geometry mark with more points, than the client itself would ever produce. */
+function annotationsWithinLimits(annotations) {
+  if (annotations.length > MAX_ANNOTATIONS) { return false }
+  return annotations.every((annotation) => {
+    const points = annotation?.geometry?.points
+    return !Array.isArray(points) || points.length <= MAX_POINTS_PER_ANNOTATION
+  })
+}
+
 /**
  * Sniff the actual image format from its magic bytes. The captured/loaded
  * buffer can be PNG, JPEG, or WebP (a screenshot is always PNG, but a local
@@ -45,6 +61,11 @@ export function createApiRouter({ imageBuffer, imageWidth, imageHeight, origin, 
     const { annotations } = req.body
     if (!Array.isArray(annotations)) {
       return res.status(400).json(failure('annotations must be an array'))
+    }
+    if (!annotationsWithinLimits(annotations)) {
+      return res.status(400).json(failure(
+        `Too many annotations or points (max ${MAX_ANNOTATIONS} annotations, ${MAX_POINTS_PER_ANNOTATION} points each)`
+      ))
     }
     state.annotations = [...annotations]
     res.json(success({ saved: true, count: annotations.length }))
