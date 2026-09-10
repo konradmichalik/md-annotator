@@ -421,12 +421,18 @@ export default function ImageCanvas({
         type: 'arrow', geometry, color: nextColor, arrowStyle: 'head',
         anchor: toClientPoint(wrapperRef, annotationBottomAnchor({ type: 'arrow', geometry }), zoom)
       })
-    } else if (isPointCollectingTool(activeTool) && strokePoints.length > 1) {
-      const geometry = { points: strokePoints }
-      setPending({
-        type: activeTool, geometry, color: nextColor,
-        anchor: toClientPoint(wrapperRef, annotationBottomAnchor({ type: activeTool, geometry }), zoom)
-      })
+    } else if (isPointCollectingTool(activeTool) && strokePoints.length > 0) {
+      if (strokePoints.length > 1) {
+        const geometry = { points: strokePoints }
+        setPending({
+          type: activeTool, geometry, color: nextColor,
+          anchor: toClientPoint(wrapperRef, annotationBottomAnchor({ type: activeTool, geometry }), zoom)
+        })
+      }
+      // Always clear, even for a single-point "click, no drag": otherwise
+      // handleMouseMove's `strokePoints.length > 0` check keeps matching and
+      // a stray stroke follows the cursor with no button held, until the
+      // next mousedown happens to reset it.
       setStrokePoints([])
     }
   }, [activeTool, dragStart, strokePoints, imageWidth, imageHeight, zoom, annotations, openEditPopover, nextColor, pending])
