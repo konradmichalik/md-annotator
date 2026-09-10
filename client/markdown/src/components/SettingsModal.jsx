@@ -1,7 +1,7 @@
 /* global __APP_VERSION__ */
 import { useState, useEffect, useRef } from 'react'
 import { CloseIcon } from './Icons.jsx'
-import { Logo } from './Logo.jsx'
+import { Logo } from '../../../shared/components/Logo.jsx'
 
 const TABS = [
   { id: 'appearance', label: 'Appearance' },

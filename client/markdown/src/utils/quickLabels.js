@@ -2,7 +2,7 @@
  * Quick annotation labels for fast categorization.
  * Alt+1–0 shortcuts apply a label directly to the current selection.
  */
-import { getItem } from './storage.js'
+import { getItem } from '../../../shared/utils/storage.js'
 
 const STORAGE_KEY = 'md-annotator-quick-labels'
 

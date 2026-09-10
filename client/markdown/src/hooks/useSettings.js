@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { getItem, setItem } from '../utils/storage.js'
+import { getItem, setItem } from '../../../shared/utils/storage.js'
 
 const COOKIE_KEY = 'md-annotator-settings'
 
