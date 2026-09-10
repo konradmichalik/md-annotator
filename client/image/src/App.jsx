@@ -141,13 +141,22 @@ export default function App() {
 
   const submit = useCallback(async (endpoint) => {
     try {
+      // Flush the current annotations synchronously before deciding - /api/approve
+      // and /api/feedback read the server's own state.annotations, which the
+      // debounced auto-save effect above may not have posted yet if the user
+      // submits within 500ms of their last edit.
+      await fetch('/api/annotations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ annotations: state.annotations })
+      })
       const res = await fetch(`/api/${endpoint}`, { method: 'POST' })
       if (!res.ok) { throw new Error(`Server responded with ${res.status}`) }
       setDecision(endpoint === 'approve' ? 'approved' : 'feedback')
     } catch (err) {
       setErrorStatus(`${endpoint === 'approve' ? 'Approve' : 'Submit'} failed: ${err.message}`)
     }
-  }, [setErrorStatus])
+  }, [setErrorStatus, state.annotations])
 
   const zoomBy = useCallback((delta) => {
     setZoom((z) => Math.round(Math.max(0.1, Math.min(3, z + delta)) * 100) / 100)
