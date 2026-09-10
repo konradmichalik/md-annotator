@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, useEffect, useReducer } from 'react'
 import {
   clampPoint, boxFromPoints, findAnnotationAt, translateGeometry,
   annotationCentroid, annotationBottomAnchor, annotationTopAnchor, resizeGeometry, freehandBounds,
-  isPointsGeometry, HIGHLIGHTER_OPACITY, dimensionCapLines, dimensionTickLengthFor
+  isPointsGeometry, HIGHLIGHTER_OPACITY, dimensionCapLines, dimensionTickLengthFor, MAX_POINTS_PER_ANNOTATION
 } from '../utils/drawing.js'
 import { resolveArrowStyle, strokeWidthOf, dashArrayFor, pickStyleFields } from '../utils/annotationStyles.js'
 import { cursorForTool } from '../utils/cursors.js'
@@ -286,13 +286,17 @@ export default function ImageCanvas({
       const tag = document.activeElement?.tagName
       if (tag === 'TEXTAREA' || tag === 'INPUT') { return }
       const isMod = event.metaKey || event.ctrlKey
-      if (isMod && !event.shiftKey && event.key === 'z') {
+      // event.key reports the shifted/Caps-Lock'd character ('Z', not 'z') -
+      // without normalizing, Shift+Z-for-redo would never match, and Caps Lock
+      // would break the undo branch the same way.
+      const key = event.key.toLowerCase()
+      if (isMod && !event.shiftKey && key === 'z') {
         event.preventDefault()
         onUndo()
-      } else if (isMod && event.shiftKey && event.key === 'z') {
+      } else if (isMod && event.shiftKey && key === 'z') {
         event.preventDefault()
         onRedo()
-      } else if (event.ctrlKey && !event.metaKey && event.key === 'y') {
+      } else if (event.ctrlKey && !event.metaKey && key === 'y') {
         event.preventDefault()
         onRedo()
       }
@@ -434,6 +438,10 @@ export default function ImageCanvas({
     }
 
     if (isPointCollectingTool(activeTool) && strokePoints.length > 0) {
+      // Capped so an unusually long stroke can't produce an annotation the
+      // import validator (or the server's own copy of this same limit) would
+      // then refuse to accept back - see MAX_POINTS_PER_ANNOTATION in drawing.js.
+      if (strokePoints.length >= MAX_POINTS_PER_ANNOTATION) { return }
       const point = pointFromEvent(event, wrapperRef, imageWidth, imageHeight, zoom)
       setStrokePoints((prev) => [...prev, point])
       return
