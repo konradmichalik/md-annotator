@@ -2,9 +2,9 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 import {
   clampPoint, boxFromPoints, findAnnotationAt, translateGeometry,
   annotationCentroid, annotationBottomAnchor, annotationTopAnchor, resizeGeometry, freehandBounds,
-  isPointsGeometry, HIGHLIGHTER_OPACITY, dimensionCapLines, DIMENSION_TICK_LENGTH
+  isPointsGeometry, HIGHLIGHTER_OPACITY, dimensionCapLines, dimensionTickLengthFor
 } from '../utils/drawing.js'
-import { resolveArrowStyle, strokeWidthOf, dashArrayFor, DEFAULT_STROKE_WIDTH, pickStyleFields } from '../utils/annotationStyles.js'
+import { resolveArrowStyle, strokeWidthOf, dashArrayFor, pickStyleFields } from '../utils/annotationStyles.js'
 import { cursorForTool } from '../utils/cursors.js'
 import { ANNOTATION_COLORS } from '../utils/annotationColors.js'
 import { ACTION_ICONS } from '../utils/icons.jsx'
@@ -43,9 +43,7 @@ function BoxShape({ geometry, color, strokeWidth, dash, selectionProps }) {
 function ArrowShape({ annotation, color, strokeWidth, dash, markerId, selectionProps }) {
   const { x1, y1, x2, y2 } = annotation.geometry
   const style = resolveArrowStyle(annotation.arrowStyle)
-  // Ticks scale with the shaft's own width, preserving DIMENSION_TICK_LENGTH at the default width.
-  const tickLength = (strokeWidth / DEFAULT_STROKE_WIDTH) * DIMENSION_TICK_LENGTH
-  const ticks = style === 'dimension' ? dimensionCapLines(annotation.geometry, tickLength) : null
+  const ticks = style === 'dimension' ? dimensionCapLines(annotation.geometry, dimensionTickLengthFor(annotation)) : null
   const markerUrl = `url(#${markerId})`
   const markerEnd = style === 'head' || style === 'double' ? markerUrl : undefined
   const markerStart = style === 'double' ? markerUrl : undefined

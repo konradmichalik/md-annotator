@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   clampPoint, distance, boxFromPoints,
   annotationCentroid, annotationBottomAnchor, annotationTopAnchor, translateGeometry, hitTestAnnotation, findAnnotationAt,
-  resizeGeometry, freehandBounds, isPointsGeometry, dimensionCapLines
+  resizeGeometry, freehandBounds, isPointsGeometry, dimensionCapLines, dimensionTickLengthFor
 } from '../../../client/image/src/utils/drawing.js'
 
 describe('clampPoint', () => {
@@ -181,6 +181,17 @@ describe('hitTestAnnotation', () => {
     const point = { x: 50, y: 8 }
     expect(hitTestAnnotation(point, { type: 'highlighter', geometry, strokeWidth: 10 })).toBe(true)
   })
+
+  it('includes a dimension arrow\'s perpendicular ticks in hit-testing, not just the shaft', () => {
+    const geometry = { x1: 0, y1: 0, x2: 100, y2: 0 }
+    // At strokeWidth 15 the tick half-length (35) well exceeds the shaft's
+    // own tolerance (9.5), so this point only hits through the tick itself.
+    const nearTickTip = { x: 0, y: 34 }
+    const dimensionArrow = { type: 'arrow', arrowStyle: 'dimension', strokeWidth: 15, geometry }
+    const headArrow = { type: 'arrow', arrowStyle: 'head', strokeWidth: 15, geometry }
+    expect(hitTestAnnotation(nearTickTip, dimensionArrow)).toBe(true)
+    expect(hitTestAnnotation(nearTickTip, headArrow)).toBe(false)
+  })
 })
 
 describe('findAnnotationAt', () => {
@@ -280,6 +291,16 @@ describe('dimensionCapLines', () => {
 
   it('returns null for a zero-length arrow', () => {
     expect(dimensionCapLines({ x1: 5, y1: 5, x2: 5, y2: 5 })).toBeNull()
+  })
+})
+
+describe('dimensionTickLengthFor', () => {
+  it('preserves the historical 14-unit tick length at the default stroke width', () => {
+    expect(dimensionTickLengthFor({ type: 'arrow' })).toBe(14)
+  })
+
+  it('scales proportionally with a configured stroke width', () => {
+    expect(dimensionTickLengthFor({ type: 'arrow', strokeWidth: 6 })).toBe(28)
   })
 })
 

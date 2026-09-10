@@ -1,4 +1,4 @@
-import { strokeWidthOf } from './annotationStyles.js'
+import { strokeWidthOf, resolveArrowStyle, DEFAULT_STROKE_WIDTH } from './annotationStyles.js'
 
 export function clampPoint(point, width, height) {
   return {
@@ -120,7 +120,15 @@ export function hitTestAnnotation(point, annotation) {
       && point.y >= geometry.y && point.y <= geometry.y + geometry.height
   }
   if (type === 'arrow') {
-    return distanceToSegment(point, { x: geometry.x1, y: geometry.y1 }, { x: geometry.x2, y: geometry.y2 }) <= hitTolerance(annotation)
+    const tolerance = hitTolerance(annotation)
+    const onShaft = distanceToSegment(point, { x: geometry.x1, y: geometry.y1 }, { x: geometry.x2, y: geometry.y2 }) <= tolerance
+    if (onShaft || resolveArrowStyle(annotation.arrowStyle) !== 'dimension') { return onShaft }
+    // A dimension-style arrow also renders two perpendicular ticks, which
+    // can extend past the shaft's own tolerance for a thick arrow.
+    const ticks = dimensionCapLines(geometry, dimensionTickLengthFor(annotation))
+    return !!ticks && ticks.some((tick) =>
+      distanceToSegment(point, { x: tick.x1, y: tick.y1 }, { x: tick.x2, y: tick.y2 }) <= tolerance
+    )
   }
   if (type === 'pin') {
     return distance(point, geometry) <= PIN_HIT_RADIUS
@@ -212,4 +220,14 @@ export function dimensionCapLines(geometry, tickLength = DIMENSION_TICK_LENGTH) 
     { x1: x1 - px * half, y1: y1 - py * half, x2: x1 + px * half, y2: y1 + py * half },
     { x1: x2 - px * half, y1: y2 - py * half, x2: x2 + px * half, y2: y2 + py * half }
   ]
+}
+
+/**
+ * A dimension-style arrow's tick length, scaled from its own stroke width
+ * (preserving DIMENSION_TICK_LENGTH at the default width). Shared by
+ * ArrowShape's rendering and hitTestAnnotation's hit-testing, so the visible
+ * tick length and the clickable tick length can never drift apart.
+ */
+export function dimensionTickLengthFor(annotation) {
+  return (strokeWidthOf(annotation) / DEFAULT_STROKE_WIDTH) * DIMENSION_TICK_LENGTH
 }
