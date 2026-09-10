@@ -30,4 +30,44 @@ describe('serializeAnnotations / parseAnnotationsJson', () => {
   it('rejects valid JSON that is not an array', () => {
     expect(() => parseAnnotationsJson('{"foo": "bar"}')).toThrow(/must be an array/)
   })
+
+  it('rejects an annotation with no geometry instead of letting it crash the app on render', () => {
+    // The exact shape that used to reach state unvalidated and crash the
+    // canvas with "Cannot destructure property 'x' of 'o' as it is undefined".
+    expect(() => parseAnnotationsJson('[{"id":"x","type":"box"}]')).toThrow(/geometry/)
+  })
+
+  it('rejects an unknown annotation type', () => {
+    expect(() => parseAnnotationsJson('[{"id":"x","type":"triangle","geometry":{}}]')).toThrow(/unknown type/)
+  })
+
+  it('rejects a box with non-numeric geometry fields', () => {
+    const json = JSON.stringify([{ id: 'x', type: 'box', geometry: { x: '1', y: 2, width: 3, height: 4 } }])
+    expect(() => parseAnnotationsJson(json)).toThrow(/box geometry/)
+  })
+
+  it('accepts a general comment with no geometry at all', () => {
+    const json = JSON.stringify([{ id: 'x', type: 'comment', geometry: null, text: 'hi' }])
+    expect(parseAnnotationsJson(json)).toEqual([{ id: 'x', type: 'comment', geometry: null, text: 'hi' }])
+  })
+
+  it('rejects a freehand/highlighter mark with an empty points array', () => {
+    const json = JSON.stringify([{ id: 'x', type: 'freehand', geometry: { points: [] } }])
+    expect(() => parseAnnotationsJson(json)).toThrow(/points array/)
+  })
+
+  it('rejects a non-numeric strokeWidth, which would otherwise throw a DOMException from setLineDash at render time', () => {
+    const json = JSON.stringify([{ id: 'x', type: 'box', geometry: { x: 0, y: 0, width: 1, height: 1 }, strokeWidth: 'thick' }])
+    expect(() => parseAnnotationsJson(json)).toThrow(/strokeWidth/)
+  })
+
+  it('accepts an unrecognized dashStyle/arrowStyle string, since both already fall back gracefully at render time', () => {
+    const json = JSON.stringify([{ id: 'x', type: 'arrow', geometry: { x1: 0, y1: 0, x2: 1, y2: 1 }, dashStyle: 'wavy', arrowStyle: 'sparkly' }])
+    expect(() => parseAnnotationsJson(json)).not.toThrow()
+  })
+
+  it('rejects a non-string dashStyle/arrowStyle', () => {
+    const json = JSON.stringify([{ id: 'x', type: 'arrow', geometry: { x1: 0, y1: 0, x2: 1, y2: 1 }, dashStyle: 5 }])
+    expect(() => parseAnnotationsJson(json)).toThrow(/dashStyle/)
+  })
 })

@@ -133,6 +133,9 @@ export function hitTestAnnotation(point, annotation) {
   if (type === 'pin') {
     return distance(point, geometry) <= PIN_HIT_RADIUS
   }
+  // A general comment (no geometry, not drawn on the canvas at all) or any
+  // other type with no points array is never hit-testable.
+  if (!isPointsGeometry(type) || !geometry?.points) { return false }
   const points = geometry.points
   const tolerance = hitTolerance(annotation)
   for (let i = 0; i < points.length - 1; i++) {

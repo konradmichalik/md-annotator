@@ -52,7 +52,80 @@ describe('annotationReducer', () => {
     expect(next.annotations).toEqual([])
   })
 
+  it('SET_ALL clears history and redo, so a restored session cannot undo past the restore', () => {
+    const state = { annotations: [], history: [{ action: 'add', annotation: makeAnnotation() }], redo: [{ action: 'add', annotation: makeAnnotation() }] }
+    const next = annotationReducer(state, { type: 'SET_ALL', annotations: [makeAnnotation()] })
+    expect(next.history).toEqual([])
+    expect(next.redo).toEqual([])
+  })
+
   it('returns the same state for an unknown action type', () => {
     expect(annotationReducer(initialAnnotationState, { type: 'NOPE' })).toBe(initialAnnotationState)
+  })
+
+  describe('EDIT (a completed move, resize, or popover edit)', () => {
+    it('replaces the annotation with `after` and records one history entry, not a per-drag-frame one', () => {
+      const before = makeAnnotation({ geometry: { x: 10, y: 10 } })
+      const after = { ...before, geometry: { x: 50, y: 60 } }
+      const state = { annotations: [before], history: [], redo: [] }
+      const next = annotationReducer(state, { type: 'EDIT', id: 'ann-1', before, after })
+      expect(next.annotations).toEqual([after])
+      expect(next.history).toEqual([{ action: 'edit', id: 'ann-1', before, after }])
+      expect(next.redo).toEqual([])
+    })
+  })
+
+  describe('UNDO / REDO', () => {
+    it('undoes an ADD by removing the annotation, and REDO restores it', () => {
+      const ann = makeAnnotation()
+      const added = annotationReducer(initialAnnotationState, { type: 'ADD', annotation: ann })
+      const undone = annotationReducer(added, { type: 'UNDO' })
+      expect(undone.annotations).toEqual([])
+      expect(undone.history).toEqual([])
+      expect(undone.redo).toHaveLength(1)
+
+      const redone = annotationReducer(undone, { type: 'REDO' })
+      expect(redone.annotations).toEqual([ann])
+      expect(redone.redo).toEqual([])
+    })
+
+    it('undoes a REMOVE by restoring the annotation, and REDO removes it again', () => {
+      const ann = makeAnnotation()
+      const state = { annotations: [ann], history: [], redo: [] }
+      const removed = annotationReducer(state, { type: 'REMOVE', id: 'ann-1' })
+      const undone = annotationReducer(removed, { type: 'UNDO' })
+      expect(undone.annotations).toEqual([ann])
+
+      const redone = annotationReducer(undone, { type: 'REDO' })
+      expect(redone.annotations).toEqual([])
+    })
+
+    it('undoes an EDIT (move/resize/style change) by restoring `before`, and REDO reapplies `after`', () => {
+      const before = makeAnnotation({ geometry: { x: 10, y: 10 } })
+      const after = { ...before, geometry: { x: 99, y: 99 } }
+      const state = { annotations: [before], history: [], redo: [] }
+      const edited = annotationReducer(state, { type: 'EDIT', id: 'ann-1', before, after })
+      const undone = annotationReducer(edited, { type: 'UNDO' })
+      expect(undone.annotations).toEqual([before])
+
+      const redone = annotationReducer(undone, { type: 'REDO' })
+      expect(redone.annotations).toEqual([after])
+    })
+
+    it('UNDO is a no-op when there is no history', () => {
+      expect(annotationReducer(initialAnnotationState, { type: 'UNDO' })).toBe(initialAnnotationState)
+    })
+
+    it('REDO is a no-op when there is no redo entry', () => {
+      expect(annotationReducer(initialAnnotationState, { type: 'REDO' })).toBe(initialAnnotationState)
+    })
+
+    it('a new ADD after an UNDO clears the redo stack', () => {
+      const ann = makeAnnotation()
+      const added = annotationReducer(initialAnnotationState, { type: 'ADD', annotation: ann })
+      const undone = annotationReducer(added, { type: 'UNDO' })
+      const readded = annotationReducer(undone, { type: 'ADD', annotation: makeAnnotation({ id: 'ann-2' }) })
+      expect(readded.redo).toEqual([])
+    })
   })
 })
