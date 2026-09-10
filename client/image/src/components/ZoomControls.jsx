@@ -6,7 +6,10 @@ export default function ZoomControls({ zoom, onZoomBy, onZoomReset, onZoomFit })
       <button type="button" onClick={() => onZoomBy(-0.1)} title="Zoom out" aria-label="Zoom out">
         {ZOOM_ICONS.out}
       </button>
-      <button type="button" className="toolbar-zoom-level" onClick={onZoomReset} title="Reset zoom to 100%">
+      <button
+        type="button" className="toolbar-zoom-level" onClick={onZoomReset}
+        title="Reset zoom to 100%" aria-label="Reset zoom to 100%"
+      >
         {Math.round(zoom * 100)}%
       </button>
       <button type="button" onClick={() => onZoomBy(0.1)} title="Zoom in" aria-label="Zoom in">
