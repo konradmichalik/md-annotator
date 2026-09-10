@@ -5,7 +5,9 @@ import {
 
 const PIN_RADIUS = 14
 const BADGE_RADIUS = 11
-const DEFAULT_COLOR = '#e11d48'
+// Matches ANNOTATION_COLORS[0] in client/image/src/utils/annotationColors.js
+// (client and server share no modules, so this duplication is deliberate).
+const DEFAULT_COLOR = '#bf616a'
 const HIGHLIGHTER_OPACITY = 0.4
 
 const LEGEND_PADDING = 14
@@ -16,7 +18,7 @@ const LEGEND_BG = '#20242c'
 const LEGEND_HEADER_COLOR = '#f5f6fa'
 const LEGEND_TEXT_COLOR = '#b8bfcc'
 
-const TYPE_LABELS = { box: 'Box', arrow: 'Arrow', freehand: 'Freehand', highlighter: 'Highlight', pin: 'Pin' }
+const TYPE_LABELS = { box: 'Box', arrow: 'Arrow', freehand: 'Freehand', highlighter: 'Highlight', pin: 'Pin', comment: 'General comment' }
 
 function drawArrowhead(ctx, x1, y1, x2, y2, color, headLength, lineWidth) {
   const angle = Math.atan2(y2 - y1, x2 - x1)

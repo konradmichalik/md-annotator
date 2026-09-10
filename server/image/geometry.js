@@ -5,6 +5,12 @@
 
 export function boundingPoint(annotation) {
   const { type, geometry } = annotation
+  // A general comment about the whole image has no geometry and no real
+  // position - placed far off any real annotation so it never registers as
+  // "nearby" one in findNearbyAnnotationNumbers.
+  if (type === 'comment') {
+    return { x: -1e6, y: -1e6 }
+  }
   if (type === 'pin') {
     return { x: geometry.x, y: geometry.y }
   }
@@ -39,6 +45,7 @@ function positionLabel(vertical, horizontal) {
 }
 
 export function describePosition(annotation, imageWidth, imageHeight) {
+  if (annotation.type === 'comment') { return 'the whole image' }
   const { x, y } = boundingPoint(annotation)
   const pctFromLeft = Math.round((x / imageWidth) * 100)
   const pctFromTop = Math.round((y / imageHeight) * 100)

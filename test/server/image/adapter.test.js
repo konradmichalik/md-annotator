@@ -54,6 +54,14 @@ describe('image annotator server', () => {
     expect(bytes.byteLength).toBeGreaterThan(0)
   })
 
+  it('serves a JPEG source image with the matching content-type, not a hardcoded PNG label', async () => {
+    const { createCanvas } = await import('@napi-rs/canvas')
+    const jpegBuffer = createCanvas(40, 30).toBuffer('image/jpeg')
+    await start({ imageBuffer: jpegBuffer })
+    const res = await fetch(`${server.url}/api/image`)
+    expect(res.headers.get('content-type')).toBe('image/jpeg')
+  })
+
   it('serves image metadata', async () => {
     await start()
     const res = await fetch(`${server.url}/api/meta`)
@@ -118,7 +126,7 @@ describe('image annotator server', () => {
 
   it('rejects a submit with zero annotations', async () => {
     await start()
-    const res = await fetch(`${server.url}/api/submit`, { method: 'POST' })
+    const res = await fetch(`${server.url}/api/feedback`, { method: 'POST' })
     expect(res.status).toBe(400)
   })
 
@@ -129,7 +137,7 @@ describe('image annotator server', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ annotations: [{ id: 'a1', type: 'box', geometry: { x: 0, y: 0, width: 10, height: 10 }, text: 'fix', color: '#e11d48' }] })
     })
-    await fetch(`${server.url}/api/submit`, { method: 'POST' })
+    await fetch(`${server.url}/api/feedback`, { method: 'POST' })
     const decision = await server.waitForDecision()
     expect(decision.approved).toBe(false)
     expect(decision.output).toContain('1 annotation on the screenshot.')
@@ -150,7 +158,7 @@ describe('image annotator server', () => {
     expect(await isStillPending(server)).toBe(true)
   })
 
-  it('returns 500 and leaves the decision unresolved when /api/submit fails to write the annotated image', async () => {
+  it('returns 500 and leaves the decision unresolved when /api/feedback fails to write the annotated image', async () => {
     await start()
     await fetch(`${server.url}/api/annotations`, {
       method: 'POST',
@@ -159,7 +167,7 @@ describe('image annotator server', () => {
     })
     writeAnnotatedImage.mockRejectedValueOnce(new Error('disk full'))
 
-    const res = await fetch(`${server.url}/api/submit`, { method: 'POST' })
+    const res = await fetch(`${server.url}/api/feedback`, { method: 'POST' })
     expect(res.status).toBe(500)
     expect(await isStillPending(server)).toBe(true)
   })
