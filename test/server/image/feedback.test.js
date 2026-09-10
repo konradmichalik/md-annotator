@@ -69,4 +69,13 @@ describe('exportFeedback', () => {
     const output = exportFeedback([pin, box], 100, 100, '/tmp/annotated.png')
     expect(output).not.toContain('close to annotation')
   })
+
+  it('formats a general comment without a position or nearby-marker note', () => {
+    const comment = { type: 'comment', color: null, text: 'Overall this looks great' }
+    const output = exportFeedback([comment], 100, 100, '/tmp/annotated.png')
+    expect(output).toContain('1. General comment about the whole image')
+    expect(output).toContain('Overall this looks great')
+    expect(output).not.toContain('% from top')
+    expect(output).not.toContain('close to annotation')
+  })
 })

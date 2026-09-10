@@ -5,13 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>annotaitr — Markdown</title>
   <link rel="icon" type="image/svg+xml" href="./src/assets/icon-annotaitr.svg?inline">
-  <script>
-    (function() {
-      var t = localStorage.getItem('md-annotator-theme') || 'auto';
-      var dark = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme:dark)').matches);
-      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-    })();
-  </script>
+  <!-- THEME_INIT -->
 </head>
 <body>
   <div id="root"></div>

@@ -36,6 +36,11 @@ describe('describePosition', () => {
     const highlighter = { type: 'highlighter', geometry: { points: [{ x: 0, y: 0 }, { x: 20, y: 20 }] } }
     expect(describePosition(highlighter, 100, 100)).toBe('top left (~10% from top, ~10% from left)')
   })
+
+  it('describes a general comment without touching its (absent) geometry', () => {
+    const comment = { type: 'comment', geometry: null }
+    expect(describePosition(comment, 100, 100)).toBe('the whole image')
+  })
 })
 
 describe('findNearbyAnnotationNumbers', () => {
@@ -56,5 +61,11 @@ describe('findNearbyAnnotationNumbers', () => {
     const b = { type: 'pin', geometry: { x: 90, y: 18 } }
     const c = { type: 'pin', geometry: { x: 10, y: 90 } }
     expect(findNearbyAnnotationNumbers([a, b, c], 100, 100)).toEqual([[2], [1], []])
+  })
+
+  it('never crashes on a general comment (no geometry) and never flags it as "nearby" a real annotation', () => {
+    const pin = { type: 'pin', geometry: { x: 10, y: 10 } }
+    const comment = { type: 'comment', geometry: null }
+    expect(findNearbyAnnotationNumbers([pin, comment], 100, 100)).toEqual([[], []])
   })
 })

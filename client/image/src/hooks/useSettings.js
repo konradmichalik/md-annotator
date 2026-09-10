@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect } from 'react'
 import { DEFAULT_ANNOTATION_COLOR } from '../utils/annotationColors.js'
+import { getItem, setItem } from '../../../shared/utils/storage.js'
 
-// Kept as its own key (not part of the settings blob below): client/index.html
-// reads it synchronously before React mounts, to paint the correct theme on
-// first frame without a flash of the wrong one.
-const THEME_KEY = 'img-annotator-theme'
+// Cookies, not localStorage: each invocation binds to a random port unless
+// ANNOTAITR_PORT is set, and localStorage is scoped per-origin (host+port),
+// so settings saved under one run's port would be invisible to the next.
+// Cookies are scoped by domain only, so they survive the port changing.
 const STORAGE_KEY = 'img-annotator-settings'
 
 const DEFAULTS = {
@@ -15,23 +16,17 @@ const DEFAULTS = {
 }
 
 function loadSettings() {
-  const theme = localStorage.getItem(THEME_KEY) || DEFAULTS.theme
+  const raw = getItem(STORAGE_KEY)
+  if (!raw) { return { ...DEFAULTS } }
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) { return { ...DEFAULTS, theme } }
-    return { ...DEFAULTS, ...JSON.parse(raw), theme }
+    return { ...DEFAULTS, ...JSON.parse(raw) }
   } catch {
-    return { ...DEFAULTS, theme }
+    return { ...DEFAULTS }
   }
 }
 
 function persistSettings(settings) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
-    localStorage.setItem(THEME_KEY, settings.theme)
-  } catch {
-    // localStorage unavailable (private browsing, disabled storage) - settings just won't persist
-  }
+  setItem(STORAGE_KEY, JSON.stringify(settings))
 }
 
 export function useSettings() {

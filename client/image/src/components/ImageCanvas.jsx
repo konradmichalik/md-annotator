@@ -1,8 +1,8 @@
-import { useRef, useState, useCallback, useEffect } from 'react'
+import { useRef, useState, useCallback, useEffect, useReducer } from 'react'
 import {
   clampPoint, boxFromPoints, findAnnotationAt, translateGeometry,
   annotationCentroid, annotationBottomAnchor, annotationTopAnchor, resizeGeometry, freehandBounds,
-  isPointsGeometry, HIGHLIGHTER_OPACITY, dimensionCapLines, dimensionTickLengthFor
+  isPointsGeometry, HIGHLIGHTER_OPACITY, dimensionCapLines, dimensionTickLengthFor, MAX_POINTS_PER_ANNOTATION
 } from '../utils/drawing.js'
 import { resolveArrowStyle, strokeWidthOf, dashArrayFor, pickStyleFields } from '../utils/annotationStyles.js'
 import { cursorForTool } from '../utils/cursors.js'
@@ -195,11 +195,15 @@ function SelectionToolbar({ point, onEdit, onRemove, onClose }) {
 }
 
 export default function ImageCanvas({
-  imageUrl, imageWidth, imageHeight, activeTool, annotations, zoom, onZoomBy,
-  editingAnnotationId, onAddAnnotation, onUpdateAnnotation, onRemoveAnnotation, onRequestEdit,
-  colorMode = 'rotate', fixedColor = DEFAULT_COLOR
+  imageUrl, imageAlt = 'Image being annotated', imageWidth, imageHeight, activeTool, annotations, zoom, onZoomBy,
+  editingAnnotationId, onAddAnnotation, onUpdateAnnotation, onCommitEdit, onRemoveAnnotation, onRequestEdit,
+  onUndo, onRedo, colorMode = 'rotate', fixedColor = DEFAULT_COLOR
 }) {
   const wrapperRef = useRef(null)
+  // Set by the wheel handler just before onZoomBy fires, and consumed by the
+  // effect below once `zoom` actually changes - carries the point that
+  // should stay fixed under the cursor across the zoom change.
+  const pendingZoomAnchorRef = useRef(null)
 
   // Ctrl/Cmd+scroll to zoom. Attached as a native listener (not React's
   // onWheel) so preventDefault reliably stops the browser's own page-zoom
@@ -210,11 +214,37 @@ export default function ImageCanvas({
     const handleWheel = (event) => {
       if (!event.ctrlKey && !event.metaKey) { return }
       event.preventDefault()
+      const appMain = el.closest('.app-main')
+      if (appMain) {
+        const wrapperRect = el.getBoundingClientRect()
+        const mainRect = appMain.getBoundingClientRect()
+        pendingZoomAnchorRef.current = {
+          // The image-space point under the cursor, independent of the
+          // current zoom/scroll - this is what must stay under the cursor.
+          imageX: (event.clientX - wrapperRect.left) / zoom,
+          imageY: (event.clientY - wrapperRect.top) / zoom,
+          offsetX: event.clientX - mainRect.left,
+          offsetY: event.clientY - mainRect.top
+        }
+      }
       onZoomBy(event.deltaY < 0 ? 0.1 : -0.1)
     }
     el.addEventListener('wheel', handleWheel, { passive: false })
     return () => el.removeEventListener('wheel', handleWheel)
-  }, [onZoomBy])
+  }, [onZoomBy, zoom])
+
+  // Runs after `zoom` actually changes: re-scrolls `.app-main` so the point
+  // captured above stays under the cursor, instead of every zoom always
+  // growing/shrinking from the top-left corner.
+  useEffect(() => {
+    const anchor = pendingZoomAnchorRef.current
+    pendingZoomAnchorRef.current = null
+    if (!anchor) { return }
+    const appMain = wrapperRef.current?.closest('.app-main')
+    if (!appMain) { return }
+    appMain.scrollLeft = anchor.imageX * zoom - anchor.offsetX
+    appMain.scrollTop = anchor.imageY * zoom - anchor.offsetY
+  }, [zoom])
 
   const [dragStart, setDragStart] = useState(null)
   const [dragPoint, setDragPoint] = useState(null)
@@ -225,6 +255,9 @@ export default function ImageCanvas({
   const [isGrabbing, setIsGrabbing] = useState(false)
   const moveState = useRef(null)
   const resizeState = useRef(null)
+  // Ever-incrementing count of annotations created this session, seeded from
+  // whatever was already restored - see nextColor below.
+  const createdCountRef = useRef(annotations.length)
 
   // Delete/Backspace removes the selected annotation, so it doesn't require
   // opening the sidebar. Skipped while the comment popover is open (so
@@ -244,12 +277,55 @@ export default function ImageCanvas({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [selectedId, pending, onRemoveAnnotation])
 
+  // Cmd/Ctrl+Z to undo, Cmd/Ctrl+Shift+Z or Ctrl+Y to redo. Same guards as
+  // Delete/Backspace above: skipped while the popover is open or another
+  // text input has focus.
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (pending) { return }
+      const tag = document.activeElement?.tagName
+      if (tag === 'TEXTAREA' || tag === 'INPUT') { return }
+      const isMod = event.metaKey || event.ctrlKey
+      // event.key reports the shifted/Caps-Lock'd character ('Z', not 'z') -
+      // without normalizing, Shift+Z-for-redo would never match, and Caps Lock
+      // would break the undo branch the same way.
+      const key = event.key.toLowerCase()
+      if (isMod && !event.shiftKey && key === 'z') {
+        event.preventDefault()
+        onUndo()
+      } else if (isMod && event.shiftKey && key === 'z') {
+        event.preventDefault()
+        onRedo()
+      } else if (event.ctrlKey && !event.metaKey && key === 'y') {
+        event.preventDefault()
+        onRedo()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [pending, onUndo, onRedo])
+
+  // The comment popover and the selection toolbar are `position: fixed`,
+  // anchored to a point derived from the wrapper's live bounding rect. That
+  // rect only changes on scroll, which is a native browser event - nothing
+  // about it triggers a React re-render on its own, so without this the
+  // popover/toolbar would stay frozen at their opening position while the
+  // canvas scrolls underneath them. The capture-phase listener catches a
+  // scroll on any ancestor (namely `.app-main`), not just the window itself.
+  const [, forceRerenderOnScroll] = useReducer((n) => n + 1, 0)
+  useEffect(() => {
+    if (!pending && !selectedId) { return }
+    const onScroll = () => forceRerenderOnScroll()
+    window.addEventListener('scroll', onScroll, true)
+    return () => window.removeEventListener('scroll', onScroll, true)
+  }, [pending, selectedId])
+
   const handleHandleMouseDown = useCallback((event, handle) => {
     event.preventDefault()
     event.stopPropagation()
     const annotation = annotations.find((a) => a.id === selectedId)
     if (!annotation) { return }
-    resizeState.current = { id: annotation.id, type: annotation.type, startGeometry: annotation.geometry, handle }
+    resizeState.current = { id: annotation.id, type: annotation.type, startGeometry: annotation.geometry, startAnnotation: annotation, handle, moved: false }
     setIsGrabbing(true)
   }, [annotations, selectedId])
 
@@ -260,10 +336,10 @@ export default function ImageCanvas({
       geometry: annotation.geometry,
       color: annotation.color,
       text: annotation.text,
-      ...pickStyleFields(annotation.type, annotation),
-      anchor: toClientPoint(wrapperRef, annotationBottomAnchor(annotation), zoom)
+      before: annotation,
+      ...pickStyleFields(annotation.type, annotation)
     })
-  }, [zoom])
+  }, [])
 
   // "Edit" clicked in the sidebar: bring the annotation into view, then open
   // the same popover used for click-to-edit-on-the-image.
@@ -284,14 +360,16 @@ export default function ImageCanvas({
   }, [editingAnnotationId, annotations, onRequestEdit, zoom, openEditPopover])
 
   // The starting color for a new annotation: either the next color in the
-  // palette (cycling by how many annotations already exist, so multiple
-  // markings on one image stay visually distinguishable) or a fixed color
-  // the user picked in Settings. Either way it's just a starting point - the
-  // comment popover still lets the color be changed per annotation, and
-  // editing an existing annotation keeps its stored color untouched.
+  // palette, cycling by how many annotations have been CREATED this session
+  // (createdCountRef - not annotations.length, which would repeat a color
+  // that's still in use as soon as an earlier annotation is deleted) - or a
+  // fixed color the user picked in Settings. Either way it's just a starting
+  // point - the comment popover still lets the color be changed per
+  // annotation, and editing an existing annotation keeps its stored color
+  // untouched.
   const nextColor = colorMode === 'fixed'
     ? fixedColor
-    : ANNOTATION_COLORS[annotations.length % ANNOTATION_COLORS.length].hex
+    : ANNOTATION_COLORS[createdCountRef.current % ANNOTATION_COLORS.length].hex
 
   const handleMouseDown = useCallback((event) => {
     // A mousedown that closes the open popover (see CommentPopover's own
@@ -315,7 +393,7 @@ export default function ImageCanvas({
       const wasSelected = hit.id === selectedId
       setSelectedId(hit.id)
       setIsGrabbing(true)
-      moveState.current = { id: hit.id, type: hit.type, startGeometry: hit.geometry, startPoint: point, moved: false, wasSelected }
+      moveState.current = { id: hit.id, type: hit.type, startGeometry: hit.geometry, startAnnotation: hit, startPoint: point, moved: false, wasSelected }
       return
     }
 
@@ -325,8 +403,7 @@ export default function ImageCanvas({
     }
 
     if (activeTool === 'pin') {
-      const geometry = point
-      setPending({ type: 'pin', geometry, color: nextColor, anchor: toClientPoint(wrapperRef, annotationBottomAnchor({ type: 'pin', geometry }), zoom) })
+      setDragStart(point)
       return
     }
 
@@ -337,12 +414,13 @@ export default function ImageCanvas({
 
     setDragStart(point)
     setDragPoint(point)
-  }, [activeTool, imageWidth, imageHeight, zoom, pending, annotations, selectedId, nextColor])
+  }, [activeTool, imageWidth, imageHeight, zoom, pending, annotations, selectedId])
 
   const handleMouseMove = useCallback((event) => {
     if (resizeState.current) {
       const point = pointFromEvent(event, wrapperRef, imageWidth, imageHeight, zoom)
       const { id, type, startGeometry, handle } = resizeState.current
+      resizeState.current.moved = true
       onUpdateAnnotation(id, { geometry: resizeGeometry(type, startGeometry, handle, point) })
       return
     }
@@ -360,6 +438,10 @@ export default function ImageCanvas({
     }
 
     if (isPointCollectingTool(activeTool) && strokePoints.length > 0) {
+      // Capped so an unusually long stroke can't produce an annotation the
+      // import validator (or the server's own copy of this same limit) would
+      // then refuse to accept back - see MAX_POINTS_PER_ANNOTATION in drawing.js.
+      if (strokePoints.length >= MAX_POINTS_PER_ANNOTATION) { return }
       const point = pointFromEvent(event, wrapperRef, imageWidth, imageHeight, zoom)
       setStrokePoints((prev) => [...prev, point])
       return
@@ -376,19 +458,68 @@ export default function ImageCanvas({
     }
   }, [activeTool, strokePoints.length, dragStart, imageWidth, imageHeight, zoom, onUpdateAnnotation, pending, annotations])
 
+  // Wraps every `setPending` call that starts a brand-new annotation (as
+  // opposed to editing an existing one) so the created-count increment can't
+  // drift out of sync with it - see nextColor above for why the count exists.
+  const createPending = useCallback((partial) => {
+    setPending(partial)
+    createdCountRef.current += 1
+  }, [])
+
+  // The tool-specific dispatch for "a drag/click just finished, and it was a
+  // draw gesture rather than a move/resize/select" - split out of
+  // handleMouseUp below so that function stays focused on the drag-in-
+  // progress bookkeeping it owns (resize/move commit, then handing off here).
+  const handleCreateAnnotation = useCallback((point) => {
+    if (activeTool === 'pin' && dragStart) {
+      setDragStart(null)
+      createPending({ type: 'pin', geometry: dragStart, color: nextColor })
+    } else if (activeTool === 'box' && dragStart) {
+      const geometry = boxFromPoints(dragStart, point)
+      setDragStart(null)
+      setDragPoint(null)
+      if (geometry.width > 2 && geometry.height > 2) {
+        createPending({ type: 'box', geometry, color: nextColor })
+      }
+    } else if (activeTool === 'arrow' && dragStart) {
+      setDragStart(null)
+      setDragPoint(null)
+      const geometry = { x1: dragStart.x, y1: dragStart.y, x2: point.x, y2: point.y }
+      createPending({ type: 'arrow', geometry, color: nextColor, arrowStyle: 'head' })
+    } else if (isPointCollectingTool(activeTool) && strokePoints.length > 0) {
+      if (strokePoints.length > 1) {
+        createPending({ type: activeTool, geometry: { points: strokePoints }, color: nextColor })
+      }
+      // Always clear, even for a single-point "click, no drag": otherwise
+      // handleMouseMove's `strokePoints.length > 0` check keeps matching and
+      // a stray stroke follows the cursor with no button held, until the
+      // next mousedown happens to reset it.
+      setStrokePoints([])
+    }
+  }, [activeTool, dragStart, strokePoints, nextColor, createPending])
+
   const handleMouseUp = useCallback((event) => {
     if (pending) { return }
+    if (!wrapperRef.current) { return }
     if (resizeState.current) {
+      const { id, moved, startAnnotation } = resizeState.current
       resizeState.current = null
       setIsGrabbing(false)
+      if (moved) {
+        const after = annotations.find((a) => a.id === id)
+        if (after) { onCommitEdit(id, startAnnotation, after) }
+      }
       return
     }
 
     if (moveState.current) {
-      const { id, moved, wasSelected } = moveState.current
+      const { id, moved, wasSelected, startAnnotation } = moveState.current
       moveState.current = null
       setIsGrabbing(false)
-      if (!moved && wasSelected) {
+      if (moved) {
+        const after = annotations.find((a) => a.id === id)
+        if (after) { onCommitEdit(id, startAnnotation, after) }
+      } else if (wasSelected) {
         // A click on an already-selected shape: open its edit popover. A
         // first click only selects it (so the handles and the Remove/Edit
         // toolbar stay visible instead of being immediately hidden behind
@@ -399,60 +530,42 @@ export default function ImageCanvas({
       return
     }
 
-    const point = pointFromEvent(event, wrapperRef, imageWidth, imageHeight, zoom)
+    handleCreateAnnotation(pointFromEvent(event, wrapperRef, imageWidth, imageHeight, zoom))
+  }, [imageWidth, imageHeight, zoom, annotations, openEditPopover, onCommitEdit, pending, handleCreateAnnotation])
 
-    if (activeTool === 'box' && dragStart) {
-      const geometry = boxFromPoints(dragStart, point)
-      setDragStart(null)
-      setDragPoint(null)
-      if (geometry.width > 2 && geometry.height > 2) {
-        setPending({
-          type: 'box', geometry, color: nextColor,
-          anchor: toClientPoint(wrapperRef, annotationBottomAnchor({ type: 'box', geometry }), zoom)
-        })
-      }
-    } else if (activeTool === 'arrow' && dragStart) {
-      setDragStart(null)
-      setDragPoint(null)
-      const geometry = { x1: dragStart.x, y1: dragStart.y, x2: point.x, y2: point.y }
-      setPending({
-        type: 'arrow', geometry, color: nextColor, arrowStyle: 'head',
-        anchor: toClientPoint(wrapperRef, annotationBottomAnchor({ type: 'arrow', geometry }), zoom)
-      })
-    } else if (isPointCollectingTool(activeTool) && strokePoints.length > 0) {
-      if (strokePoints.length > 1) {
-        const geometry = { points: strokePoints }
-        setPending({
-          type: activeTool, geometry, color: nextColor,
-          anchor: toClientPoint(wrapperRef, annotationBottomAnchor({ type: activeTool, geometry }), zoom)
-        })
-      }
-      // Always clear, even for a single-point "click, no drag": otherwise
-      // handleMouseMove's `strokePoints.length > 0` check keeps matching and
-      // a stray stroke follows the cursor with no button held, until the
-      // next mousedown happens to reset it.
-      setStrokePoints([])
-    }
-  }, [activeTool, dragStart, strokePoints, imageWidth, imageHeight, zoom, annotations, openEditPopover, nextColor, pending])
+  // A window-level listener (not a React handler on the wrapper) so a drag,
+  // move, or resize still finishes correctly when the button is released
+  // outside the canvas (e.g. over the sidebar) - the wrapper's own mouseup
+  // never fires there, which otherwise leaves the operation stuck: the next
+  // mousemove over the canvas keeps interpreting it as still in progress
+  // even with no button held.
+  useEffect(() => {
+    window.addEventListener('mouseup', handleMouseUp)
+    return () => window.removeEventListener('mouseup', handleMouseUp)
+  }, [handleMouseUp])
 
   const handleCommentSubmit = useCallback((fields) => {
     if (pending) {
       const { text, color } = fields
       const styleFields = pickStyleFields(pending.type, fields)
       if (pending.id) {
-        onUpdateAnnotation(pending.id, { text, color, ...styleFields })
+        const after = { ...pending.before, text, color, ...styleFields }
+        onCommitEdit(pending.id, pending.before, after)
       } else {
         onAddAnnotation({ type: pending.type, geometry: pending.geometry, text, color, ...styleFields })
       }
     }
     setPending(null)
-  }, [pending, onAddAnnotation, onUpdateAnnotation])
+  }, [pending, onAddAnnotation, onCommitEdit])
 
   const handleCommentClose = useCallback(() => {
     setPending(null)
   }, [])
 
   const selectedAnnotation = selectedId ? annotations.find((a) => a.id === selectedId) : null
+  // Computed fresh every render (not stored in state) so the scroll-triggered
+  // re-render above actually moves it - see the effect that owns forceRerenderOnScroll.
+  const pendingAnchorPoint = pending ? toClientPoint(wrapperRef, annotationBottomAnchor(pending), zoom) : null
 
   let livePreview = null
   if (activeTool === 'box' && dragStart && dragPoint) {
@@ -474,9 +587,8 @@ export default function ImageCanvas({
       style={{ width: imageWidth * zoom, height: imageHeight * zoom, cursor }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
     >
-      <img src={imageUrl} alt="Captured page" width={imageWidth * zoom} height={imageHeight * zoom} draggable={false} />
+      <img src={imageUrl} alt={imageAlt} width={imageWidth * zoom} height={imageHeight * zoom} draggable={false} />
       <svg
         className="annotation-overlay"
         width={imageWidth * zoom} height={imageHeight * zoom}
@@ -519,7 +631,7 @@ export default function ImageCanvas({
       )}
       {pending && (
         <CommentPopover
-          anchorPoint={pending.anchor}
+          anchorPoint={pendingAnchorPoint}
           initialText={pending.text || ''}
           initialColor={pending.color}
           annotationType={pending.type}

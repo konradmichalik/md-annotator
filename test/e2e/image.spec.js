@@ -50,7 +50,9 @@ test('a full box annotation submits and the CLI prints structured feedback', asy
     await page.mouse.up()
 
     await page.getByPlaceholder('Add a comment (optional)...').fill('Move this element up')
-    await page.getByRole('button', { name: 'Add' }).click()
+    // Exact match: the sidebar's "Add general comment" button also matches a
+    // loose substring search for "Add".
+    await page.getByRole('button', { name: 'Add', exact: true }).click()
 
     await expect(page.getByText('1. Box')).toBeVisible()
 

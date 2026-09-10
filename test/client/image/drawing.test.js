@@ -182,6 +182,11 @@ describe('hitTestAnnotation', () => {
     expect(hitTestAnnotation(point, { type: 'highlighter', geometry, strokeWidth: 10 })).toBe(true)
   })
 
+  it('never hits a general comment (no geometry, not drawn on the canvas at all)', () => {
+    const comment = { type: 'comment', geometry: null }
+    expect(hitTestAnnotation({ x: 0, y: 0 }, comment)).toBe(false)
+  })
+
   it('includes a dimension arrow\'s perpendicular ticks in hit-testing, not just the shaft', () => {
     const geometry = { x1: 0, y1: 0, x2: 100, y2: 0 }
     // At strokeWidth 15 the tick half-length (35) well exceeds the shaft's

@@ -81,6 +81,13 @@ export const ACTION_ICONS = {
     <svg {...ICON_PROPS} aria-hidden="true">
       <path d="M18 6l-12 12" /><path d="M6 6l12 12" />
     </svg>
+  ),
+  addComment: (
+    <svg {...ICON_PROPS} aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="16" />
+      <line x1="8" y1="12" x2="16" y2="12" />
+    </svg>
   )
 }
 

@@ -1,5 +1,5 @@
 /* global __APP_VERSION__ */
-import { useEffect, useReducer, useState, useCallback } from 'react'
+import { useEffect, useReducer, useState, useCallback, useRef } from 'react'
 import { annotationReducer, initialAnnotationState, createAnnotationId } from './state/annotationReducer.js'
 import Toolbar from './components/Toolbar.jsx'
 import ZoomControls from './components/ZoomControls.jsx'
@@ -8,13 +8,21 @@ import AnnotationPanel from './components/AnnotationPanel.jsx'
 import ExportModal from './components/ExportModal.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
 import { useSettings } from './hooks/useSettings.js'
-import { useAutoClose } from './hooks/useAutoClose.js'
-import appIcon from './assets/icon-annotaitr.svg?inline'
+import { useAutoClose } from '../../shared/hooks/useAutoClose.js'
+import { useServerConnection } from '../../shared/hooks/useServerConnection.js'
+import { useResizablePanel } from '../../shared/hooks/useResizablePanel.js'
+import { UpdateBanner } from '../../shared/components/UpdateBanner.jsx'
+import { Logo } from '../../shared/components/Logo.jsx'
+import { getItem, setItem } from '../../shared/utils/storage.js'
 
 const ORIGIN_LABELS = {
   'claude-code': 'Claude Code',
   'opencode': 'OpenCode',
   'vibe': 'Mistral Vibe'
+}
+
+function getInitialSidebarCollapsed() {
+  return getItem('img-annotator-sidebar-collapsed') === 'true'
 }
 
 export default function App() {
@@ -27,25 +35,68 @@ export default function App() {
   const [editingAnnotationId, setEditingAnnotationId] = useState(null)
   const [zoom, setZoom] = useState(1)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialSidebarCollapsed)
+  const [status, setStatus] = useState('')
+  const [toast, setToast] = useState(null)
   const { settings, updateSetting, resetSettings } = useSettings()
   const { state: autoCloseState, enableAndStart } = useAutoClose(!!decision, settings.autoCloseDelay)
+  const { serverGone, reconnectState } = useServerConnection({ submitted: !!decision })
+  const { width: panelWidth, handleMouseDown: handlePanelResize } = useResizablePanel('img-annotator-panel-width', 300, 1)
+  const toastTimerRef = useRef(null)
+  const errorTimerRef = useRef(null)
+
+  const showToast = useCallback((message) => {
+    if (toastTimerRef.current) { clearTimeout(toastTimerRef.current) }
+    setToast(message)
+    toastTimerRef.current = setTimeout(() => setToast(null), 2500)
+  }, [])
+
+  const setErrorStatus = useCallback((message) => {
+    setStatus(message)
+    if (errorTimerRef.current) { clearTimeout(errorTimerRef.current) }
+    errorTimerRef.current = setTimeout(() => {
+      setStatus((prev) => (prev === message ? '' : prev))
+      errorTimerRef.current = null
+    }, 5000)
+  }, [])
 
   useEffect(() => {
-    fetch('/api/meta').then((r) => r.json()).then((r) => setMeta(r.data))
+    return () => {
+      if (toastTimerRef.current) { clearTimeout(toastTimerRef.current) }
+      if (errorTimerRef.current) { clearTimeout(errorTimerRef.current) }
+    }
+  }, [])
+
+  useEffect(() => {
+    setItem('img-annotator-sidebar-collapsed', sidebarCollapsed)
+  }, [sidebarCollapsed])
+
+  useEffect(() => {
+    fetch('/api/meta').then((r) => r.json()).then((r) => setMeta(r.data)).catch((err) => setErrorStatus('Error loading image metadata: ' + err.message))
     setImageUrl('/api/image')
     fetch('/api/annotations')
       .then((r) => r.json())
       .then((r) => dispatch({ type: 'SET_ALL', annotations: r.data.annotations }))
-  }, [])
+      .catch((err) => setErrorStatus('Error loading annotations: ' + err.message))
+  }, [setErrorStatus])
 
+  // Debounced auto-save to the server, so a fast drag doesn't fire one POST
+  // per mousemove - only settles 500ms after the annotations actually stop
+  // changing. Skipped once a decision has been submitted.
   useEffect(() => {
-    if (!meta) { return }
-    fetch('/api/annotations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ annotations: state.annotations })
-    })
-  }, [state.annotations, meta])
+    if (!meta || decision) { return }
+    const timer = setTimeout(() => {
+      fetch('/api/annotations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ annotations: state.annotations })
+      }).catch(() => {
+        // Silent failure - persistence is best-effort, the heartbeat/disconnect
+        // screen is what surfaces a truly lost server.
+      })
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [state.annotations, meta, decision])
 
   const addAnnotation = useCallback((partial) => {
     dispatch({
@@ -53,6 +104,20 @@ export default function App() {
       annotation: { id: createAnnotationId(), createdAt: Date.now(), ...partial }
     })
   }, [])
+
+  const addGlobalComment = useCallback(() => {
+    dispatch({
+      type: 'ADD',
+      annotation: { id: createAnnotationId(), createdAt: Date.now(), type: 'comment', geometry: null, text: '', color: null }
+    })
+    setSidebarCollapsed(false)
+  }, [])
+
+  const editGlobalComment = useCallback((id, text) => {
+    const before = state.annotations.find((a) => a.id === id)
+    if (!before) { return }
+    dispatch({ type: 'EDIT', id, before, after: { ...before, text } })
+  }, [state.annotations])
 
   const removeAnnotation = useCallback((id) => {
     dispatch({ type: 'REMOVE', id })
@@ -62,14 +127,36 @@ export default function App() {
     dispatch({ type: 'UPDATE', id, changes })
   }, [])
 
-  const importAnnotations = useCallback((annotations) => {
-    dispatch({ type: 'SET_ALL', annotations })
+  const commitEditAnnotation = useCallback((id, before, after) => {
+    dispatch({ type: 'EDIT', id, before, after })
   }, [])
 
+  const undo = useCallback(() => dispatch({ type: 'UNDO' }), [])
+  const redo = useCallback(() => dispatch({ type: 'REDO' }), [])
+
+  const importAnnotations = useCallback((annotations) => {
+    dispatch({ type: 'SET_ALL', annotations })
+    showToast(`Imported ${annotations.length} annotation${annotations.length === 1 ? '' : 's'}`)
+  }, [showToast])
+
   const submit = useCallback(async (endpoint) => {
-    const res = await fetch(`/api/${endpoint}`, { method: 'POST' })
-    if (res.ok) { setDecision(endpoint === 'approve' ? 'approved' : 'feedback') }
-  }, [])
+    try {
+      // Flush the current annotations synchronously before deciding - /api/approve
+      // and /api/feedback read the server's own state.annotations, which the
+      // debounced auto-save effect above may not have posted yet if the user
+      // submits within 500ms of their last edit.
+      await fetch('/api/annotations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ annotations: state.annotations })
+      })
+      const res = await fetch(`/api/${endpoint}`, { method: 'POST' })
+      if (!res.ok) { throw new Error(`Server responded with ${res.status}`) }
+      setDecision(endpoint === 'approve' ? 'approved' : 'feedback')
+    } catch (err) {
+      setErrorStatus(`${endpoint === 'approve' ? 'Approve' : 'Submit'} failed: ${err.message}`)
+    }
+  }, [setErrorStatus, state.annotations])
 
   const zoomBy = useCallback((delta) => {
     setZoom((z) => Math.round(Math.max(0.1, Math.min(3, z + delta)) * 100) / 100)
@@ -81,14 +168,64 @@ export default function App() {
     if (!meta) { return }
     const appMain = document.querySelector('.app-main')
     if (!appMain) { return }
-    const availableWidth = appMain.clientWidth - 24
-    const availableHeight = appMain.clientHeight - 76
+    // Reserve room for .app-main's own padding (12px each side) plus, on the
+    // vertical axis, the sticky .canvas-topbar toolbar row above the image.
+    const APP_MAIN_PADDING = 24
+    const TOPBAR_RESERVED_HEIGHT = 76
+    const availableWidth = appMain.clientWidth - APP_MAIN_PADDING
+    const availableHeight = appMain.clientHeight - TOPBAR_RESERVED_HEIGHT
     const fit = Math.min(availableWidth / meta.width, availableHeight / meta.height)
     setZoom(Math.round(Math.max(0.1, Math.min(3, fit)) * 100) / 100)
   }, [meta])
 
   const annotationCount = state.annotations.length
   const origin = meta?.origin
+
+  if (serverGone && !decision) {
+    return (
+      <div className="app-shell">
+        <div className="done-screen">
+          <div className="done-card">
+            <div className="done-icon done-icon--disconnected">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="1" y1="1" x2="23" y2="23" />
+                <path d="M16.72 11.06A10.94 10.94 0 0119 12.55" />
+                <path d="M5 12.55a10.94 10.94 0 015.17-2.39" />
+                <path d="M10.71 5.05A16 16 0 0122.56 9" />
+                <path d="M1.42 9a15.91 15.91 0 014.7-2.88" />
+                <path d="M8.53 16.11a6 6 0 016.95 0" />
+                <line x1="12" y1="20" x2="12.01" y2="20" />
+              </svg>
+            </div>
+            <h1 className="done-title">Server Disconnected</h1>
+            <p className="done-message">
+              The server is no longer available. Your annotations have not been submitted.
+            </p>
+            {reconnectState === 'reconnecting' && <p className="done-hint">Attempting to reconnect...</p>}
+            {reconnectState === 'failed' && <p className="done-hint">Could not reconnect to the server.</p>}
+            {annotationCount > 0 && (
+              <div className="done-actions">
+                <p className="done-backup-info">
+                  {annotationCount} annotation{annotationCount === 1 ? '' : 's'} not yet submitted.
+                </p>
+                <button type="button" onClick={() => setShowExport(true)} className="btn btn-feedback">
+                  Export Annotations
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        {showExport && (
+          <ExportModal
+            annotations={state.annotations}
+            onImport={importAnnotations}
+            onClose={() => setShowExport(false)}
+          />
+        )}
+        {toast && <div className="toast">{toast}</div>}
+      </div>
+    )
+  }
 
   if (decision) {
     return (
@@ -148,6 +285,7 @@ export default function App() {
               )}
             </div>
           </div>
+          <Logo className="app-logo done-logo" />
         </div>
       </div>
     )
@@ -157,8 +295,7 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <div className="header-left">
-          <img src={appIcon} alt="" className="app-icon" width="20" height="20" />
-          <span className="app-name">annotaitr</span>
+          <Logo className="app-logo" />
           <span className="version-badge">v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '?'}</span>
           {ORIGIN_LABELS[origin] && (
             <span className="origin-badge">{ORIGIN_LABELS[origin]}</span>
@@ -168,7 +305,7 @@ export default function App() {
         <div className="header-right">
           <button
             type="button"
-            onClick={() => submit('submit')}
+            onClick={() => submit('feedback')}
             className="btn btn-feedback"
             disabled={annotationCount === 0}
             title={annotationCount === 0 ? 'Add annotations first' : `Submit ${annotationCount} annotation(s)`}
@@ -198,10 +335,22 @@ export default function App() {
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
             </svg>
           </button>
+          <button
+            type="button"
+            onClick={() => setSidebarCollapsed((prev) => !prev)}
+            className="btn btn-icon"
+            title={sidebarCollapsed ? 'Show annotations' : 'Hide annotations'}
+            aria-label={sidebarCollapsed ? 'Show annotations' : 'Hide annotations'}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="15" y1="3" x2="15" y2="21" />
+            </svg>
+          </button>
         </div>
       </header>
 
-      <div className="app-body">
+      <main className="app-body">
         <div className="app-main">
           <div className="canvas-topbar">
             <Toolbar
@@ -217,6 +366,7 @@ export default function App() {
           {imageUrl && meta && (
             <ImageCanvas
               imageUrl={imageUrl}
+              imageAlt={meta.targetLabel ? `Annotating ${meta.targetLabel}` : 'Image being annotated'}
               imageWidth={meta.width}
               imageHeight={meta.height}
               activeTool={activeTool}
@@ -226,37 +376,63 @@ export default function App() {
               editingAnnotationId={editingAnnotationId}
               onAddAnnotation={addAnnotation}
               onUpdateAnnotation={updateAnnotation}
+              onCommitEdit={commitEditAnnotation}
               onRemoveAnnotation={removeAnnotation}
               onRequestEdit={setEditingAnnotationId}
+              onUndo={undo}
+              onRedo={redo}
               colorMode={settings.colorMode}
               fixedColor={settings.fixedColor}
             />
           )}
         </div>
-        <div className="app-sidebar">
-          <div className="panel-header">
-            <h2>Annotations</h2>
-            <span className="panel-badge">{annotationCount}</span>
-            <button
-              type="button"
-              className="panel-icon-btn"
-              onClick={() => setShowExport(true)}
-              title="Export / Import"
-              aria-label="Export / Import"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-            </button>
-          </div>
-          <AnnotationPanel annotations={state.annotations} onRemove={removeAnnotation} onEdit={setEditingAnnotationId} />
-        </div>
-      </div>
+        {!sidebarCollapsed && (
+          <div className="panel-resize-handle" onMouseDown={handlePanelResize} />
+        )}
+        {!sidebarCollapsed && (
+          <aside className="app-sidebar" style={{ width: panelWidth }}>
+            <div className="panel-header">
+              <h2>Annotations</h2>
+              <span className="panel-badge">{annotationCount}</span>
+              <button
+                type="button"
+                className="panel-icon-btn"
+                onClick={addGlobalComment}
+                title="Add general comment"
+                aria-label="Add general comment"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="16" />
+                  <line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className="panel-icon-btn"
+                onClick={() => setShowExport(true)}
+                title="Export / Import"
+                aria-label="Export / Import"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              </button>
+            </div>
+            <AnnotationPanel
+              annotations={state.annotations}
+              onRemove={removeAnnotation}
+              onEdit={setEditingAnnotationId}
+              onEditGlobalComment={editGlobalComment}
+            />
+          </aside>
+        )}
+      </main>
 
       <footer className="app-status">
-        <span>Click a mark to select it, drag to move, or press Delete to remove it.</span>
+        <span>{status || 'Click a mark to select it, drag to move, or press Delete to remove it.'}</span>
         {meta && <span className="image-stats">{meta.width} &times; {meta.height}px</span>}
       </footer>
 
@@ -275,6 +451,9 @@ export default function App() {
         updateSetting={updateSetting}
         resetSettings={resetSettings}
       />
+
+      <UpdateBanner />
+      {toast && <div className="toast">{toast}</div>}
     </div>
   )
 }

@@ -7,7 +7,14 @@ export default function ExportModal({ annotations, onImport, onClose }) {
 
   const handleImport = () => {
     try {
-      onImport(parseAnnotationsJson(draft))
+      const imported = parseAnnotationsJson(draft)
+      if (annotations.length > 0) {
+        const proceed = window.confirm(
+          `This will replace ${annotations.length} existing annotation(s) with ${imported.length} imported annotation(s).\n\nContinue?`
+        )
+        if (!proceed) { return }
+      }
+      onImport(imported)
       onClose()
     } catch (err) {
       setError(err.message)

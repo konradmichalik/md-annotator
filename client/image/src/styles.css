@@ -1,3 +1,5 @@
+@import url('../../shared/styles/common.css');
+
 /* === Reset & Base === */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -83,15 +85,12 @@ body {
   gap: 1rem;
 }
 
-.app-icon {
-  display: block;
-  border-radius: 4px;
-}
-
-.app-name {
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: var(--text);
+.app-logo {
+  height: 1.375rem;
+  width: auto;
+  fill: currentcolor;
+  flex-shrink: 0;
+  transform: translateY(-3px);
 }
 
 .origin-badge {
@@ -162,7 +161,7 @@ body {
   background-size: 20px 20px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: safe center;
   padding: 12px 0;
 }
 
@@ -1044,10 +1043,19 @@ body {
 }
 
 .done-screen {
+  position: relative;
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.done-logo {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0.5;
 }
 
 .done-card {
@@ -1093,4 +1101,100 @@ body {
   font-size: 0.8125rem;
   color: var(--text-muted);
   opacity: 0.7;
+}
+
+/* Panel-splitter drag handle between the canvas and the sidebar. Distinct
+   from .resize-handle above (the SVG corner-drag circles on a selected
+   annotation) - same concept as md-annotator's own .resize-handle, renamed
+   here since both live in the same stylesheet. */
+.panel-resize-handle {
+  width: 4px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: transparent;
+  transition: background var(--transition-fast);
+  position: relative;
+  z-index: 5;
+  margin-left: -2px;
+  margin-right: -2px;
+}
+
+.panel-resize-handle:hover,
+.panel-resize-handle:active {
+  background: var(--primary);
+}
+
+/* .toast and the .update-banner-* shell live in client/shared/styles/common.css -
+   only .update-banner-icon stays here, since its tint is tuned per app to
+   each one's own light-mode --primary shade. */
+.update-banner-icon {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: rgb(94 129 172 / 12%);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* === General (global) comment on the whole image === */
+.panel-global-comment {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.panel-global-comment .panel-edit-btn,
+.panel-global-comment .panel-delete-btn {
+  opacity: 1;
+}
+
+.panel-global-textarea {
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 2.5rem;
+  outline: none;
+}
+
+.panel-global-textarea:focus {
+  border-color: var(--primary);
+}
+
+.panel-global-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.25rem;
+}
+
+.panel-global-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.375rem;
+}
+
+.panel-global-save-btn {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.panel-global-save-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--primary);
 }

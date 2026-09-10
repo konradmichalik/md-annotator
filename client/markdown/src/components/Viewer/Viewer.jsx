@@ -14,7 +14,7 @@ import { useDocumentSearch } from '../../hooks/useDocumentSearch.js'
 import { highlightMatches, setActiveMatch, clearSearchHighlights } from '../../utils/searchHighlight.js'
 import { SearchBar } from '../SearchBar.jsx'
 import { getQuickLabels, formatLabelText } from '../../utils/quickLabels.js'
-import { getItem, setItem } from '../../utils/storage.js'
+import { getItem, setItem } from '../../../../shared/utils/storage.js'
 import { groupHtmlWrappers } from '../../utils/htmlWrappers.js'
 import { isOpenableFileLink } from '../../utils/links.js'
 

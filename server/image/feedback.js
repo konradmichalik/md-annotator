@@ -35,13 +35,18 @@ function formatAnnotationList(annotations, imageWidth, imageHeight) {
   const nearbyByIndex = findNearbyAnnotationNumbers(annotations, imageWidth, imageHeight)
 
   return annotations.map((annotation, index) => {
+    const comment = annotation.text ? `> ${annotation.text.replace(/\n/g, '\n> ')}` : '> (no comment text)'
+    if (annotation.type === 'comment') {
+      // A general comment isn't placed anywhere on the image - no position,
+      // no nearby-marker note, nothing pinned to it visually.
+      return `### ${index + 1}. General comment about the whole image\n${comment}\n`
+    }
     const label = annotationLabel(annotation)
     const position = describePosition(annotation, imageWidth, imageHeight)
     const nearby = nearbyByIndex[index]
     const nearbyNote = nearby.length > 0
       ? ` — close to annotation${nearby.length > 1 ? 's' : ''} ${nearby.join(', ')}, check the numbered marker in the image`
       : ''
-    const comment = annotation.text ? `> ${annotation.text.replace(/\n/g, '\n> ')}` : '> (no comment text)'
     return `### ${index + 1}. ${label}: ${position}${nearbyNote}\n${comment}\n`
   }).join('\n')
 }
